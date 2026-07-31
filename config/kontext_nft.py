@@ -11,7 +11,7 @@ def _get_config(base_model="kontext", n_gpus=1, gradient_step_per_epoch=1, rewar
     config = base.get_config()
     config.logdir = os.getenv("LOGDIR", os.getenv("TRAIN_LOGDIR", config.logdir))
     config.num_epochs = int(os.getenv("NUM_EPOCHS", str(config.num_epochs)))
-    config.eval_freq = int(os.getenv("EVAL_FREQ", "1"))
+    config.eval_freq = int(os.getenv("EVAL_FREQ", "50"))
 
     config.base_model = base_model
     config.dataset = os.getenv("DATASET_ROOT", "/nvmedata/workspace2/users/wzt/dataset/GRPO")
@@ -35,6 +35,9 @@ def _get_config(base_model="kontext", n_gpus=1, gradient_step_per_epoch=1, rewar
     if str(lora_path).strip().lower() in {"", "none", "null", "false", "off", "0"}:
         lora_path = None
     config.train.lora_path = lora_path
+    config.train.learning_rate = float(
+        os.getenv("LORA_LEARNING_RATE", str(config.train.learning_rate))
+    )
     config.train.beta = 0.0001
     config.sample.noise_level = float(os.getenv("SAMPLE_NOISE_LEVEL", "0.7"))
     bsz = initial_bsz

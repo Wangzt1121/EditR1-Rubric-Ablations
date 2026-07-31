@@ -50,7 +50,10 @@ export SINGLE_REWARD_MODE=${REWARD_MODE}
 export SINGLE_REWARD_RUBRIC_YAML=${RUBRIC_PATH}
 export NUM_EPOCHS=150
 export SAVE_FREQ=${SAVE_FREQ:-25}
-export SKIP_EVAL=${SKIP_EVAL:-1}
+export LORA_LEARNING_RATE=${LORA_LEARNING_RATE:-5e-4}
+export EVAL_FREQ=${EVAL_FREQ:-50}
+export SKIP_EVAL=${SKIP_EVAL:-0}
+export MAX_EVAL_BATCHES=${MAX_EVAL_BATCHES:-0}
 export SINGLE_REWARD_FAIL_OPEN=${SINGLE_REWARD_FAIL_OPEN:-0}
 export OUTPUT_ROOT=${OUTPUT_ROOT:-${PROJECT_ROOT}/outputs}
 export LOGDIR=${OUTPUT_ROOT}/${EXPERIMENT}
@@ -65,5 +68,5 @@ if [ "${MODE}" = "--preflight-only" ]; then
     exit 0
 fi
 
-echo "[ablation] name=${EXPERIMENT} steps=${NUM_EPOCHS} mode=${SINGLE_REWARD_MODE} rubric=${SINGLE_REWARD_RUBRIC_YAML} logdir=${LOGDIR}"
+echo "[ablation] name=${EXPERIMENT} steps=${NUM_EPOCHS} lr=${LORA_LEARNING_RATE} eval_every=${EVAL_FREQ} eval_batches=all mode=${SINGLE_REWARD_MODE} rubric=${SINGLE_REWARD_RUBRIC_YAML} logdir=${LOGDIR}"
 exec bash examples/train_kontext_gemini.sh kontext_single_api_reward

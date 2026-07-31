@@ -2838,33 +2838,6 @@ def main(_):
                 return_tensors="pt",
             ).input_ids.to(device)
 
-            skip_eval = os.getenv("SKIP_EVAL", "0").strip().lower() in {
-                "1",
-                "true",
-                "yes",
-                "y",
-            }
-            if i == 0 and epoch % config.eval_freq == 0 and not config.debug and not skip_eval:
-                eval_fn(
-                    pipeline,
-                    test_dataloader,
-                    text_encoders,
-                    tokenizers,
-                    config,
-                    device,
-                    rank,
-                    world_size,
-                    global_step,
-                    epoch,
-                    eval_reward_fn,
-                    executor,
-                    mixed_precision_dtype,
-                    ema,
-                    transformer_trainable_parameters,
-                )
-            elif i == 0 and epoch % config.eval_freq == 0 and skip_eval and is_main_process(rank):
-                logger.info("Skipping eval because SKIP_EVAL=1.")
-
             sample_generators, sample_seeds = make_candidate_generators(
                 config,
                 device,
@@ -3601,6 +3574,34 @@ def main(_):
                     tgt_param.detach().data * decay
                     + src_param.detach().clone().data * (1.0 - decay)
                 )
+
+        skip_eval = os.getenv("SKIP_EVAL", "0").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+        }
+        eval_due = global_step > 0 and global_step % config.eval_freq == 0
+        if eval_due and not config.debug and not skip_eval:
+            eval_fn(
+                pipeline,
+                test_dataloader,
+                text_encoders,
+                tokenizers,
+                config,
+                device,
+                rank,
+                world_size,
+                global_step,
+                epoch + 1,
+                eval_reward_fn,
+                executor,
+                mixed_precision_dtype,
+                ema,
+                transformer_trainable_parameters,
+            )
+        elif eval_due and skip_eval and is_main_process(rank):
+            logger.info("Skipping eval because SKIP_EVAL=1.")
 
         if (
             (epoch + 1) % config.save_freq == 0

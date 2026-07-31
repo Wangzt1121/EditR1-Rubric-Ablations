@@ -62,8 +62,9 @@ and does not load model weights.
 ## Run the three ablations
 
 Each launcher first validates its rubric and environment, then runs 150
-optimizer steps with fail-closed Gemini scoring. All other model, data,
-sampling, and candidate settings are shared through `.env`.
+optimizer steps with fail-closed Gemini scoring and a LoRA learning rate of
+`5e-4`. All other model, data, sampling, and candidate settings are shared
+through `.env`.
 
 The three experiments are parallel variants on the same `main` branch:
 
@@ -97,9 +98,10 @@ Output is written to `OUTPUT_ROOT/l1_balanced`,
 launchers. Therefore `NUM_EPOCHS=150` produces 150 optimizer/global steps.
 Checkpoints are saved every 25 epochs by default, including step 150.
 
-`SKIP_EVAL=1` is used by the ablation launcher to avoid expensive validation
-sampling during training. Set `SKIP_EVAL=0` explicitly if intermediate
-evaluation is required; it does not change the number of optimizer steps.
+The launchers set `EVAL_FREQ=50`, `SKIP_EVAL=0`, and
+`MAX_EVAL_BATCHES=0`. Evaluation therefore traverses the complete validation
+set after optimizer steps 50, 100, and 150 instead of evaluating 500 images at
+every step.
 
 ## Reproducibility and security
 

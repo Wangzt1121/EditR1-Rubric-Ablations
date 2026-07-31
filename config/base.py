@@ -62,8 +62,8 @@ def get_config():
     config.train = train = ml_collections.ConfigDict()
     # batch size (per GPU!) to use for training.
     train.batch_size = 1
-    # learning rate.
-    train.learning_rate = 3e-4
+    # LoRA optimizer learning rate used by the rubric ablations.
+    train.learning_rate = 5e-4
     # Adam beta1.
     train.adam_beta1 = 0.9
     # Adam beta2.

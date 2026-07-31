@@ -66,9 +66,10 @@ fi
 export NUM_EPOCHS=${NUM_EPOCHS:-150}
 export SAVE_FREQ=${SAVE_FREQ:-25}
 export NUM_GROUPS_PER_EPOCH=${NUM_GROUPS_PER_EPOCH:-2}
-export EVAL_FREQ=${EVAL_FREQ:-1}
-export SKIP_EVAL=${SKIP_EVAL:-1}
-export MAX_EVAL_BATCHES=${MAX_EVAL_BATCHES:-5}
+export LORA_LEARNING_RATE=${LORA_LEARNING_RATE:-5e-4}
+export EVAL_FREQ=${EVAL_FREQ:-50}
+export SKIP_EVAL=${SKIP_EVAL:-0}
+export MAX_EVAL_BATCHES=${MAX_EVAL_BATCHES:-0}
 export WANDB_MODE=${WANDB_MODE:-offline}
 
 export DATASET_ROOT=${DATASET_ROOT:-data}
@@ -107,7 +108,7 @@ export SINGLE_REWARD_DEBUG_LIMIT=${SINGLE_REWARD_DEBUG_LIMIT:-0}
 CONFIG_NAME=${1:-kontext_single_api_reward}
 cd "${PROJECT_ROOT}"
 
-echo "[train_kontext] config=${CONFIG_NAME} mode=${SINGLE_REWARD_MODE} model=${SINGLE_REWARD_MODEL} rubric=${SINGLE_REWARD_RUBRIC_YAML} steps=${NUM_EPOCHS} gpus=${CUDA_VISIBLE_DEVICES}"
+echo "[train_kontext] config=${CONFIG_NAME} mode=${SINGLE_REWARD_MODE} model=${SINGLE_REWARD_MODEL} rubric=${SINGLE_REWARD_RUBRIC_YAML} steps=${NUM_EPOCHS} lr=${LORA_LEARNING_RATE} eval_every=${EVAL_FREQ} eval_batches=all gpus=${CUDA_VISIBLE_DEVICES}"
 
 exec "${PYTHON_BIN}" -m torch.distributed.run \
     --nproc_per_node="${NPROC_PER_NODE}" \

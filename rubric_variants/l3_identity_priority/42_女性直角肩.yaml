@@ -1,0 +1,753 @@
+task_key: female_right_angle_shoulders
+task_title: Female Right-Angle Shoulder Retouching
+task_title_zh: 女性直角肩
+version: v48_fixed_integer_22_l3_female_right_angle_shoulders_successgate_hybrid_compact_deep_review_compact_secondpass_l3_identity_priority
+language: English
+judge_role: You are a strict expert evaluator for natural female right-angle-shoulder editing, shoulder-girdle anatomy, pose
+  preservation, and scene consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare shoulder slope, shoulder-neck angle, trapezius heaviness, clavicles, shoulder tips, arms/hands,
+  torso, clothing/hair occlusion, pose, identity, face/hair, lighting, background, camera framing, and perspective.
+
+
+  2) Task target. A successful edit creates a natural right-angle-shoulder effect by reducing excessive downward slope/roundedness,
+  clarifying a gently horizontal shoulder line, and improving shoulder-neck transition. It must not create literal sharp corners,
+  shoulder-pad geometry, exaggerated deltoids, changed posture, or global body reshaping.
+
+
+  3) Task-specific failures. Treat absent/weak shoulder correction, posture/body/camera substitute, over-boxy shoulder-pad
+  shape, broken shoulder/clavicle/arm anatomy, clothing/hair/background artifacts, and source drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear shoulder-specific geometry evidence. If the effect comes from posture/camera/body
+  scaling or creates unnatural shoulders, preservation/quality must not lift affected facets.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 205
+  unique_prompt_variants: 161
+  dominant_requirements:
+  - create a natural right-angle or straight-shoulder appearance
+  - reduce excessive shoulder slope, roundedness, and upper-trapezius heaviness
+  - improve the shoulder-neck transition without pointed corners
+  - preserve neck length, arms, hands, pose, torso, clothing, scene, and framing
+  - keep anatomy, texture, lighting, and perspective realistic
+  optional_styles:
+  - narrow-frame or broad-yet-natural width
+  - delicate, feminine, athletic, model-like, editorial, youthful, or mature styling
+  - collarbone or shoulder-tip enhancement
+  - open, relaxed, poised, or balanced visual impression
+  data_note: Repeated localization templates occur throughout the dataset. Style words describe the desired shoulder appearance
+    and do not permit changes to posture, clothing design, body scale, or non-target anatomy.
+target_region: Visible shoulder contours, shoulder tips, shoulder-neck transitions, and the minimum necessary upper-trapezius
+  or collarbone-adjacent area. Neck length, arms, hands, chest, torso, and clothing remain non-target except for minimal boundary
+  adaptation.
+target_action_summary: Create a natural right-angle-shoulder effect by reducing excessive downward slope or roundedness, clarifying
+  a gently horizontal shoulder line, and improving the shoulder-neck transition. Do not create literal sharp corners, shoulder-pad
+  geometry, exaggerated deltoids, or a changed body posture.
+right_angle_shoulder_definition: A naturally straighter and cleaner shoulder line with a clear but softly curved shoulder-neck
+  transition. It is not a literal ninety-degree corner and must remain compatible with the source pose, build, perspective,
+  clothing, and anatomy.
+task_boundary:
+  allowed:
+  - localized shoulder-line straightening and slope reduction
+  - localized reduction of excessive upper-trapezius visual heaviness
+  - subtle shoulder-tip or collarbone-adjacent clarification
+  - minimal width adjustment only when explicitly requested
+  - minimal fabric, hair, skin, and shadow adaptation at target boundaries
+  not_equivalent_tasks:
+  - changing neck length or neck width
+  - moving arms, shoulders, torso, or posture to simulate the result
+  - adding shoulder pads or exaggerated muscular shoulder mass
+  - globally broadening or narrowing the upper body
+  - replacing clothing or reframing the image
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate prompt compliance, anatomical integration, non-target preservation, and
+    image quality. Do not reward generic attractiveness when shoulder geometry or preservation is incorrect.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not infer hidden anatomy.
+  - Do not reward literal sharp corners, boxy shoulder pads, or ruler-straight anatomy.
+  - Do not reward changes produced by head, neck, arm, torso, pose, scale, or camera movement.
+  - Use perspective-aware balance rather than forced mirror symmetry.
+  - A severe anatomy, pose, clothing, identity, or background error must not be averaged away.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request a right-angle, straight, more horizontal, cleaner, more open, less sloped,
+    less rounded, or less trapezius-heavy shoulder line.
+  wrong_task_examples:
+  - changing only neck length, arms, chest, back, or whole-body posture
+  - adding shoulder pads or bodybuilding shoulder mass
+  - changing clothing style without shoulder-contour editing
+  - globally widening or narrowing the upper body
+  conflict_examples:
+  - make the same shoulders both strongly sloped and clearly horizontal
+  - preserve the exact shoulder contour while requiring an obvious contour change
+  - create pointed corners while requiring soft natural edges
+  visibility_failures:
+  - both shoulders are outside the frame
+  - hair, clothing, or objects fully hide the requested contours
+  - image quality prevents identification of neck, shoulder line, and arm attachment
+  partial_visibility_rule: Score only assessable visible shoulders. Do not penalize a fully occluded side, but penalize missed
+    or inconsistent visible target regions.
+prompt_resolution:
+  rules:
+  - Natural anatomy and non-exaggeration override literal geometric interpretation of right-angle.
+  - Open or posture-based styling means a cleaner local shoulder impression without moving the body.
+  - Width changes are allowed only when explicitly requested.
+  - Trapezius reduction must not alter neck length or shoulder attachment.
+  - Collarbone enhancement means compatible contour and lighting, not new bone geometry.
+  - Clothing keeps its original design; only minimum contour-following adaptation is allowed.
+anatomy_preservation_protocol:
+  strict_rules:
+  - Preserve neck length, neck center, clavicle placement, shoulder-joint centers, and arm attachment points.
+  - Preserve torso axis, body posture, arm pose, and perspective.
+  - Keep the shoulder line softly anatomical rather than geometrically rigid.
+  - Do not create spikes, shelves, square blocks, detached shoulders, or artificial shoulder height.
+  - Preserve plausible trapezius, deltoid, clavicle, and shoulder-cap relationships.
+  - Do not warp clothing, hair, accessories, background lines, text, or image borders.
+identity_preservation_protocol:
+  target_exemptions:
+  - Only the requested shoulder contour and minimal local trapezius, fabric, hair, or shadow transition may change.
+  strict_rules:
+  - Preserve the same person, face, hair, skin tone, age impression, and body identity.
+  - Preserve neck, arms, hands, chest, torso, waist, hips, and non-target proportions.
+  - Preserve expression, gaze, pose, clothing design, and photographic style.
+  - The intended shoulder refinement must not itself be treated as identity drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: Good realism, clean background, or attractive clothing cannot compensate for unchanged shoulders,
+    posture/camera/clothing-pad substitute, boxy over-sharp shoulders, broken clavicle/arm anatomy, or source-state drift.
+  right_angle_shoulder_disambiguation_rule: Reward only source-preserving right-angle-shoulder refinement through natural
+    shoulder slope and shoulder-neck transition. Penalize pose/camera/clothing substitutes, shoulder-pad geometry, over-sharp
+    corners, and anatomy/occlusion drift.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Shoulder slope/roundedness remains mostly unchanged, shoulder-neck transition is not clarified, or the
+          right-angle-shoulder effect is too weak.
+        severity_guidance: Tiny but correct shoulder-line refinement may be severity 1. Correct but weak/partial right-angle
+          impression should be severity 2. Mostly unchanged shoulder slope at normal viewing size must be severity 3. Absent,
+          reversed, or worse rounded/downward shoulder effect must be severity 4-5.
+        affected_l3:
+        - shoulder_primary_right_angle_outcome_match
+        - shoulder_line_horizontality_slope_match
+        - shoulder_neck_transition_angle_match
+        - shoulder_trapezius_heaviness_reduction_match
+        - shoulder_open_balance_impression_match
+        - shoulder_requested_style_intensity_match
+        - shoulder_edit_localized_to_target_region
+        - shoulder_width_frame_style_match
+        - shoulder_tip_definition_softness_match
+        - shoulder_neck_clavicle_transition_quality
+        - shoulder_neck_arms_pose_preservation
+        - shoulder_torso_non_target_body_preservation
+        - shoulder_subject_identity_face_hair_preservation
+        - shoulder_clothing_accessory_detail_preservation
+        - shoulder_scene_camera_framing_preservation
+        - shoulder_artifact_background_stability
+      substitute_posture_body_scale_camera_or_clothing_pad:
+        detect_when: The result achieves the shoulder effect through posture/head/neck/arm movement, torso/body scaling, camera/crop
+          change, clothing shoulder-pad geometry, deltoid exaggeration, or generic body reshaping rather than local shoulder
+          contour editing.
+        severity_guidance: Minor clothing/pose cue with genuine local shoulder refinement may be severity 1-2. If posture,
+          body/camera/crop, clothing pad, hair/clothing rearrangement, neck/torso change, or perspective trick is a major
+          part of the effect, severity 3. If it is the main visible edit or changes source pose/identity/camera, severity
+          4-5.
+        affected_l3:
+        - shoulder_primary_right_angle_outcome_match
+        - shoulder_line_horizontality_slope_match
+        - shoulder_width_frame_style_match
+        - shoulder_edit_localized_to_target_region
+        - shoulder_neck_arms_pose_preservation
+        - shoulder_torso_non_target_body_preservation
+        - shoulder_subject_identity_face_hair_preservation
+        - shoulder_scene_camera_framing_preservation
+        - shoulder_neck_transition_angle_match
+        - shoulder_trapezius_heaviness_reduction_match
+        - shoulder_tip_definition_softness_match
+        - shoulder_open_balance_impression_match
+        - shoulder_requested_style_intensity_match
+        - shoulder_neck_clavicle_transition_quality
+        - shoulder_clothing_accessory_detail_preservation
+        - shoulder_artifact_background_stability
+      over_sharp_boxy_padded_or_anatomically_impossible:
+        detect_when: Shoulders become literal sharp corners, boxy, padded, overly wide, rigid, asymmetric, exaggerated, or
+          anatomically impossible for the source body and pose.
+        severity_guidance: Slight over-defined shoulder tip may be severity 1-2. Clear boxy, padded, bulky, masculine, or
+          too-straight shoulder geometry should be severity 3. Literal sharp corners, impossible clavicle/shoulder-girdle
+          anatomy, or severe style change must be severity 4-5.
+        affected_l3:
+        - shoulder_line_horizontality_slope_match
+        - shoulder_neck_transition_angle_match
+        - shoulder_width_frame_style_match
+        - shoulder_tip_definition_softness_match
+        - shoulder_open_balance_impression_match
+        - shoulder_girdle_anatomy_perspective_consistency
+        - shoulder_skin_fabric_surface_realism
+        - shoulder_artifact_background_stability
+        - shoulder_primary_right_angle_outcome_match
+        - shoulder_trapezius_heaviness_reduction_match
+        - shoulder_requested_style_intensity_match
+        - shoulder_edit_localized_to_target_region
+        - shoulder_neck_clavicle_transition_quality
+        - shoulder_arm_attachment_transition_quality
+        - shoulder_clothing_hair_occlusion_integration
+        - shoulder_neck_arms_pose_preservation
+        - shoulder_local_lighting_shadow_consistency
+        - shoulder_contour_edge_blending_quality
+      shoulder_clavicle_arm_or_occlusion_broken:
+        detect_when: Neck/clavicle/shoulder transition, shoulder-to-arm attachment, arms/hands, clothing/hair occlusion, surface
+          texture, lighting, contour edges, or background near shoulders becomes warped, cut, smeared, haloed, or inconsistent.
+        severity_guidance: Tiny edge/blend defect may be severity 1. Clear neck-clavicle-arm transition, sleeve/strap/hair
+          occlusion, local shadow, or boundary issue should be severity 2-3. Broken arm attachment, warped clothing/hair,
+          background seam, or impossible shoulder anatomy must be severity 4-5.
+        affected_l3:
+        - shoulder_neck_clavicle_transition_quality
+        - shoulder_arm_attachment_transition_quality
+        - shoulder_girdle_anatomy_perspective_consistency
+        - shoulder_clothing_hair_occlusion_integration
+        - shoulder_clothing_accessory_detail_preservation
+        - shoulder_skin_fabric_surface_realism
+        - shoulder_local_lighting_shadow_consistency
+        - shoulder_contour_edge_blending_quality
+        - shoulder_artifact_background_stability
+        - shoulder_primary_right_angle_outcome_match
+        - shoulder_line_horizontality_slope_match
+        - shoulder_neck_transition_angle_match
+        - shoulder_trapezius_heaviness_reduction_match
+        - shoulder_width_frame_style_match
+        - shoulder_tip_definition_softness_match
+        - shoulder_open_balance_impression_match
+        - shoulder_requested_style_intensity_match
+        - shoulder_edit_localized_to_target_region
+        - shoulder_neck_arms_pose_preservation
+      identity_pose_torso_scene_or_source_drift:
+        detect_when: Neck, arms, hands, pose, torso, face identity, hair, clothing/accessories, lighting, background, camera
+          framing, or scene layout changes beyond shoulder correction.
+        severity_guidance: Minor local blend/lighting drift may be severity 1. Clear clothing/background/torso/arm/hair drift
+          should be severity 2-3. Identity, pose, face/hair, camera framing, crop, or broad scene-state change must be severity
+          4-5.
+        affected_l3:
+        - shoulder_neck_arms_pose_preservation
+        - shoulder_torso_non_target_body_preservation
+        - shoulder_subject_identity_face_hair_preservation
+        - shoulder_clothing_accessory_detail_preservation
+        - shoulder_scene_camera_framing_preservation
+        - shoulder_artifact_background_stability
+        - shoulder_primary_right_angle_outcome_match
+        - shoulder_edit_localized_to_target_region
+        - shoulder_skin_fabric_surface_realism
+        - shoulder_local_lighting_shadow_consistency
+        - shoulder_contour_edge_blending_quality
+        - shoulder_line_horizontality_slope_match
+        - shoulder_neck_transition_angle_match
+        - shoulder_trapezius_heaviness_reduction_match
+        - shoulder_width_frame_style_match
+        - shoulder_tip_definition_softness_match
+        - shoulder_open_balance_impression_match
+        - shoulder_requested_style_intensity_match
+        - shoulder_neck_clavicle_transition_quality
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Female right-angle shoulders means natural shoulder-line/shoulder-neck refinement with preserved
+    pose and anatomy. It is not posture change, arm movement, camera/crop change, clothing padding, deltoid enlargement, neck
+    change, or literal boxy shoulder corners.
+  no_compensation_rule: If shoulder-line improvement is absent or achieved by posture/clothing/camera substitute, preservation/background/photorealism
+    must not raise edit-dependent facets. A cleaner or more elegant portrait must not compensate for broken shoulder anatomy,
+    padding, pose drift, or source-state change.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample creates a natural female right-angle-shoulder effect by reducing excessive shoulder
+    slope/roundedness and improving shoulder-neck transition without changing posture, body scale, clothing geometry, or scene.
+  success_gate_conditions:
+  - Shoulder line is gently more horizontal and shoulder-neck transition is clearer at normal viewing size.
+  - 'The result remains natural: no literal sharp corners, shoulder-pad geometry, excessive deltoids, or rigid boxy shoulder
+    shape.'
+  - Neck, clavicles, shoulder-to-arm attachment, arms/hands, torso, hair/clothing occlusion, pose, and perspective remain
+    anatomically coherent.
+  - The effect is not created by posture change, head/neck/arm movement, torso/body scaling, camera/crop change, or clothing-only
+    illusion.
+  - Identity, face/hair, clothing/accessory detail, lighting, background, framing, and scene state remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- shoulder_primary_right_angle_outcome_match
+- shoulder_line_horizontality_slope_match
+- shoulder_neck_transition_angle_match
+- shoulder_trapezius_heaviness_reduction_match
+- shoulder_width_frame_style_match
+- shoulder_tip_definition_softness_match
+- shoulder_open_balance_impression_match
+- shoulder_requested_style_intensity_match
+- shoulder_edit_localized_to_target_region
+- shoulder_neck_clavicle_transition_quality
+- shoulder_arm_attachment_transition_quality
+- shoulder_girdle_anatomy_perspective_consistency
+- shoulder_clothing_hair_occlusion_integration
+- shoulder_neck_arms_pose_preservation
+- shoulder_torso_non_target_body_preservation
+- shoulder_subject_identity_face_hair_preservation
+- shoulder_clothing_accessory_detail_preservation
+- shoulder_scene_camera_framing_preservation
+- shoulder_skin_fabric_surface_realism
+- shoulder_local_lighting_shadow_consistency
+- shoulder_contour_edge_blending_quality
+- shoulder_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    shoulder_primary_right_angle_outcome_match: 0.18
+    shoulder_line_horizontality_slope_match: 0.17
+    shoulder_neck_transition_angle_match: 0.15
+    shoulder_trapezius_heaviness_reduction_match: 0.12
+    shoulder_width_frame_style_match: 0.11
+    shoulder_tip_definition_softness_match: 0.1
+    shoulder_open_balance_impression_match: 0.13
+    shoulder_requested_style_intensity_match: 0.04
+  Localization and Anatomical Integration:
+    shoulder_edit_localized_to_target_region: 0.22
+    shoulder_neck_clavicle_transition_quality: 0.18
+    shoulder_arm_attachment_transition_quality: 0.2
+    shoulder_girdle_anatomy_perspective_consistency: 0.25
+    shoulder_clothing_hair_occlusion_integration: 0.15
+  Subject Preservation:
+    shoulder_neck_arms_pose_preservation: 0.24
+    shoulder_torso_non_target_body_preservation: 0.2
+    shoulder_subject_identity_face_hair_preservation: 0.2
+    shoulder_clothing_accessory_detail_preservation: 0.18
+    shoulder_scene_camera_framing_preservation: 0.18
+  Task Realism and Image Quality:
+    shoulder_skin_fabric_surface_realism: 0.28
+    shoulder_local_lighting_shadow_consistency: 0.25
+    shoulder_contour_edge_blending_quality: 0.27
+    shoulder_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: Masked weighted arithmetic mean over the 8 Prompt Compliance facets; only mask=1 facets enter numerator
+    and denominator.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.55 * P_masked + 0.22 * L + 0.16 * S + 0.07 * Q
+  anatomy_score: A = score(shoulder_girdle_anatomy_perspective_consistency) / 9.0
+  preservation_score: N = score(shoulder_neck_arms_pose_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (N ** 0.18)
+taxonomy:
+  Prompt Compliance:
+    Requested Right-Angle Shoulder:
+      shoulder_primary_right_angle_outcome_match:
+        title: Primary right-angle-shoulder outcome
+        definition: Whether the visible shoulders become naturally straighter, cleaner, and more right-angle-like in the Pilates-style
+          sense requested by the prompt, without posture, camera, neck, face, or whole-body changes. Do not give credit for
+          simply making shoulders wider, adding shoulder-pad geometry, changing pose, or globally reshaping the upper body.
+        anchors:
+          0: No visible right-angle shoulder edit, opposite edit, or a different task such as pose/body/clothing change.
+          3: Very weak or doubtful shoulder refinement; the source shoulder shape mostly remains.
+          5: Visible partial right-angle effect, but incomplete, asymmetric, overdone, or mixed with non-target changes.
+          7: Clear natural right-angle shoulder improvement with one visible issue.
+          9: Complete, natural, prompt-faithful Pilates-style right-angle shoulder result with face, neck, pose, clothing,
+            and scene preserved.
+        rubric: Whether the visible shoulders become naturally straighter, cleaner, and more right-angle-like in the Pilates-style
+          sense requested by the prompt, without posture, camera, neck, face, or whole-body changes. Do not give credit for
+          simply making shoulders wider, adding shoulder-pad geometry, changing pose, or globally reshaping the upper body.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_line_horizontality_slope_match:
+        title: Shoulder-line horizontality and slope
+        definition: Whether excessive downward slope or roundedness is reduced to the requested gently horizontal or balanced
+          shoulder line without creating a rigid shelf, pointed corner, shoulder-pad shape, or anatomically impossible silhouette.
+        anchors:
+          0: Slope is unchanged, worse, reversed, or achieved through destructive body/camera distortion.
+          3: Minimal, highly uneven, or visibly artificial slope improvement.
+          5: General improvement with clear residual slope, overcorrection, or asymmetry.
+          7: Appropriate shoulder line with one minor inconsistency.
+          9: Shoulder-line direction precisely matches the request and remains anatomically natural.
+        rubric: Whether excessive downward slope or roundedness is reduced to the requested gently horizontal or balanced
+          shoulder line without creating a rigid shelf, pointed corner, shoulder-pad shape, or anatomically impossible silhouette.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_neck_transition_angle_match:
+        title: Shoulder-neck transition
+        definition: Whether the neck-to-shoulder junction becomes cleaner and more defined while retaining soft human anatomy,
+          source neck length, clavicle relation, and natural trapezius continuity.
+        anchors:
+          0: Unchanged, broken, detached, falsely angular, or created by changing neck length/head position.
+          3: Weak or visibly unnatural transition with clear anatomy concerns.
+          5: Recognizable improvement but with clear contour, clavicle, neck, or trapezius errors.
+          7: Clean natural transition with one minor issue.
+          9: Clearly defined, soft, source-compatible, and anatomically exact transition.
+        rubric: Whether the neck-to-shoulder junction becomes cleaner and more defined while retaining soft human anatomy,
+          source neck length, clavicle relation, and natural trapezius continuity. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      shoulder_trapezius_heaviness_reduction_match:
+        title: Upper-trapezius refinement
+        definition: Requested reduction of trapezius heaviness or rounded-shoulder appearance without changing neck length
+          or pose.
+        anchors:
+          0: Opposite change, no requested reduction, or destructive removal.
+          3: Weak, asymmetric, or anatomically implausible reduction.
+          5: Partial improvement with residual or overcorrection.
+          7: Correct refinement with one minor issue.
+          9: Precise and fully natural refinement.
+        rubric: Requested reduction of trapezius heaviness or rounded-shoulder appearance without changing neck length or
+          pose. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_width_frame_style_match:
+        title: Shoulder width and frame style
+        definition: Explicit narrow-frame, broad-yet-natural, lightweight, or width-related styling; otherwise preserve source
+          width.
+        anchors:
+          0: Opposite width direction or global upper-body change.
+          3: Strongly inaccurate, asymmetric, or exaggerated width.
+          5: Recognizable style with material inaccuracy.
+          7: Correct width style with one minor issue.
+          9: Width and frame style exactly match the prompt.
+        rubric: Explicit narrow-frame, broad-yet-natural, lightweight, or width-related styling; otherwise preserve source
+          width. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_tip_definition_softness_match:
+        title: Shoulder-tip definition and softness
+        definition: Clean shoulder-tip definition without spikes, hard corners, box shapes, or bulky muscle.
+        anchors:
+          0: Missing definition or severe pointed or boxy corners.
+          3: Weak, jagged, asymmetric, or overly hard tips.
+          5: Recognizable definition with clear contour issues.
+          7: Clean soft definition with one minor issue.
+          9: Precisely defined and naturally rounded tips.
+        rubric: Clean shoulder-tip definition without spikes, hard corners, box shapes, or bulky muscle. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_open_balance_impression_match:
+        title: Open and balanced shoulder impression
+        definition: Requested relaxed, open, poised, confident, or balanced impression created locally without body movement.
+        anchors:
+          0: Opposite impression or produced through pose change.
+          3: Weak or artificial opening or balance.
+          5: General impression present but uneven or incomplete.
+          7: Correct impression with one minor inconsistency.
+          9: Clear, balanced, and pose-preserving impression.
+        rubric: Requested relaxed, open, poised, confident, or balanced impression created locally without body movement.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_requested_style_intensity_match:
+        title: Requested style and intensity
+        definition: Match stated delicate, athletic, model-like, editorial, youthful, mature, or garment-context styling without
+          exaggeration.
+        anchors:
+          0: Opposite, absent, or destructive styling.
+          3: Severely mismatched or exaggerated.
+          5: Recognizable but clearly inaccurate style.
+          7: Appropriate style with one minor mismatch.
+          9: Style and intensity exactly match and remain believable.
+        rubric: Match stated delicate, athletic, model-like, editorial, youthful, mature, or garment-context styling without
+          exaggeration. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Anatomical Integration:
+    Shoulder Boundaries and Structure:
+      shoulder_edit_localized_to_target_region:
+        title: Edit localization
+        definition: Whether changes remain within shoulders, shoulder-neck transitions, and minimum necessary upper-trapezius
+          boundaries.
+        anchors:
+          0: Broad neck, arm, torso, body, or scene editing.
+          3: Significant spill into non-target regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with a minor spill.
+          9: Precisely confined to the permitted target area.
+        rubric: Whether changes remain within shoulders, shoulder-neck transitions, and minimum necessary upper-trapezius
+          boundaries. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_neck_clavicle_transition_quality:
+        title: Neck, clavicle, and shoulder transition
+        definition: Continuity among the unchanged neck, clavicles, upper trapezius, and edited shoulder line.
+        anchors:
+          0: Broken, detached, collapsed, or impossible transition.
+          3: Major dents, shelves, pinching, or clavicle distortion.
+          5: Connected with an obvious irregularity.
+          7: Natural with one minor issue.
+          9: Smooth, coherent, and anatomically plausible.
+        rubric: Continuity among the unchanged neck, clavicles, upper trapezius, and edited shoulder line. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_arm_attachment_transition_quality:
+        title: Shoulder-to-arm attachment
+        definition: Continuity from shoulder tip into the unchanged upper arm and deltoid without gaps, bulges, or arm displacement.
+        anchors:
+          0: Detached arm or severe shoulder-joint deformation.
+          3: Major notch, bulge, seam, or attachment error.
+          5: Connected but visibly unnatural.
+          7: Natural with one minor issue.
+          9: Seamless and anatomically correct attachment.
+        rubric: Continuity from shoulder tip into the unchanged upper arm and deltoid without gaps, bulges, or arm displacement.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_girdle_anatomy_perspective_consistency:
+        title: Shoulder-girdle anatomy and perspective
+        definition: Shoulder height, clavicle relation, trapezius, deltoid, body axis, view angle, and bilateral coherence.
+        anchors:
+          0: Impossible, detached, duplicated, or severely distorted anatomy.
+          3: Major axis, height, perspective, or structure error.
+          5: Generally plausible with one clear inconsistency.
+          7: Coherent with one minor issue.
+          9: Fully natural anatomy and perspective.
+        rubric: Shoulder height, clavicle relation, trapezius, deltoid, body axis, view angle, and bilateral coherence. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_clothing_hair_occlusion_integration:
+        title: Clothing, hair, and occlusion integration
+        definition: Natural adaptation of neckline, straps, sleeves, collars, hair, jewelry, and front-back layering.
+        anchors:
+          0: Severe penetration, detachment, melted fabric, or wrong layering.
+          3: Major strap, sleeve, neckline, hair, or accessory damage.
+          5: Integrated with obvious local inconsistencies.
+          7: Natural with one minor issue.
+          9: All contact and occlusion relationships are seamless.
+        rubric: Natural adaptation of neckline, straps, sleeves, collars, hair, jewelry, and front-back layering. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity, Body, Clothing, and Scene:
+      shoulder_neck_arms_pose_preservation:
+        title: Neck, arms, hands, and pose preservation
+        definition: Preservation of neck length and position, arm and hand placement, shoulder-joint centers, torso posture,
+          and pose.
+        anchors:
+          0: Major neck, arm, hand, or pose change.
+          3: Strong positional or anatomical drift.
+          5: Mostly preserved with one clear shift.
+          7: Preserved with one minor difference.
+          9: Neck, arms, hands, and pose remain unchanged.
+        rubric: Preservation of neck length and position, arm and hand placement, shoulder-joint centers, torso posture, and
+          pose. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_torso_non_target_body_preservation:
+        title: Torso and non-target body preservation
+        definition: Preservation of chest, back, torso width, waist, hips, legs, body height, and non-target proportions.
+        anchors:
+          0: Major body redesign or multiple altered regions.
+          3: Significant torso or non-target proportion changes.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All non-target body proportions remain unchanged.
+        rubric: Preservation of chest, back, torso width, waist, hips, legs, body height, and non-target proportions. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_subject_identity_face_hair_preservation:
+        title: Subject identity, face, and hair preservation
+        definition: Preservation of the same person, face, expression, gaze, skin tone, age impression, and hairstyle.
+        anchors:
+          0: Different person or severe identity drift.
+          3: Strong face, age, color, expression, or hair alteration.
+          5: Same person recognizable with one clear change.
+          7: Identity preserved with one minor difference.
+          9: Identity, face, expression, and hair remain unchanged.
+        rubric: Preservation of the same person, face, expression, gaze, skin tone, age impression, and hairstyle. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_clothing_accessory_detail_preservation:
+        title: Clothing and accessory preservation
+        definition: Preservation of outfit shape, neckline, straps, sleeves, seams, folds, texture, pattern, color, and jewelry.
+        anchors:
+          0: Major garment or accessory replacement or destruction.
+          3: Strong design, texture, shape, or color drift.
+          5: Mostly preserved with one obvious alteration.
+          7: Preserved with one minor difference.
+          9: Clothing and accessory details remain unchanged.
+        rubric: Preservation of outfit shape, neckline, straps, sleeves, seams, folds, texture, pattern, color, and jewelry.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_scene_camera_framing_preservation:
+        title: Scene, camera, and framing preservation
+        definition: Preservation of background, objects, global lighting, camera angle, crop, scale, image distance, composition,
+          and resolution.
+        anchors:
+          0: Major scene, camera, scale, or framing replacement.
+          3: Strong background, crop, distance, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: Scene and image geometry remain unchanged.
+        rubric: Preservation of background, objects, global lighting, camera angle, crop, scale, image distance, composition,
+          and resolution. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      shoulder_skin_fabric_surface_realism:
+        title: Skin and fabric surface realism
+        definition: Natural skin, pores, fabric texture, folds, and local sharpness without smearing, repetition, or plasticity.
+        anchors:
+          0: Severely synthetic, smeared, or destroyed surface.
+          3: Strong skin or fabric texture artifacts.
+          5: Usable but visibly processed.
+          7: Realistic with one minor surface issue.
+          9: Fully photorealistic and source-consistent texture.
+        rubric: Natural skin, pores, fabric texture, folds, and local sharpness without smearing, repetition, or plasticity.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_local_lighting_shadow_consistency:
+        title: Local lighting and shadow consistency
+        definition: Clavicle, neck, trapezius, shoulder, clothing, and cast shadows must follow the edited contour and source
+          light.
+        anchors:
+          0: Lighting or shadows strongly contradict the image.
+          3: Major missing, duplicated, or incorrect shadows.
+          5: Generally plausible with obvious local errors.
+          7: Consistent with one minor issue.
+          9: Lighting and shadows integrate perfectly.
+        rubric: Clavicle, neck, trapezius, shoulder, clothing, and cast shadows must follow the edited contour and source
+          light. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: Clean shoulder boundaries without halos, jagged edges, dents, black outlines, seams, over-sharpening,
+          or blur.
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, pointed artifacts, or blur.
+          5: Mostly blended with visible boundary artifacts.
+          7: Clean with one minor edge issue.
+          9: Seamless, detailed, and naturally bounded.
+        rubric: Clean shoulder boundaries without halos, jagged edges, dents, black outlines, seams, over-sharpening, or blur.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      shoulder_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Absence of duplicated shoulders, malformed arms, melted straps, warped hair, bent lines, text distortion,
+          or scene deformation.
+        anchors:
+          0: Severe structural artifacts or background warping.
+          3: Multiple obvious distortions.
+          5: One clear artifact or moderate instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; surrounding structures remain stable.
+        rubric: Absence of duplicated shoulders, malformed arms, melted straps, warped hair, bent lines, text distortion,
+          or scene deformation. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+prompt_applicability:
+  purpose: Keep the fixed 22-score output while preventing unrequested shoulder styles from contributing easy high scores.
+  always_applicable:
+  - shoulder_primary_right_angle_outcome_match
+  - shoulder_line_horizontality_slope_match
+  - shoulder_neck_transition_angle_match
+  - shoulder_open_balance_impression_match
+  activation_rules:
+    shoulder_trapezius_heaviness_reduction_match:
+    - activate for trapezius, reduced slope, rounded shoulder, lightweight upper shoulder, or less bulky requests
+    shoulder_width_frame_style_match:
+    - activate for narrow-frame, broad, width, lightweight, structured, or shoulder-width requests
+    - otherwise judge preservation of original shoulder width
+    shoulder_tip_definition_softness_match:
+    - activate for shoulder tip, defined edge, crisp line, clean edge, collarbone-enhancing, or non-pointed-corner requests
+    shoulder_requested_style_intensity_match:
+    - activate when the prompt names a specific aesthetic, age style, athletic style, garment context, cultural style, portrait
+      style, or intensity
+  mask_values:
+    applicable: 1
+    not_applicable: 0
+  aggregation_rule: P = sum_i(weight_i * mask_i * normalized_score_i) / sum_i(weight_i * mask_i)

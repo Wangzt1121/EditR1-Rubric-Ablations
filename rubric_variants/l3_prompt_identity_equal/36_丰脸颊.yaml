@@ -1,0 +1,711 @@
+task_key: cheek_plumping
+task_title: Natural Cheek Plumping
+task_title_zh: 丰脸颊
+version: v48_fixed_integer_22_l3_cheek_plumping_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+language: English
+training_prompt_profile:
+  total_prompts_reviewed: 100
+  unique_prompt_templates: 10
+  template_frequency: Each unique template appears 10 times.
+  target_function: face_plumping
+  fine_control: plump_cheeks
+  recurring_requirements:
+  - add natural fullness to slightly sunken cheeks
+  - avoid bloating or broadly widening the face
+  - make the change visible but believable
+  - preserve identity, age impression, expression, gaze, and head pose
+  - preserve pores, skin texture, local shadows, asymmetry, and photographic style
+  - keep unrelated facial features, hair, clothing, background, lighting, and camera conditions unchanged
+  - avoid plastic skin, warped edges, duplicated anatomy, and background deformation
+  data_note: All prompts request localized cheek-volume restoration. No prompt requests full-face weight gain, apple-cheek
+    enlargement, facial slimming, or jaw widening.
+target_region: The visible soft-tissue cheek regions between the lower orbital area, cheekbone, nasolabial fold, mouth corner,
+  temple-side cheek, and jaw transition. The eyes, nose, lips, brows, ears, jaw width, temples, and global face outline remain
+  non-target except for minimum local blending required by the added cheek volume.
+target_action_summary: Restore natural soft-tissue fullness to slightly sunken cheeks while preserving the original face shape
+  and identity. Added volume should fill local hollows and create smooth cheek transitions without causing puffiness, broad
+  facial swelling, excessive apple-cheek projection, or jawline expansion.
+task_boundary:
+  allowed:
+  - localized soft-tissue volume increase within the cheek regions
+  - gentle reduction of visible cheek hollows
+  - minimal contour, skin-texture, and shadow reconstruction required by the new volume
+  - perspective-aware left-right differences when required by head angle or natural asymmetry
+  not_equivalent_tasks:
+  - globally widening or fattening the whole face
+  - enlarging only the apple-cheek area
+  - changing cheekbone bone structure or jaw width
+  - removing nasolabial folds as a separate task
+  - slimming the face, changing head shape, or altering camera perspective
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate cheek-volume compliance, anatomical integration, non-target preservation,
+    and rendering quality. Do not reward a rounder-looking face when the result comes from global swelling, face widening,
+    jaw deformation, smoothing, or camera warping.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible cheek-volume evidence.
+  - Do not reward global face enlargement, jaw widening, apple-cheek exaggeration, or skin smoothing.
+  - Use perspective-aware bilateral balance rather than forced mirror symmetry.
+  - One severe anatomy, identity, expression, or non-target error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request increased cheek fullness, cheek plumping, or reduction of sunken-cheek appearance.
+  wrong_task_examples:
+  - slim the cheeks or narrow the face
+  - enlarge only the apple cheeks
+  - widen the jaw or cheekbones
+  - remove nasolabial folds without a cheek-volume target
+  - globally increase body or facial weight
+  conflict_examples:
+  - plump and hollow the same cheek regions simultaneously
+  - preserve exact cheek volume while requiring visible fullness
+  - increase cheek volume while requiring the complete cheek contour to remain pixel-identical
+  visibility_failures:
+  - both cheek regions are outside the frame or fully occluded
+  - extreme blur prevents comparison of cheek contour and local shadows
+  - pose or obstruction makes cheek volume impossible to assess reliably
+  partial_visibility_rule: Score only visible and assessable cheek evidence. Do not penalize a fully occluded side, but penalize
+    missed or inconsistent visible target regions.
+anatomy_interpretation:
+  rules:
+  - Added volume should fill soft-tissue hollows rather than alter cheekbone bone structure.
+  - The cheek should transition smoothly into the lower eyelid, nose side, mouth corner, temple, and jaw.
+  - Preserve face width and jawline unless a subpixel contour change is unavoidable.
+  - Avoid inflated balloon-like cheeks, edema, chipmunk appearance, or excessive youthful roundness.
+  - Preserve nasolabial-fold direction and mouth-corner anatomy; do not erase them indiscriminately.
+  - Natural asymmetry may remain when supported by source anatomy and head pose.
+  - The result must remain compatible with head rotation, lens perspective, expression, and local lighting.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: Good background, smooth skin, or attractive roundness cannot compensate for unchanged cheeks, wrong-region
+    volume, swollen filler-like cheeks, broken anatomy, or source-state drift.
+  cheek_plumping_disambiguation_rule: Reward only localized cheek hollow reduction/fullness with preserved face width and
+    anatomy. Penalize global widening, overfill, beauty filtering, and source-state changes.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Cheek hollows remain mostly unchanged, added fullness is absent/too weak, or normal-view cheek improvement
+          is not visible.
+        severity_guidance: Tiny but correct local fullness may be severity 1. Correct but weak/partial cheek-hollow reduction
+          should be severity 2. Mostly unchanged cheeks at normal viewing size must be severity 3. Absent, reversed, or unassessable
+          cheek plumping must be severity 4-5.
+        affected_l3:
+        - cheek_plumping_primary_outcome_match
+        - cheek_plumping_fullness_magnitude_match
+        - cheek_plumping_hollow_reduction_match
+        - cheek_plumping_volume_distribution_match
+        - cheek_plumping_contour_softness_match
+        - cheek_plumping_bilateral_balance_match
+        - cheek_plumping_requested_finish_visibility_match
+        - cheek_plumping_edit_localized_to_cheek_region
+        - cheek_plumping_bloat_face_width_control_match
+        - cheek_plumping_cheekbone_under_eye_transition_quality
+        - cheek_plumping_identity_face_shape_preservation
+        - cheek_plumping_expression_gaze_head_pose_preservation
+        - cheek_plumping_non_target_facial_feature_preservation
+        - cheek_plumping_skin_tone_texture_makeup_preservation
+        - cheek_plumping_hair_clothing_scene_camera_preservation
+        - cheek_plumping_artifact_background_stability
+      wrong_region_global_face_widening_or_beauty_substitute:
+        detect_when: The result appears fuller because of global face widening, jaw/temple expansion, apple-cheek inflation,
+          skin smoothing, whitening, lighting change, crop/pose change, or generic beauty retouching rather than cheek-hollow
+          filling.
+        severity_guidance: Minor non-cheek drift with real cheek plumping may be severity 1-2. If wrong-region volume, face
+          widening, lighting/crop trick, or beauty filtering is a major part of the improvement, severity 3. If it is the
+          main visible edit or changes identity/camera/face shape, severity 4-5.
+        affected_l3:
+        - cheek_plumping_primary_outcome_match
+        - cheek_plumping_volume_distribution_match
+        - cheek_plumping_bloat_face_width_control_match
+        - cheek_plumping_edit_localized_to_cheek_region
+        - cheek_plumping_jaw_temple_boundary_continuity
+        - cheek_plumping_identity_face_shape_preservation
+        - cheek_plumping_skin_tone_texture_makeup_preservation
+        - cheek_plumping_hair_clothing_scene_camera_preservation
+        - cheek_plumping_fullness_magnitude_match
+        - cheek_plumping_hollow_reduction_match
+        - cheek_plumping_contour_softness_match
+        - cheek_plumping_bilateral_balance_match
+        - cheek_plumping_requested_finish_visibility_match
+        - cheek_plumping_cheekbone_under_eye_transition_quality
+        - cheek_plumping_expression_gaze_head_pose_preservation
+        - cheek_plumping_non_target_facial_feature_preservation
+        - cheek_plumping_artifact_background_stability
+      overfilled_puffy_bloated_or_face_width_expanded:
+        detect_when: Cheeks become swollen, puffy, bloated, over-rounded, over-projected, asymmetric, filler-like, or cause
+          unnatural face-width expansion.
+        severity_guidance: Slight over-fullness may be severity 1-2. Clear puffiness, filler-like roundness, asymmetry, or
+          widened face impression should be severity 3. Severe swelling, chipmunk-like cheeks, or identity-changing overfill
+          must be severity 4-5.
+        affected_l3:
+        - cheek_plumping_fullness_magnitude_match
+        - cheek_plumping_volume_distribution_match
+        - cheek_plumping_contour_softness_match
+        - cheek_plumping_bloat_face_width_control_match
+        - cheek_plumping_bilateral_balance_match
+        - cheek_plumping_face_angle_perspective_anatomy_consistency
+        - cheek_plumping_identity_face_shape_preservation
+        - cheek_plumping_artifact_background_stability
+        - cheek_plumping_primary_outcome_match
+        - cheek_plumping_hollow_reduction_match
+        - cheek_plumping_requested_finish_visibility_match
+        - cheek_plumping_edit_localized_to_cheek_region
+        - cheek_plumping_cheekbone_under_eye_transition_quality
+        - cheek_plumping_nasolabial_mouth_transition_quality
+        - cheek_plumping_jaw_temple_boundary_continuity
+        - cheek_plumping_skin_surface_detail_realism
+        - cheek_plumping_local_lighting_shadow_color_consistency
+        - cheek_plumping_contour_edge_blending_quality
+      cheek_transition_anatomy_or_perspective_broken:
+        detect_when: Cheekbone, under-eye, nasolabial, mouth, jaw, temple, surface curvature, perspective, edge blending,
+          lighting, or skin boundary becomes dented, smeared, warped, haloed, or anatomically implausible.
+        severity_guidance: Tiny local blend issue may be severity 1. Clear under-eye/cheekbone/nasolabial/mouth/jaw/temple
+          transition defect should be severity 2-3. Impossible curvature, warped anatomy, pasted volume, or perspective break
+          must be severity 4-5.
+        affected_l3:
+        - cheek_plumping_cheekbone_under_eye_transition_quality
+        - cheek_plumping_nasolabial_mouth_transition_quality
+        - cheek_plumping_jaw_temple_boundary_continuity
+        - cheek_plumping_face_angle_perspective_anatomy_consistency
+        - cheek_plumping_skin_surface_detail_realism
+        - cheek_plumping_local_lighting_shadow_color_consistency
+        - cheek_plumping_contour_edge_blending_quality
+        - cheek_plumping_artifact_background_stability
+        - cheek_plumping_primary_outcome_match
+        - cheek_plumping_fullness_magnitude_match
+        - cheek_plumping_hollow_reduction_match
+        - cheek_plumping_volume_distribution_match
+        - cheek_plumping_contour_softness_match
+        - cheek_plumping_bloat_face_width_control_match
+        - cheek_plumping_bilateral_balance_match
+        - cheek_plumping_requested_finish_visibility_match
+        - cheek_plumping_edit_localized_to_cheek_region
+        - cheek_plumping_identity_face_shape_preservation
+      identity_expression_skin_or_source_state_drift:
+        detect_when: Identity, face shape outside cheeks, expression, gaze, head pose, skin tone/texture/makeup, hair, clothing,
+          lighting, background, perspective, or camera state changes beyond cheek filling.
+        severity_guidance: Minor local skin/lighting drift may be severity 1. Clear expression/gaze/skin/makeup/lighting/background
+          drift should be severity 2-3. Identity, face shape, head pose, crop, or camera-state change must be severity 4-5.
+        affected_l3:
+        - cheek_plumping_identity_face_shape_preservation
+        - cheek_plumping_expression_gaze_head_pose_preservation
+        - cheek_plumping_non_target_facial_feature_preservation
+        - cheek_plumping_skin_tone_texture_makeup_preservation
+        - cheek_plumping_hair_clothing_scene_camera_preservation
+        - cheek_plumping_skin_surface_detail_realism
+        - cheek_plumping_local_lighting_shadow_color_consistency
+        - cheek_plumping_artifact_background_stability
+        - cheek_plumping_primary_outcome_match
+        - cheek_plumping_edit_localized_to_cheek_region
+        - cheek_plumping_contour_edge_blending_quality
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Cheek plumping means localized natural cheek-volume increase or hollow reduction. It is not whole-face
+    widening, jaw/temple/forehead inflation, camera scaling, lighting trick, generic beauty retouching, or skin smoothing.
+  no_compensation_rule: If cheek fullness is absent or wrong-region, preservation/background/photorealism must not raise edit-dependent
+    facets. If fullness comes from face widening, swelling, beauty filtering, lighting/camera change, or identity drift, a
+    prettier/rounder face must not raise cheek-plumping facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample restores natural local cheek fullness to slightly sunken cheeks while preserving
+    original face shape, identity, expression, skin texture, lighting, and scene.
+  success_gate_conditions:
+  - Cheek hollows are visibly reduced with controlled, natural soft-tissue fullness in the cheek/mid-face region.
+  - Volume distribution is local and balanced, not global face widening, jaw expansion, apple-cheek exaggeration, or broad
+    swelling.
+  - Cheekbone-under-eye, nasolabial/mouth, jaw, and temple transitions remain anatomically smooth and perspective-consistent.
+  - Identity, face shape outside cheeks, expression, gaze, skin tone/texture/makeup, hair, clothing, lighting, background,
+    and camera state remain stable.
+  - No puffy, bloated, filler-like, asymmetric, warped, or beauty-filtered appearance is present.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- cheek_plumping_primary_outcome_match
+- cheek_plumping_fullness_magnitude_match
+- cheek_plumping_hollow_reduction_match
+- cheek_plumping_volume_distribution_match
+- cheek_plumping_contour_softness_match
+- cheek_plumping_bloat_face_width_control_match
+- cheek_plumping_bilateral_balance_match
+- cheek_plumping_requested_finish_visibility_match
+- cheek_plumping_edit_localized_to_cheek_region
+- cheek_plumping_cheekbone_under_eye_transition_quality
+- cheek_plumping_nasolabial_mouth_transition_quality
+- cheek_plumping_jaw_temple_boundary_continuity
+- cheek_plumping_face_angle_perspective_anatomy_consistency
+- cheek_plumping_identity_face_shape_preservation
+- cheek_plumping_expression_gaze_head_pose_preservation
+- cheek_plumping_non_target_facial_feature_preservation
+- cheek_plumping_skin_tone_texture_makeup_preservation
+- cheek_plumping_hair_clothing_scene_camera_preservation
+- cheek_plumping_skin_surface_detail_realism
+- cheek_plumping_local_lighting_shadow_color_consistency
+- cheek_plumping_contour_edge_blending_quality
+- cheek_plumping_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    cheek_plumping_primary_outcome_match: 0.19
+    cheek_plumping_fullness_magnitude_match: 0.16
+    cheek_plumping_hollow_reduction_match: 0.14
+    cheek_plumping_volume_distribution_match: 0.14
+    cheek_plumping_contour_softness_match: 0.11
+    cheek_plumping_bloat_face_width_control_match: 0.12
+    cheek_plumping_bilateral_balance_match: 0.08
+    cheek_plumping_requested_finish_visibility_match: 0.06
+  Localization and Anatomical Integration:
+    cheek_plumping_edit_localized_to_cheek_region: 0.2
+    cheek_plumping_cheekbone_under_eye_transition_quality: 0.2
+    cheek_plumping_nasolabial_mouth_transition_quality: 0.18
+    cheek_plumping_jaw_temple_boundary_continuity: 0.18
+    cheek_plumping_face_angle_perspective_anatomy_consistency: 0.24
+  Subject Preservation:
+    cheek_plumping_identity_face_shape_preservation: 0.27
+    cheek_plumping_expression_gaze_head_pose_preservation: 0.22
+    cheek_plumping_non_target_facial_feature_preservation: 0.2
+    cheek_plumping_skin_tone_texture_makeup_preservation: 0.17
+    cheek_plumping_hair_clothing_scene_camera_preservation: 0.14
+  Task Realism and Image Quality:
+    cheek_plumping_skin_surface_detail_realism: 0.28
+    cheek_plumping_local_lighting_shadow_color_consistency: 0.27
+    cheek_plumping_contour_edge_blending_quality: 0.25
+    cheek_plumping_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.50 * P + 0.24 * L + 0.16 * S + 0.10 * Q
+  anatomy_score: A = score(cheek_plumping_face_angle_perspective_anatomy_consistency) / 9.0
+  identity_score: I = score(cheek_plumping_identity_face_shape_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.23) * (I ** 0.19)
+taxonomy:
+  Prompt Compliance:
+    Requested Cheek Fullness:
+      cheek_plumping_primary_outcome_match:
+        title: Primary cheek-plumping outcome
+        definition: Whether both assessable cheeks gain natural localized fullness.
+        anchors:
+          0: No target edit, opposite change, or a different task.
+          3: Weak or inconsistent fullness increase.
+          5: Visible partial result with major incompleteness.
+          7: Clear successful result with one material issue.
+          9: Cheek fullness is complete, visible, and natural.
+        rubric: Whether both assessable cheeks gain natural localized fullness. Apply this facet's 0-9 anchors directly. If
+          any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      cheek_plumping_fullness_magnitude_match:
+        title: Fullness magnitude
+        definition: Whether added volume is strong or noticeable as requested while remaining believable.
+        anchors:
+          0: No volume increase or destructive swelling.
+          3: Severely too weak, too strong, or uneven.
+          5: Recognizable but clearly inaccurate magnitude.
+          7: Appropriate magnitude with one minor issue.
+          9: Magnitude precisely matches the prompt and source face.
+        rubric: Whether added volume is strong or noticeable as requested while remaining believable. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_hollow_reduction_match:
+        title: Sunken-cheek reduction
+        definition: Whether visible cheek hollows are reduced without erasing natural facial structure.
+        anchors:
+          0: Hollows remain unchanged, deepen, or are replaced by broad swelling.
+          3: Minimal or highly artificial hollow correction.
+          5: Partial reduction with clear residual or overfill.
+          7: Effective reduction with one minor issue.
+          9: Sunken appearance is naturally and completely improved.
+        rubric: Whether visible cheek hollows are reduced without erasing natural facial structure. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_volume_distribution_match:
+        title: Cheek-volume distribution
+        definition: Whether volume is distributed across the true cheek soft tissue rather than concentrated in one artificial
+          bulge.
+        anchors:
+          0: Volume is misplaced or forms an impossible lump.
+          3: Major concentration, asymmetry, or anatomical mismatch.
+          5: General fullness exists with one clear distribution error.
+          7: Natural distribution with one minor issue.
+          9: Volume is smoothly and anatomically distributed.
+        rubric: Whether volume is distributed across the true cheek soft tissue rather than concentrated in one artificial
+          bulge. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_contour_softness_match:
+        title: Cheek-contour softness
+        definition: Whether the cheek contour becomes softly rounded and healthy without losing definition.
+        anchors:
+          0: Contour becomes sharp, collapsed, or balloon-like.
+          3: Strong rigidity, lumpiness, or over-rounding.
+          5: General softening with one clear contour issue.
+          7: Soft and natural with one minor issue.
+          9: Contour is smoothly rounded and fully believable.
+        rubric: Whether the cheek contour becomes softly rounded and healthy without losing definition. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_bloat_face_width_control_match:
+        title: Bloat and face-width control
+        definition: Whether fullness is added without global puffiness, widened jaw, or swollen face shape.
+        anchors:
+          0: Severe facial bloating or broad face-shape expansion.
+          3: Major non-target widening or edema-like appearance.
+          5: Localized fullness exists but noticeable broad swelling remains.
+          7: Well controlled with one minor width change.
+          9: Fullness is localized with no bloating or face-width drift.
+        rubric: Whether fullness is added without global puffiness, widened jaw, or swollen face shape. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_bilateral_balance_match:
+        title: Bilateral completeness and balance
+        definition: Whether visible cheeks are treated completely with pose- and asymmetry-aware balance.
+        anchors:
+          0: One visible cheek is missed or severe imbalance is introduced.
+          3: Major left-right mismatch or incomplete editing.
+          5: Both cheeks are attempted but visibly inconsistent.
+          7: Balanced with one minor difference.
+          9: All assessable cheeks are complete and naturally balanced.
+        rubric: Whether visible cheeks are treated completely with pose- and asymmetry-aware balance. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_requested_finish_visibility_match:
+        title: Requested finish and visibility
+        definition: Whether studio, editorial, app-style, commercial, premium, or high-fashion finish is visible at normal
+          viewing size.
+        anchors:
+          0: Finish is absent, opposite, or destructive.
+          3: Strong style, visibility, or realism mismatch.
+          5: Requested finish is recognizable but inaccurate.
+          7: Appropriate finish with one minor mismatch.
+          9: Finish and normal-view visibility exactly match the prompt.
+        rubric: Whether studio, editorial, app-style, commercial, premium, or high-fashion finish is visible at normal viewing
+          size. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Anatomical Integration:
+    Cheek Anatomy and Transitions:
+      cheek_plumping_edit_localized_to_cheek_region:
+        title: Edit localization
+        definition: Whether changes remain within cheek soft tissue and minimum necessary transition areas.
+        anchors:
+          0: Broad whole-face, jaw, nose, mouth, hair, or scene editing.
+          3: Significant spill into non-target facial regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to the permitted cheek region.
+        rubric: Whether changes remain within cheek soft tissue and minimum necessary transition areas. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_cheekbone_under_eye_transition_quality:
+        title: Cheekbone and under-eye transition
+        definition: Whether added volume connects naturally to the cheekbone and lower orbital area.
+        anchors:
+          0: Broken shelf, detached bulge, or impossible under-eye anatomy.
+          3: Major ridge, lump, gap, or lower-eyelid distortion.
+          5: Generally connected with one clear transition problem.
+          7: Natural with one minor issue.
+          9: Cheekbone-to-under-eye transition is seamless and plausible.
+        rubric: Whether added volume connects naturally to the cheekbone and lower orbital area. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_nasolabial_mouth_transition_quality:
+        title: Nasolabial and mouth transition
+        definition: Whether fullness integrates with the nose side, nasolabial fold, and mouth corner without erasing or displacing
+          them.
+        anchors:
+          0: Mouth, nose, or fold anatomy is severely displaced or erased.
+          3: Major fold, smile-line, or mouth-corner distortion.
+          5: Generally plausible with one obvious transition error.
+          7: Natural with one minor issue.
+          9: Nasolabial and mouth transitions remain fully coherent.
+        rubric: Whether fullness integrates with the nose side, nasolabial fold, and mouth corner without erasing or displacing
+          them. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_jaw_temple_boundary_continuity:
+        title: Jaw and temple boundary continuity
+        definition: Whether fullness tapers naturally toward the temple-side cheek and jaw without widening either structure.
+        anchors:
+          0: Severe jaw expansion, temple bulge, or broken face contour.
+          3: Major boundary swelling, pinching, or discontinuity.
+          5: Generally plausible with one clear boundary issue.
+          7: Natural with one minor issue.
+          9: Cheek volume tapers seamlessly into jaw and temple boundaries.
+        rubric: Whether fullness tapers naturally toward the temple-side cheek and jaw without widening either structure.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_face_angle_perspective_anatomy_consistency:
+        title: Face angle, perspective, and anatomy
+        definition: Whether fullness follows head rotation, facial depth, foreshortening, source asymmetry, and expression.
+        anchors:
+          0: Volume contradicts pose or creates impossible facial anatomy.
+          3: Major depth, perspective, axis, or asymmetry error.
+          5: Generally plausible with one clear anatomical inconsistency.
+          7: Coherent with one minor issue.
+          9: Cheek volume is fully compatible with anatomy and perspective.
+        rubric: Whether fullness follows head rotation, facial depth, foreshortening, source asymmetry, and expression. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      cheek_plumping_identity_face_shape_preservation:
+        title: Identity and face-shape preservation
+        definition: Whether the same person, age impression, jaw width, cheekbone identity, and overall face shape remain
+          recognizable.
+        anchors:
+          0: Different person or major face-shape redesign.
+          3: Strong identity, age, jaw, or facial-width drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and all non-target face-shape traits remain unchanged.
+        rubric: Whether the same person, age impression, jaw width, cheekbone identity, and overall face shape remain recognizable.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_expression_gaze_head_pose_preservation:
+        title: Expression, gaze, and head-pose preservation
+        definition: Whether expression, smile, mouth state, gaze, head angle, tilt, scale, and position remain stable.
+        anchors:
+          0: Major expression, gaze, or head-pose change.
+          3: Strong drift in one or more listed properties.
+          5: Mostly preserved with one clear difference.
+          7: Preserved with one minor shift.
+          9: Expression, gaze, and head pose remain unchanged.
+        rubric: Whether expression, smile, mouth state, gaze, head angle, tilt, scale, and position remain stable. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_non_target_facial_feature_preservation:
+        title: Non-target facial-feature preservation
+        definition: Whether eyes, brows, nose, lips, ears, forehead, chin, jaw, teeth, and hairline remain unchanged.
+        anchors:
+          0: Multiple major non-target facial changes.
+          3: Strong alteration of one or more unrelated facial features.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target facial features remain unchanged.
+        rubric: Whether eyes, brows, nose, lips, ears, forehead, chin, jaw, teeth, and hairline remain unchanged. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_skin_tone_texture_makeup_preservation:
+        title: Skin tone, texture, and makeup preservation
+        definition: Whether pores, fine texture, local marks, skin color, makeup, shadows, and natural asymmetry remain source-consistent.
+        anchors:
+          0: Major recoloring, plastic skin, erased texture, or makeup replacement.
+          3: Strong texture, color, shadow, or makeup drift.
+          5: Mostly preserved with one obvious alteration.
+          7: Preserved with one minor difference.
+          9: Skin tone, texture, makeup, and local detail remain unchanged.
+        rubric: Whether pores, fine texture, local marks, skin color, makeup, shadows, and natural asymmetry remain source-consistent.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_hair_clothing_scene_camera_preservation:
+        title: Hair, clothing, scene, and camera preservation
+        definition: Whether hair, clothing, accessories, body, background, lighting, crop, camera angle, framing, scale, and
+          resolution remain stable.
+        anchors:
+          0: Major non-target replacement, global warping, or camera change.
+          3: Strong hair, clothing, scene, crop, scale, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target scene and camera conditions remain unchanged.
+        rubric: Whether hair, clothing, accessories, body, background, lighting, crop, camera angle, framing, scale, and resolution
+          remain stable. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      cheek_plumping_skin_surface_detail_realism:
+        title: Skin-surface detail realism
+        definition: Whether pores, fine lines, makeup, peach fuzz, and soft-tissue detail remain natural over the plumped
+          cheeks.
+        anchors:
+          0: Severely synthetic, smeared, plastic, or destroyed detail.
+          3: Strong texture loss, repetition, or over-smoothing.
+          5: Usable but visibly processed.
+          7: Realistic with one minor detail issue.
+          9: Fully photorealistic and source-consistent skin detail.
+        rubric: Whether pores, fine lines, makeup, peach fuzz, and soft-tissue detail remain natural over the plumped cheeks.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_local_lighting_shadow_color_consistency:
+        title: Local lighting, shadow, and color consistency
+        definition: Whether cheek highlights, midtones, cast shadows, skin color, and facial depth follow source illumination.
+        anchors:
+          0: Lighting, shadows, or colors strongly contradict the image.
+          3: Major missing, duplicated, or incorrect cheek illumination.
+          5: Generally plausible with one obvious inconsistency.
+          7: Consistent with one minor issue.
+          9: Color, lighting, and cheek shadows integrate perfectly.
+        rubric: Whether cheek highlights, midtones, cast shadows, skin color, and facial depth follow source illumination.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: Whether cheek boundaries and transitions remain clean without halos, seams, dents, jaggedness, or blur.
+        anchors:
+          0: Severe compositing or contour failure.
+          3: Strong halos, seams, dents, warping, or blur.
+          5: Mostly blended with one clear boundary artifact.
+          7: Clean with one minor edge issue.
+          9: All edited contours are seamless and natural.
+        rubric: Whether cheek boundaries and transitions remain clean without halos, seams, dents, jaggedness, or blur. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      cheek_plumping_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Whether duplicated features, warped hair, broken teeth, facial tearing, stretched accessories, and background
+          deformation are absent.
+        anchors:
+          0: Severe structural artifacts or image instability.
+          3: Multiple obvious distortions or duplicated anatomy.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; face and surrounding image remain fully stable.
+        rubric: Whether duplicated features, warped hair, broken teeth, facial tearing, stretched accessories, and background
+          deformation are absent. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+prompt_applicability:
+  purpose: All prompts share the same localized cheek-plumping target. All eight Prompt Compliance facets are always applicable.
+  always_applicable:
+  - cheek_plumping_primary_outcome_match
+  - cheek_plumping_fullness_magnitude_match
+  - cheek_plumping_hollow_reduction_match
+  - cheek_plumping_volume_distribution_match
+  - cheek_plumping_contour_softness_match
+  - cheek_plumping_bloat_face_width_control_match
+  - cheek_plumping_bilateral_balance_match
+  - cheek_plumping_requested_finish_visibility_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+judge_role: You are a strict expert evaluator for cheek plumping, mid-face soft-tissue anatomy, identity preservation, and
+  source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare cheek hollows, cheekbone-under-eye transition, nasolabial/mouth region, jaw/temple boundary, face
+  width, bilateral cheek balance, skin texture, makeup, identity, expression, gaze, head pose, lighting, clothing, background,
+  perspective, and camera state.
+
+
+  2) Task target. A successful edit restores natural local cheek fullness to slightly sunken cheeks, reducing hollows and
+  smoothing cheek transitions while preserving original face shape and identity. It must not create puffy cheeks, global facial
+  swelling, apple-cheek exaggeration, jaw expansion, skin smoothing, or camera/lighting-based fake fullness.
+
+
+  3) Task-specific failures. Treat absent/weak cheek filling, wrong-region/global face widening, overfill/puffiness, broken
+  cheek transitions, and identity/source drift as failures. Apply global_scoring_policy.failure_propagation before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear cheek-specific volume evidence. If cheek fullness is absent or produced by global
+  swelling/beautification, preservation or realism must not lift affected facets into the successful range.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '

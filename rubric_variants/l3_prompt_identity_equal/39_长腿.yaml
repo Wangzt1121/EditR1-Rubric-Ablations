@@ -1,0 +1,788 @@
+task_key: long_leg_body_proportion
+task_title: Long-Leg Body-Proportion Editing
+task_title_zh: 长腿
+version: v48_fixed_integer_22_l3_long_leg_body_proportion_successgate_hybrid_compact_deep_review_compact_secondpass_l3_pi_equal
+language: English
+training_prompt_profile:
+  total_prompts_reviewed: 241
+  unique_prompt_templates: 1
+  recurring_requirements:
+  - lengthen both legs
+  - raise the waistline
+  - create an obvious high-fashion full-body silhouette
+  - preserve subject identity, facial features, and pose intent
+  - rebuild hips, knees, ankles, clothing hems, shoes, and shadows
+  - preserve background, clothing texture, lighting, camera angle, and photographic style
+  - keep the result natural, clean-edged, and anatomically believable
+  data_note: All 241 prompts are identical. Every Prompt Compliance facet is therefore applicable to every valid sample.
+target_region: The lower-body proportion system from the visible waistline and pelvis through the hips, thighs, knees, calves,
+  ankles, feet, shoes, clothing hems, and ground-contact shadows. The face, head, shoulders, chest, arms, hands, and background
+  are non-target.
+target_action_summary: Create an obvious but believable long-leg silhouette by increasing the visible leg length and raising
+  the perceived waistline. Reconstruct the pelvis-to-leg transition, joint landmarks, clothing hems, shoes, and shadows coherently.
+  Do not obtain the result through whole-image stretching, torso compression, camera reframing, or background warping.
+task_boundary:
+  allowed:
+  - proportional vertical redistribution between torso and legs
+  - localized upward waistline adjustment compatible with clothing and pelvis
+  - coherent repositioning of hips, knees, ankles, feet, shoes, hems, and shadows
+  - minimum contour, texture, and lighting reconstruction required by the new proportions
+  not_equivalent_tasks:
+  - uniformly stretching the entire person or image
+  - only slimming the legs without increasing length
+  - compressing the torso or shrinking the head to fake longer legs
+  - changing the pose, camera angle, crop, or perspective
+  - changing shoe design, clothing style, or background geometry
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate requested long-leg proportion, anatomical reconstruction, non-target preservation,
+    and image quality. A taller-looking image must not score highly when it is created by global stretching, torso compression,
+    joint distortion, shoe deformation, or background warping.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not infer hidden limb anatomy.
+  - Do not reward global vertical scaling, crop change, camera change, or torso compression.
+  - Do not reward generic tallness when waistline, joints, shoes, or shadows are inconsistent.
+  - Use pose- and perspective-aware bilateral balance rather than forced mirror symmetry.
+  - One severe anatomy, identity, pose, or background failure must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request longer legs or a higher leg-to-torso proportion, with sufficient visible lower-body
+    evidence to assess waist, knees, ankles, and feet.
+  wrong_task_examples:
+  - only slimming or widening the legs
+  - only raising the waistline without a long-leg proportion target
+  - changing overall body height through whole-image scaling
+  - changing pose, camera angle, or crop to simulate longer legs
+  conflict_examples:
+  - lengthen and shorten the same legs simultaneously
+  - preserve all joint positions while requiring an obvious leg-length increase
+  - raise and lower the same waistline simultaneously
+  visibility_failures:
+  - the waist, knees, or feet are outside the frame
+  - long clothing or occlusion prevents reliable inference of leg and joint placement
+  - image quality is too poor to identify hips, knees, ankles, shoes, and ground contact
+  partial_visibility_rule: Because the training prompt explicitly requires a full-body silhouette, skip samples where the
+    complete waist-to-foot proportion cannot be assessed reliably.
+proportion_interpretation:
+  rules:
+  - Leg lengthening must be visible in the hip-to-foot span, not only in one isolated segment.
+  - The raised waistline must remain compatible with the pelvis, clothing construction, and torso anatomy.
+  - Thigh and calf length should be redistributed coherently; do not produce extremely long calves or thighs.
+  - Knees, ankles, feet, and shoes must move consistently with the new leg lengths.
+  - The upper body should remain source-consistent rather than being compressed to exaggerate the legs.
+  - High-fashion means an elegant elongated proportion, not anatomically impossible legs.
+  - Body height may increase as a consequence of genuine leg lengthening, but person scale and camera geometry must remain
+    coherent.
+anatomy_preservation_protocol:
+  strict_rules:
+  - Preserve pelvis orientation, hip width, leg axes, stance, and pose intent.
+  - Preserve plausible thigh-to-calf ratios and knee, ankle, and foot anatomy.
+  - Preserve left-right joint correspondence under the source perspective.
+  - Do not create floating feet, duplicated joints, dislocated knees, pinched ankles, or stretched shoes.
+  - Preserve body widths unless minimum perspective-consistent contour reconstruction is required.
+  - Rebuild clothing hems, folds, textures, seams, and occlusion around the lengthened legs.
+  - Reconstruct cast shadows and ground contact to match the new foot positions.
+  - Do not bend floors, walls, furniture, text, image borders, or nearby background structures.
+identity_preservation_protocol:
+  target_exemptions:
+  - Leg length, waistline height, joint vertical positions, and minimum local clothing and shadow transitions may change.
+  strict_rules:
+  - Preserve the same person, face, hair, skin tone, age impression, and characteristic appearance.
+  - Preserve facial features, expression, gaze, head size, shoulders, chest, arms, and hands.
+  - Preserve pose intent, clothing design, background, lighting direction, and camera angle.
+  - The intended lower-body proportion change must not itself be treated as identity drift.
+  - Broad body redesign or upper-body compression must strongly reduce preservation scores.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: Attractive pose, clean background, or realistic fabric cannot compensate for unchanged legs, global
+    stretch/crop substitute, broken joints/feet, overlong proportions, warped clothing/ground, or upper-body/source drift.
+  long_leg_disambiguation_rule: Reward only source-preserving long-leg body proportion with coherent pelvis, joint, foot,
+    clothing, ground, and camera consistency. Penalize full-image stretch, camera/crop changes, torso compression, body slimming,
+    and impossible model-like proportions.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Visible legs are not meaningfully longer, waistline is not raised, leg-to-torso ratio is mostly unchanged,
+          or the long-leg silhouette is too weak.
+        severity_guidance: Tiny but correct leg-length/proportion improvement may be severity 1. Correct but weak/partial
+          lengthening should be severity 2. Mostly unchanged leg proportion at normal viewing size must be severity 3. Absent,
+          reversed, or worse leg proportion must be severity 4-5.
+        affected_l3:
+        - long_leg_primary_proportion_outcome_match
+        - long_leg_lengthening_direction_magnitude_match
+        - long_leg_waistline_raise_match
+        - long_leg_leg_to_torso_ratio_match
+        - long_leg_thigh_calf_length_distribution_match
+        - long_leg_high_fashion_visibility_naturalness_match
+        - long_leg_edit_localized_to_permitted_body_region
+        - long_leg_joint_landmark_repositioning_match
+        - long_leg_bilateral_completeness_balance_match
+        - long_leg_waist_hip_pelvis_transition_quality
+        - long_leg_subject_identity_upper_body_preservation
+        - long_leg_pose_intent_limb_orientation_preservation
+        - long_leg_non_target_body_width_proportion_preservation
+        - long_leg_scene_camera_framing_preservation
+        - long_leg_artifact_background_stability
+      substitute_global_stretch_torso_compression_crop_or_camera:
+        detect_when: The longer-leg appearance comes from full-image vertical stretch, torso/upper-body compression, camera/crop/framing
+          change, perspective shift, moving the person, or background stretching instead of lower-body proportion editing.
+        severity_guidance: Minor crop/perspective cue with genuine anatomical leg improvement may be severity 1-2. If global
+          stretch, crop/camera shift, torso compression, body scaling, or background scaling is a major part of the long-leg
+          impression, severity 3. If it is the main visible edit or changes scene/body state, severity 4-5.
+        affected_l3:
+        - long_leg_primary_proportion_outcome_match
+        - long_leg_lengthening_direction_magnitude_match
+        - long_leg_waistline_raise_match
+        - long_leg_leg_to_torso_ratio_match
+        - long_leg_edit_localized_to_permitted_body_region
+        - long_leg_subject_identity_upper_body_preservation
+        - long_leg_pose_intent_limb_orientation_preservation
+        - long_leg_non_target_body_width_proportion_preservation
+        - long_leg_scene_camera_framing_preservation
+        - long_leg_artifact_background_stability
+        - long_leg_thigh_calf_length_distribution_match
+        - long_leg_joint_landmark_repositioning_match
+        - long_leg_bilateral_completeness_balance_match
+        - long_leg_high_fashion_visibility_naturalness_match
+        - long_leg_waist_hip_pelvis_transition_quality
+      pelvis_joint_ankle_foot_or_shoe_anatomy_broken:
+        detect_when: Pelvis/hip transition, knees, thigh/calf distribution, ankles, feet, shoes, leg axis, pose perspective,
+          or ground contact becomes misplaced, stretched, bent, floating, duplicated, or anatomically implausible.
+        severity_guidance: Small landmark/blend irregularity may be severity 1. Clear pelvis/knee/ankle/foot/shoe/leg-axis/ground-contact
+          defect should be severity 2-3. Impossible joints, detached feet, warped shoes, broken gait/pose, or severe anatomy
+          failure must be severity 4-5.
+        affected_l3:
+        - long_leg_thigh_calf_length_distribution_match
+        - long_leg_joint_landmark_repositioning_match
+        - long_leg_bilateral_completeness_balance_match
+        - long_leg_waist_hip_pelvis_transition_quality
+        - long_leg_knee_anatomy_position_consistency
+        - long_leg_ankle_foot_shoe_transition_consistency
+        - long_leg_leg_axis_pose_perspective_consistency
+        - long_leg_lighting_shadow_ground_contact_consistency
+        - long_leg_contour_edge_blending_quality
+        - long_leg_primary_proportion_outcome_match
+        - long_leg_lengthening_direction_magnitude_match
+        - long_leg_waistline_raise_match
+        - long_leg_leg_to_torso_ratio_match
+        - long_leg_high_fashion_visibility_naturalness_match
+        - long_leg_edit_localized_to_permitted_body_region
+        - long_leg_clothing_hem_occlusion_integration
+        - long_leg_subject_identity_upper_body_preservation
+        - long_leg_skin_fabric_surface_realism
+        - long_leg_artifact_background_stability
+      overlong_unrealistic_or_unbalanced_body_proportion:
+        detect_when: Legs become cartoonishly long, overly thin, mannequin-like, asymmetric, incompatible with torso/body,
+          or no longer believable for pose and camera perspective.
+        severity_guidance: Slight over-lengthening may be severity 1-2. Clear imbalance, asymmetric leg length, model-like
+          exaggeration, or unnatural thigh/calf distribution should be severity 3. Cartoonish, impossible, identity-changing,
+          or severely unbalanced body proportion must be severity 4-5.
+        affected_l3:
+        - long_leg_lengthening_direction_magnitude_match
+        - long_leg_leg_to_torso_ratio_match
+        - long_leg_thigh_calf_length_distribution_match
+        - long_leg_bilateral_completeness_balance_match
+        - long_leg_high_fashion_visibility_naturalness_match
+        - long_leg_leg_axis_pose_perspective_consistency
+        - long_leg_non_target_body_width_proportion_preservation
+        - long_leg_primary_proportion_outcome_match
+        - long_leg_waistline_raise_match
+        - long_leg_joint_landmark_repositioning_match
+        - long_leg_edit_localized_to_permitted_body_region
+        - long_leg_waist_hip_pelvis_transition_quality
+        - long_leg_knee_anatomy_position_consistency
+        - long_leg_ankle_foot_shoe_transition_consistency
+        - long_leg_clothing_hem_occlusion_integration
+        - long_leg_subject_identity_upper_body_preservation
+        - long_leg_skin_fabric_surface_realism
+        - long_leg_lighting_shadow_ground_contact_consistency
+        - long_leg_contour_edge_blending_quality
+        - long_leg_artifact_background_stability
+      clothing_occlusion_shadow_or_background_artifact:
+        detect_when: Clothing hems, fabric patterns, occlusions, shoes, skin/fabric surface, shadows, ground contact, contour
+          edges, background, or scene layout becomes warped, repeated, cut, haloed, smeared, or inconsistent.
+        severity_guidance: Tiny local clothing/edge artifact may be severity 1. Clear fabric stretch, hem mismatch, shadow/ground
+          inconsistency, contour seam, or background warp should be severity 2-3. Severe clothing, shoe, floor, or background
+          deformation must be severity 4-5.
+        affected_l3:
+        - long_leg_clothing_hem_occlusion_integration
+        - long_leg_skin_fabric_surface_realism
+        - long_leg_lighting_shadow_ground_contact_consistency
+        - long_leg_contour_edge_blending_quality
+        - long_leg_artifact_background_stability
+        - long_leg_scene_camera_framing_preservation
+        - long_leg_primary_proportion_outcome_match
+        - long_leg_high_fashion_visibility_naturalness_match
+        - long_leg_edit_localized_to_permitted_body_region
+        - long_leg_waist_hip_pelvis_transition_quality
+        - long_leg_knee_anatomy_position_consistency
+        - long_leg_ankle_foot_shoe_transition_consistency
+        - long_leg_leg_axis_pose_perspective_consistency
+        - long_leg_lengthening_direction_magnitude_match
+        - long_leg_waistline_raise_match
+        - long_leg_leg_to_torso_ratio_match
+        - long_leg_thigh_calf_length_distribution_match
+        - long_leg_joint_landmark_repositioning_match
+        - long_leg_bilateral_completeness_balance_match
+        - long_leg_subject_identity_upper_body_preservation
+      identity_upper_body_pose_or_scene_drift:
+        detect_when: Face identity, upper body, hands, body width, pose intent, limb orientation, clothing, camera framing,
+          lighting, background, or scene layout changes beyond long-leg editing.
+        severity_guidance: Minor local blend drift may be severity 1. Clear upper-body, body-width, lighting, clothing, scene,
+          or camera drift should be severity 2-3. Identity, pose intent, crop/framing, viewpoint, or broad scene-state change
+          must be severity 4-5.
+        affected_l3:
+        - long_leg_subject_identity_upper_body_preservation
+        - long_leg_pose_intent_limb_orientation_preservation
+        - long_leg_non_target_body_width_proportion_preservation
+        - long_leg_scene_camera_framing_preservation
+        - long_leg_artifact_background_stability
+        - long_leg_primary_proportion_outcome_match
+        - long_leg_edit_localized_to_permitted_body_region
+        - long_leg_skin_fabric_surface_realism
+        - long_leg_lighting_shadow_ground_contact_consistency
+        - long_leg_contour_edge_blending_quality
+        - long_leg_lengthening_direction_magnitude_match
+        - long_leg_waistline_raise_match
+        - long_leg_leg_to_torso_ratio_match
+        - long_leg_thigh_calf_length_distribution_match
+        - long_leg_joint_landmark_repositioning_match
+        - long_leg_bilateral_completeness_balance_match
+        - long_leg_high_fashion_visibility_naturalness_match
+        - long_leg_waist_hip_pelvis_transition_quality
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Long-leg editing means believable lower-body proportion improvement through leg-length appearance
+    and waist/pelvis-to-leg coherence. It is not global vertical stretch, crop/camera change, torso compression, body slimming,
+    pose change, or background scaling.
+  no_compensation_rule: If visible leg-length improvement is absent or produced by global/camera/body substitute operations,
+    preservation/background/photorealism must not raise edit-dependent facets. A prettier fashion silhouette must not compensate
+    for broken anatomy, altered scene geometry, or source-state drift.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample creates an obvious but believable long-leg silhouette by increasing visible leg
+    length and perceived waistline while preserving body mechanics, clothing, shoes, shadows, upper body, identity, and scene
+    layout.
+  success_gate_conditions:
+  - Legs are visibly longer and the leg-to-torso ratio is improved with a coherent perceived waistline/pelvis-to-leg transition.
+  - Thigh/calf distribution, knees, ankles, feet/shoes, leg axis, pose perspective, and ground contact remain anatomically
+    plausible.
+  - The result is not whole-image stretching, torso compression, crop/camera change, person movement, or background stretching.
+  - Clothing hems, fabric patterns, shoes, skin/fabric surfaces, shadows, contour edges, and background reconstruction are
+    coherent.
+  - Upper body, face identity, hands, body width, pose intent, lighting, framing, and scene layout remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- long_leg_primary_proportion_outcome_match
+- long_leg_lengthening_direction_magnitude_match
+- long_leg_waistline_raise_match
+- long_leg_leg_to_torso_ratio_match
+- long_leg_thigh_calf_length_distribution_match
+- long_leg_joint_landmark_repositioning_match
+- long_leg_bilateral_completeness_balance_match
+- long_leg_high_fashion_visibility_naturalness_match
+- long_leg_edit_localized_to_permitted_body_region
+- long_leg_waist_hip_pelvis_transition_quality
+- long_leg_knee_anatomy_position_consistency
+- long_leg_ankle_foot_shoe_transition_consistency
+- long_leg_leg_axis_pose_perspective_consistency
+- long_leg_clothing_hem_occlusion_integration
+- long_leg_subject_identity_upper_body_preservation
+- long_leg_pose_intent_limb_orientation_preservation
+- long_leg_non_target_body_width_proportion_preservation
+- long_leg_scene_camera_framing_preservation
+- long_leg_skin_fabric_surface_realism
+- long_leg_lighting_shadow_ground_contact_consistency
+- long_leg_contour_edge_blending_quality
+- long_leg_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    long_leg_primary_proportion_outcome_match: 0.18
+    long_leg_lengthening_direction_magnitude_match: 0.16
+    long_leg_waistline_raise_match: 0.15
+    long_leg_leg_to_torso_ratio_match: 0.15
+    long_leg_thigh_calf_length_distribution_match: 0.11
+    long_leg_joint_landmark_repositioning_match: 0.11
+    long_leg_bilateral_completeness_balance_match: 0.08
+    long_leg_high_fashion_visibility_naturalness_match: 0.06
+  Localization and Anatomical Integration:
+    long_leg_edit_localized_to_permitted_body_region: 0.16
+    long_leg_waist_hip_pelvis_transition_quality: 0.18
+    long_leg_knee_anatomy_position_consistency: 0.17
+    long_leg_ankle_foot_shoe_transition_consistency: 0.17
+    long_leg_leg_axis_pose_perspective_consistency: 0.2
+    long_leg_clothing_hem_occlusion_integration: 0.12
+  Subject Preservation:
+    long_leg_subject_identity_upper_body_preservation: 0.3
+    long_leg_pose_intent_limb_orientation_preservation: 0.25
+    long_leg_non_target_body_width_proportion_preservation: 0.25
+    long_leg_scene_camera_framing_preservation: 0.2
+  Task Realism and Image Quality:
+    long_leg_skin_fabric_surface_realism: 0.25
+    long_leg_lighting_shadow_ground_contact_consistency: 0.3
+    long_leg_contour_edge_blending_quality: 0.25
+    long_leg_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid training prompt.
+  other_l1_blocks: Use the listed within-L1 weights for Localization and Anatomical Integration, Subject Preservation, and
+    Task Realism and Image Quality.
+  base_formula: base_reward = 0.45 * P + 0.30 * L + 0.15 * S + 0.10 * Q
+  anatomy_score: A = score(long_leg_leg_axis_pose_perspective_consistency) / 9.0
+  identity_score: I = score(long_leg_subject_identity_upper_body_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (I ** 0.18)
+taxonomy:
+  Prompt Compliance:
+    Requested Long-Leg Proportion:
+      long_leg_primary_proportion_outcome_match:
+        title: Primary long-leg proportion outcome
+        definition: Whether the character gains a clearly longer-legged, higher-waisted full-body silhouette through genuine
+          lower-body proportion editing.
+        anchors:
+          0: No target edit, opposite change, or a different task.
+          3: Weak or inconsistent long-leg effect.
+          5: Visible partial effect with major incompleteness.
+          7: Clear successful proportion change with one material issue.
+          9: The requested long-leg silhouette is complete, obvious, and believable.
+        rubric: Whether the character gains a clearly longer-legged, higher-waisted full-body silhouette through genuine lower-body
+          proportion editing. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_lengthening_direction_magnitude_match:
+        title: Leg-lengthening direction and magnitude
+        definition: Whether both legs are lengthened by a strong but realistic amount rather than shortened, barely changed,
+          or excessively stretched.
+        anchors:
+          0: Legs are unchanged, shortened, or destructively stretched.
+          3: Barely visible, highly uneven, or severely excessive lengthening.
+          5: Noticeable but clearly insufficient or overdone.
+          7: Appropriate lengthening with one minor issue.
+          9: Lengthening is obvious, balanced, and exactly appropriate.
+        rubric: Whether both legs are lengthened by a strong but realistic amount rather than shortened, barely changed, or
+          excessively stretched. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_waistline_raise_match:
+        title: Waistline elevation
+        definition: Whether the perceived waistline is raised coherently with the pelvis and clothing rather than through
+          torso cropping or compression.
+        anchors:
+          0: Waistline is unchanged, lowered, or falsely shifted through torso distortion.
+          3: Weak, uneven, or anatomically implausible elevation.
+          5: Visible elevation with clear pelvis or clothing inconsistency.
+          7: Correct elevation with one minor issue.
+          9: Waistline is clearly and naturally raised as requested.
+        rubric: Whether the perceived waistline is raised coherently with the pelvis and clothing rather than through torso
+          cropping or compression. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is
+          detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+      long_leg_leg_to_torso_ratio_match:
+        title: Leg-to-torso proportion
+        definition: Whether the final leg-to-torso ratio creates the requested elegant high-fashion silhouette while preserving
+          upper-body scale.
+        anchors:
+          0: Ratio is unchanged, worse, or created by severe torso compression.
+          3: Strongly unbalanced or implausible proportion.
+          5: Some improvement exists but the ratio remains visibly inaccurate.
+          7: Balanced elongated proportion with one minor issue.
+          9: Leg-to-torso ratio is elegant, clear, and fully believable.
+        rubric: Whether the final leg-to-torso ratio creates the requested elegant high-fashion silhouette while preserving
+          upper-body scale. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_thigh_calf_length_distribution_match:
+        title: Thigh and calf length distribution
+        definition: Whether added length is distributed naturally between thighs and calves without one segment becoming disproportionately
+          long.
+        anchors:
+          0: Length distribution is impossible or opposite to human anatomy.
+          3: Major thigh-calf imbalance or segment stretching.
+          5: General lengthening is present with one clear distribution error.
+          7: Natural distribution with one minor issue.
+          9: Thigh and calf lengths are fully coherent and proportionate.
+        rubric: Whether added length is distributed naturally between thighs and calves without one segment becoming disproportionately
+          long. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_joint_landmark_repositioning_match:
+        title: Joint-landmark repositioning
+        definition: Whether hips, knees, ankles, feet, and shoes are repositioned consistently with the new leg lengths.
+        anchors:
+          0: Landmarks remain fixed inconsistently or become dislocated.
+          3: Major mismatch among hips, knees, ankles, or feet.
+          5: Most landmarks move but one clear inconsistency remains.
+          7: Coherent repositioning with one minor issue.
+          9: All lower-body landmarks are accurately and consistently rebuilt.
+        rubric: Whether hips, knees, ankles, feet, and shoes are repositioned consistently with the new leg lengths. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_bilateral_completeness_balance_match:
+        title: Bilateral completeness and balance
+        definition: Whether both visible legs receive complete, perspective-aware lengthening without mismatched joints or
+          unequal unintended scale.
+        anchors:
+          0: One leg is missed, wrong, or severe imbalance is created.
+          3: Major left-right inconsistency or incomplete editing.
+          5: Both legs are attempted but visibly mismatched.
+          7: Complete and balanced with one minor difference.
+          9: Both legs are fully edited and naturally balanced for the pose.
+        rubric: Whether both visible legs receive complete, perspective-aware lengthening without mismatched joints or unequal
+          unintended scale. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_high_fashion_visibility_naturalness_match:
+        title: High-fashion visibility and naturalness
+        definition: Whether the improved silhouette is easy to notice at normal viewing size while remaining realistic rather
+          than cartoonishly elongated.
+        anchors:
+          0: No visible improvement or clearly grotesque elongation.
+          3: Weak, artificial, or highly exaggerated result.
+          5: Visible result with clear stylistic or realism problems.
+          7: Strong natural result with one minor issue.
+          9: Immediately visible, elegant, and fully realistic high-fashion proportion.
+        rubric: Whether the improved silhouette is easy to notice at normal viewing size while remaining realistic rather
+          than cartoonishly elongated. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+  Localization and Anatomical Integration:
+    Lower-Body Anatomy and Transitions:
+      long_leg_edit_localized_to_permitted_body_region:
+        title: Edit localization
+        definition: Whether changes remain within the waistline, pelvis, legs, clothing hems, shoes, and required shadow transitions.
+        anchors:
+          0: Broad upper-body, face, background, or whole-image scaling.
+          3: Significant spill into non-target regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to the permitted proportion-edit region.
+        rubric: Whether changes remain within the waistline, pelvis, legs, clothing hems, shoes, and required shadow transitions.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_waist_hip_pelvis_transition_quality:
+        title: Waist, hip, and pelvis transition
+        definition: Whether the raised waistline connects naturally to the unchanged torso and reconstructed pelvis, hips,
+          and upper thighs.
+        anchors:
+          0: Broken, collapsed, detached, or impossible pelvis transition.
+          3: Major pinching, shelf, gap, or hip distortion.
+          5: Broadly connected with one obvious anatomical issue.
+          7: Natural with one minor transition issue.
+          9: Waist-to-pelvis and hip transitions are seamless and plausible.
+        rubric: Whether the raised waistline connects naturally to the unchanged torso and reconstructed pelvis, hips, and
+          upper thighs. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_knee_anatomy_position_consistency:
+        title: Knee anatomy and position
+        definition: Whether knees are placed at plausible heights, retain their shape and bend, and remain consistent with
+          thigh and calf lengths.
+        anchors:
+          0: Missing, duplicated, reversed, or severely dislocated knees.
+          3: Major knee-position, shape, or bend inconsistency.
+          5: Generally plausible with one obvious knee error.
+          7: Coherent with one minor issue.
+          9: Knee anatomy and placement are fully natural.
+        rubric: Whether knees are placed at plausible heights, retain their shape and bend, and remain consistent with thigh
+          and calf lengths. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_ankle_foot_shoe_transition_consistency:
+        title: Ankle, foot, and shoe transition
+        definition: Whether ankles, feet, footwear, soles, and ground contact remain anatomically connected and source-consistent.
+        anchors:
+          0: Floating, detached, duplicated, or severely malformed feet or shoes.
+          3: Major ankle, footwear, sole, or contact error.
+          5: Generally connected with one clear inconsistency.
+          7: Natural with one minor issue.
+          9: Ankles, feet, shoes, and ground contact are fully coherent.
+        rubric: Whether ankles, feet, footwear, soles, and ground contact remain anatomically connected and source-consistent.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_leg_axis_pose_perspective_consistency:
+        title: Leg axis, pose, and perspective
+        definition: Whether hip-knee-ankle axes, stance, foreshortening, depth, and pose intent remain coherent after lengthening.
+        anchors:
+          0: Impossible leg axes, dislocated pose, or contradictory perspective.
+          3: Major stance, axis, depth, or foreshortening error.
+          5: Generally plausible with one clear inconsistency.
+          7: Coherent with one minor issue.
+          9: Leg anatomy, pose, and perspective remain fully natural.
+        rubric: Whether hip-knee-ankle axes, stance, foreshortening, depth, and pose intent remain coherent after lengthening.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_clothing_hem_occlusion_integration:
+        title: Clothing hem and occlusion integration
+        definition: Whether pants, skirts, dresses, seams, folds, hems, skin exposure, and front-back layering adapt naturally
+          to the new proportions.
+        anchors:
+          0: Clothing is detached, melted, duplicated, or wrongly layered.
+          3: Major hem, seam, fold, texture, or occlusion damage.
+          5: Integrated with one obvious local inconsistency.
+          7: Natural with one minor fabric issue.
+          9: Clothing and occlusion relationships are seamlessly rebuilt.
+        rubric: Whether pants, skirts, dresses, seams, folds, hems, skin exposure, and front-back layering adapt naturally
+          to the new proportions. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+  Subject Preservation:
+    Identity, Pose, and Scene:
+      long_leg_subject_identity_upper_body_preservation:
+        title: Subject identity and upper-body preservation
+        definition: Preservation of the same person, face, hair, head size, facial features, shoulders, chest, arms, and hands.
+        anchors:
+          0: Different person or major upper-body redesign.
+          3: Strong identity, face, head, or upper-body drift.
+          5: Same person remains recognizable with one clear alteration.
+          7: Identity preserved with one minor difference.
+          9: Identity and upper-body appearance remain fully unchanged.
+        rubric: Preservation of the same person, face, hair, head size, facial features, shoulders, chest, arms, and hands.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_pose_intent_limb_orientation_preservation:
+        title: Pose intent and limb orientation preservation
+        definition: Preservation of stance, body action, arm positions, leg directions, weight bearing, and original pose
+          meaning.
+        anchors:
+          0: Pose or action is materially changed.
+          3: Strong stance, limb-direction, or weight-bearing drift.
+          5: Pose intent remains but one clear positional change exists.
+          7: Preserved with one minor difference.
+          9: Pose intent and limb orientations remain unchanged.
+        rubric: Preservation of stance, body action, arm positions, leg directions, weight bearing, and original pose meaning.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_non_target_body_width_proportion_preservation:
+        title: Non-target body width and proportion preservation
+        definition: Preservation of torso width, shoulder width, hip width, head size, arm length, and all unrequested horizontal
+          proportions.
+        anchors:
+          0: Major broad-body scaling or proportion redesign.
+          3: Significant non-target width or proportion changes.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All non-target widths and proportions remain unchanged.
+        rubric: Preservation of torso width, shoulder width, hip width, head size, arm length, and all unrequested horizontal
+          proportions. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      long_leg_scene_camera_framing_preservation:
+        title: Scene, camera, and framing preservation
+        definition: Preservation of background, camera angle, lens perspective, crop, person scale, composition, global lighting,
+          aspect ratio, and resolution.
+        anchors:
+          0: Global image stretch, reframing, camera change, or scene replacement.
+          3: Strong background, scale, crop, perspective, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: Scene, camera, framing, and image geometry remain unchanged.
+        rubric: Preservation of background, camera angle, lens perspective, crop, person scale, composition, global lighting,
+          aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      long_leg_skin_fabric_surface_realism:
+        title: Skin and fabric surface realism
+        definition: Whether skin, clothing texture, seams, folds, patterns, and local detail remain photorealistic without
+          vertical smearing or repetition.
+        anchors:
+          0: Severely synthetic, smeared, stretched, or destroyed surfaces.
+          3: Strong texture repetition, blur, plasticity, or fabric artifacts.
+          5: Usable but visibly processed with one clear issue.
+          7: Realistic with one minor surface issue.
+          9: Skin and fabric detail are fully photorealistic and source-consistent.
+        rubric: Whether skin, clothing texture, seams, folds, patterns, and local detail remain photorealistic without vertical
+          smearing or repetition. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_lighting_shadow_ground_contact_consistency:
+        title: Lighting, shadow, and ground-contact consistency
+        definition: Whether body shading, cast shadows, shoe shadows, and ground contact are rebuilt for the new waist, joints,
+          feet, and leg lengths.
+        anchors:
+          0: Lighting or shadows contradict the edit, or feet visibly float.
+          3: Major missing, duplicated, displaced, or incorrect shadows.
+          5: Generally plausible with one obvious contact or lighting error.
+          7: Consistent with one minor issue.
+          9: Lighting, shadows, and ground contact integrate perfectly.
+        rubric: Whether body shading, cast shadows, shoe shadows, and ground contact are rebuilt for the new waist, joints,
+          feet, and leg lengths. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: Whether body, clothing, hems, shoes, and shadow boundaries remain clean without halos, jagged edges, seams,
+          dents, or blur.
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, jaggedness, dents, or local blur.
+          5: Mostly blended with one clear boundary artifact.
+          7: Clean with one minor edge issue.
+          9: All edited boundaries are seamless, detailed, and natural.
+        rubric: Whether body, clothing, hems, shoes, and shadow boundaries remain clean without halos, jagged edges, seams,
+          dents, or blur. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      long_leg_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Absence of duplicated limbs, malformed joints, stretched shoes, warped floors, bent walls, repeated patterns,
+          and image-edge distortion.
+        anchors:
+          0: Severe structural artifacts or background warping.
+          3: Multiple obvious distortions or duplicated structures.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; body and background remain fully stable.
+        rubric: Absence of duplicated limbs, malformed joints, stretched shoes, warped floors, bent walls, repeated patterns,
+          and image-edge distortion. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is
+          detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+prompt_applicability:
+  purpose: The dataset contains one identical full-body long-leg prompt. All Prompt Compliance facets are fixed as applicable.
+  always_applicable:
+  - long_leg_primary_proportion_outcome_match
+  - long_leg_lengthening_direction_magnitude_match
+  - long_leg_waistline_raise_match
+  - long_leg_leg_to_torso_ratio_match
+  - long_leg_thigh_calf_length_distribution_match
+  - long_leg_joint_landmark_repositioning_match
+  - long_leg_bilateral_completeness_balance_match
+  - long_leg_high_fashion_visibility_naturalness_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+judge_role: You are a strict expert evaluator for long-leg body-proportion editing, lower-body anatomy, clothing/ground reconstruction,
+  subject preservation, and scene consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare leg length, waistline, pelvis/hip-to-leg transition, thigh/calf distribution, knees, ankles, feet/shoes,
+  clothing hems, body width, pose intent, upper body, identity, shadows, ground contact, background, camera framing, and scene
+  layout.
+
+
+  2) Task target. A successful edit creates an obvious but believable long-leg silhouette by increasing visible leg length
+  and raising perceived waistline with coherent pelvis-to-leg transition, joint landmarks, clothing hems, shoes, and shadows.
+  It must not rely on whole-image stretching, torso compression, crop/camera reframing, shoe distortion, or background warping.
+
+
+  3) Task-specific failures. Treat absent/weak leg lengthening, global stretch/crop substitute, broken joints/pelvis/feet,
+  unrealistic overlong proportions, clothing/shadow/background artifacts, and upper-body/source drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear leg-length and anatomy evidence. If long legs come from global stretching or
+  broken body mechanics, preservation/quality must not lift affected facets.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '

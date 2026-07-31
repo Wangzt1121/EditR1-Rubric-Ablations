@@ -1,0 +1,801 @@
+task_key: source_adaptive_chin_length_adjustment
+task_title: Source-Adaptive Chin Length Adjustment
+task_title_zh: 下巴长度调整
+version: v48_fixed_integer_22_l3_chin_length_v39_v41_hybrid_successgate_compact_deep_review_compact_l3_pi_equal
+target_region: the visible chin soft-tissue region from the mentolabial fold or lower-lip-to-chin transition to the lowest
+  visible chin point, including only the minimum adjacent jawline, submental, facial-hair, skin, neck, clothing, accessory,
+  and background blending zones required for a natural vertical adjustment
+target_action_summary: Adjust chin length in the source-appropriate direction to produce a more balanced lower-face proportion.
+  Change the chin's vertical extent while preserving width, projection, tip family, cleft character, jaw width, mouth position,
+  identity, expression, pose, skin texture, lighting, camera state, and all non-target regions.
+judge_role: You are a strict expert evaluator for source-adaptive chin-length adjustment, lower-face anatomy, identity preservation,
+  and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source-state audit.
+
+  Compare source chin vertical length, mouth-to-chin distance, lower-face proportion, chin width/projection/tip/cleft, centerline,
+  jaw width, face shape, lower lip and mentolabial fold, jaw-submental-neck transition, skin/facial-hair texture, identity,
+  age impression, expression, lighting, background, clothing, crop, and camera state.
+
+
+  2) Source-adaptive target.
+
+  For this task, success means only the vertical chin extent changes toward a believable balanced lower-face proportion: shorten
+  an overlong chin, lengthen a short chin, or conservatively refine an already near-balanced chin. Do not assume one universal
+  beauty direction.
+
+
+  3) Success gates for 7-9 eligibility.
+
+  A facet may receive 7, 8, or 9 only when its exact visual evidence satisfies the relevant success conditions: correct source-adaptive
+  direction; visible vertical chin-length change; stable chin width, projection, tip character, centerline, jaw width, face
+  shape, mouth relation, identity, expression, lighting, background, crop, and camera; and no applicable failure_propagation
+  cap. These are eligibility gates, not high-score examples.
+
+
+  4) Reject substitutes.
+
+  Do not treat a prettier, smoother, sharper, more V-shaped, more pointed, slimmer, or more stylized lower face as successful
+  chin-length adjustment. Pointed-chin creation, V-face sculpting, jaw slimming, face-width slimming, projection change, mouth
+  movement, neck deformation, whole-face stretch/compression, pose/camera/crop change, shadow painting, and beauty filtering
+  are substitute operations.
+
+
+  5) Failure propagation and calibration.
+
+  Before final scores, detect failures in global_scoring_policy.failure_propagation and apply severity caps. If actual vertical
+  chin-length change is uncertain, weak, or mostly absent, activate target_absent_wrong_direction_or_too_weak rather than
+  treating the sample as success. Use severity 5 only for completely absent, reversed, or unusable edits; use 2-4 for weak,
+  partial, wrong-substitute, or clearly flawed attempts. Do not collapse every failed sample into all 1s, and do not set all
+  unaffected preservation/quality facets to 9 by default. If the primary edit fails, unchanged non-target regions are usually
+  neutral-to-good preservation evidence around 6-7 unless the exact facet is demonstrably near-perfect and no source-state
+  ambiguity exists.
+
+
+  6) Anti-template.
+
+  Do not output all 7s, mostly 7s, all 8-9s, or a split template such as many 1s plus many 9s. Use the full 0-9 scale according
+  to visible evidence for each L3.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Hybrid of the more stable v39 chin-length rubric and v41-style failure propagation/no-template safeguards.
+  constraints:
+  - Keep exactly 22 active L3 integer scores in active_l3 order.
+  - Score source-adaptive vertical chin-length adjustment, not generic beautification, V-face, pointed chin, jaw slimming,
+    projection change, mouth movement, or whole-face stretch.
+  - Use success gates as eligibility checks for 7-9, not as examples or automatic high-score templates.
+  - Apply failure_propagation caps, but avoid extreme 1/9 split vectors unless the visual evidence truly supports both extremes.
+evaluation_notes:
+- 'First infer the source chin state: overlong, short, or already balanced. The requested edit is a source-adaptive vertical
+  chin-length adjustment toward a believable lower-face proportion.'
+- A prettier, smoother, sharper, more V-shaped, or more balanced-looking face is not enough unless the vertical chin extent
+  itself changes correctly.
+- If the edit is absent, wrong-direction, or only a substitute operation, prompt-compliance and anatomy facets must be capped
+  before any high score is considered.
+- If the primary edit fails, unchanged non-target regions are preservation evidence but should not automatically become all
+  9s; avoid letting preservation lift a failed edit into a high reward.
+- Preserve mouth position, mentolabial fold, chin width/projection/tip identity, jaw width, neck relation, identity, expression,
+  skin texture, lighting, background, clothing, crop, and camera state.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: Do not default plausible results to 7 or 8. A 7 requires strong visible evidence after failure propagation;
+    8 requires near-exact source-preserving success; 9 is rare.
+  no_cross_compensation: Do not raise one facet because another is good. A cleaner or prettier face cannot compensate for
+    wrong length direction, changed chin shape, broken anatomy, changed identity, moved mouth, neck deformation, or background/camera
+    drift.
+  source_adaptive_direction_rule: Determine whether to lengthen, shorten, or conservatively refine from the source face. Never
+    assume one universal beauty direction.
+  chin_length_disambiguation_rule: Correct editing changes only vertical chin extent between the mentolabial region and lowest
+    chin point. Width editing, projection editing, pointed-chin shaping, V-line sculpting, jaw slimming, whole-face stretching,
+    mouth movement, neck deformation, pose/crop change, shadow painting, and beauty filtering are different operations.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the result as the same individual. Chin vertical extent may change, but normalized internal landmarks,
+    mouth, characteristic chin width and projection, jaw character, age impression, expression, skin tone, and same-person
+    impression must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the result is attractive, proportionate, realistic,
+    or prompt-compliant.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, crop, lighting
+    mood, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: Chin length is unchanged, barely changed, reversed, or adjusted opposite to the source-adaptive direction.
+        severity_guidance: Tiny but correct source-adaptive vertical length evidence may be severity 1. Correct but weak or
+          partial change should be severity 2. Mostly unchanged or uncertain length change should be severity 3. Clear wrong-direction
+          or substitute-only result should be severity 4. Completely absent, reversed, or unusable target editing is severity
+          5. Do not use severity 5 merely because the edit is weak.
+        affected_l3:
+        - requested_chin_length_operation_match
+        - requested_source_adaptive_length_direction_match
+        - requested_chin_length_magnitude_match
+        - requested_lower_face_vertical_proportion_match
+        - requested_chin_vertical_extent_precision_match
+        - requested_chin_length_visibility_finish_match
+        - chin_length_edit_localized_to_chin_region
+        - chin_length_mentolabial_transition_anatomically_coherent
+        - chin_length_jaw_submental_neck_transition_coherent
+        - requested_chin_width_preservation_match
+        - requested_chin_projection_preservation_match
+        - requested_chin_tip_shape_cleft_preservation_match
+        - requested_chin_centerline_bilateral_balance_match
+        - requested_mouth_chin_relationship_preservation_match
+        - requested_jaw_width_face_shape_preservation_match
+        - chin_length_identity_landmark_consistency
+        - chin_length_expression_face_scene_global_state_preserved
+        - chin_length_artifact_sharpness_no_warp_mask
+      substitute_chin_shape_or_vface_operation:
+        detect_when: The visible improvement comes mainly from pointed-chin creation, V-face slimming, jaw narrowing, face-width
+          slimming, projection change, whole-face stretch/compression, mouth movement, neck deformation, shadow painting,
+          or generic beautification rather than vertical chin-length adjustment.
+        severity_guidance: Minor substitute cues with real vertical length adjustment may be severity 1-2. If pointed chin,
+          V-face, jaw slimming, projection change, mouth movement, neck deformation, face stretch, or beauty filtering clearly
+          contributes to the perceived improvement, severity should be 3. If the substitute operation is the main visible
+          edit or changes identity, mouth, jaw, face shape, or camera/framing, severity 4-5.
+        affected_l3:
+        - requested_chin_length_operation_match
+        - requested_source_adaptive_length_direction_match
+        - requested_chin_length_magnitude_match
+        - requested_lower_face_vertical_proportion_match
+        - requested_chin_vertical_extent_precision_match
+        - requested_chin_width_preservation_match
+        - requested_chin_projection_preservation_match
+        - requested_chin_tip_shape_cleft_preservation_match
+        - requested_chin_centerline_bilateral_balance_match
+        - requested_jaw_width_face_shape_preservation_match
+        - chin_length_edit_localized_to_chin_region
+        - chin_length_mentolabial_transition_anatomically_coherent
+        - chin_length_jaw_submental_neck_transition_coherent
+        - requested_mouth_chin_relationship_preservation_match
+        - chin_length_identity_landmark_consistency
+        - chin_length_expression_face_scene_global_state_preserved
+        - chin_length_artifact_sharpness_no_warp_mask
+      chin_deformation_or_anatomy_broken:
+        detect_when: The chin, lower lip, mentolabial fold, mouth-to-chin distance, jaw-submental-neck transition, chin contour,
+          or lower-face geometry becomes stretched, pinched, melted, detached, asymmetric, over-pointed, shelf-like, or anatomically
+          implausible.
+        severity_guidance: Small local contour or transition issue may be severity 1. Clear mentolabial, lower-lip, jaw-submental-neck,
+          centerline, or perspective defect should be severity 2-3. Visibly deformed, melted, pinched, detached, over-pointed,
+          or identity-changing chin anatomy must be severity 4-5.
+        affected_l3:
+        - requested_chin_length_operation_match
+        - requested_chin_length_magnitude_match
+        - requested_lower_face_vertical_proportion_match
+        - requested_chin_vertical_extent_precision_match
+        - requested_chin_width_preservation_match
+        - requested_chin_projection_preservation_match
+        - requested_chin_tip_shape_cleft_preservation_match
+        - requested_chin_centerline_bilateral_balance_match
+        - requested_mouth_chin_relationship_preservation_match
+        - requested_jaw_width_face_shape_preservation_match
+        - requested_chin_length_visibility_finish_match
+        - chin_length_edit_localized_to_chin_region
+        - chin_length_mentolabial_transition_anatomically_coherent
+        - chin_length_jaw_submental_neck_transition_coherent
+        - chin_length_pose_perspective_occlusion_consistent
+        - chin_length_identity_landmark_consistency
+        - chin_length_skin_facial_hair_detail_realistic
+        - chin_length_boundary_contact_reconstruction_consistent
+        - chin_length_artifact_sharpness_no_warp_mask
+        - requested_source_adaptive_length_direction_match
+        - chin_length_lighting_shadow_color_integration
+      source_state_not_preserved_or_beautified:
+        detect_when: The candidate becomes prettier, younger, smoother, more generic, or different-looking by changing identity,
+          age impression, expression, skin texture, lighting, color, background, clothing, camera/framing, or photographic
+          style instead of only adjusting chin length.
+        severity_guidance: Minor local texture/lighting drift may be severity 1. Clear skin smoothing, facial-hair, mouth/expression,
+          lighting, background, clothing, or style drift should be severity 2-3. Beauty-filter replacement, younger/different
+          identity, camera/framing change, or broad source-state change must be severity 4-5.
+        affected_l3:
+        - requested_chin_length_operation_match
+        - requested_lower_face_vertical_proportion_match
+        - requested_chin_width_preservation_match
+        - requested_chin_projection_preservation_match
+        - requested_chin_tip_shape_cleft_preservation_match
+        - requested_mouth_chin_relationship_preservation_match
+        - requested_jaw_width_face_shape_preservation_match
+        - chin_length_pose_perspective_occlusion_consistent
+        - chin_length_identity_landmark_consistency
+        - chin_length_expression_face_scene_global_state_preserved
+        - chin_length_skin_facial_hair_detail_realistic
+        - chin_length_lighting_shadow_color_integration
+        - chin_length_boundary_contact_reconstruction_consistent
+        - chin_length_artifact_sharpness_no_warp_mask
+        - requested_source_adaptive_length_direction_match
+        - chin_length_edit_localized_to_chin_region
+      overdone_unbalanced_or_unbelievable_length_change:
+        detect_when: The chin length change is too strong, too weak, doll-like, surgically exaggerated, not balanced for the
+          source face, or incompatible with the prompt's strong-but-believable retouching intensity.
+        severity_guidance: Slight over/under-adjustment may be severity 1-2. Clearly unbalanced lower-face proportion, too
+          long/too short chin, or unnatural source-adaptive magnitude should be severity 3. Severe, unusable, doll-like, surgically
+          exaggerated, or identity-changing length change must be severity 4-5.
+        affected_l3:
+        - requested_chin_length_operation_match
+        - requested_source_adaptive_length_direction_match
+        - requested_chin_length_magnitude_match
+        - requested_lower_face_vertical_proportion_match
+        - requested_chin_vertical_extent_precision_match
+        - requested_chin_length_visibility_finish_match
+        - chin_length_mentolabial_transition_anatomically_coherent
+        - chin_length_jaw_submental_neck_transition_coherent
+        - chin_length_artifact_sharpness_no_warp_mask
+        - requested_chin_width_preservation_match
+        - requested_chin_projection_preservation_match
+        - requested_chin_tip_shape_cleft_preservation_match
+        - requested_chin_centerline_bilateral_balance_match
+        - requested_mouth_chin_relationship_preservation_match
+        - requested_jaw_width_face_shape_preservation_match
+        - chin_length_edit_localized_to_chin_region
+        - chin_length_pose_perspective_occlusion_consistent
+        - chin_length_identity_landmark_consistency
+        - chin_length_skin_facial_hair_detail_realistic
+        - chin_length_lighting_shadow_color_integration
+        - chin_length_boundary_contact_reconstruction_consistent
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic
+    or uncertain, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid the mechanical
+    many-1s/many-9s pattern unless the visual evidence truly supports it. Scores should reflect facet-level differences.
+  success_gate_definition: A positive sample adjusts only vertical chin length in the source-appropriate direction, producing
+    a balanced lower-face proportion while preserving chin identity, mouth relation, jaw, neck, identity, and source state.
+  success_gate_conditions:
+  - 'The direction is correct for the source: overlong chin shortened, short chin lengthened, or near-balanced chin conservatively
+    refined.'
+  - Only vertical chin extent changes; width, projection, tip family/cleft, centerline, jaw width, and face-shape character
+    remain stable.
+  - Mouth-to-chin distance, mentolabial fold, jaw-submental-neck transitions, and perspective remain anatomically coherent.
+  - The result is not pointed-chin creation, V-face sculpting, jaw slimming, mouth movement, neck deformation, or beauty filtering.
+  - Identity, age impression, expression, skin texture, lighting, background, clothing, framing, and camera state remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, or replaced by a substitute edit, choose
+    the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the requested edit evidence for that exact facet is
+    strong, localized, source-preserving, and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. This rubric intentionally
+    provides no fixed high-score vector to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, or unusable target editing.
+  task_disambiguation_rule: Chin-length adjustment changes vertical chin extent in the source-adaptive direction. It is not
+    pointed-chin creation, V-face slimming, jaw narrowing, projection movement, mouth movement, neck deformation, whole-face
+    stretch/compression, pose/crop/camera change, or generic beautification.
+  no_compensation_rule: If vertical chin-length change is absent, wrong-direction, or substituted by beauty/V-face/jaw/projection/camera
+    effects, preservation, photorealism, and attractiveness must not lift edit-dependent facets into the successful range.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_chin_length_operation_match
+- requested_source_adaptive_length_direction_match
+- requested_chin_length_magnitude_match
+- requested_lower_face_vertical_proportion_match
+- requested_chin_vertical_extent_precision_match
+- requested_chin_width_preservation_match
+- requested_chin_projection_preservation_match
+- requested_chin_tip_shape_cleft_preservation_match
+- requested_chin_centerline_bilateral_balance_match
+- requested_mouth_chin_relationship_preservation_match
+- requested_jaw_width_face_shape_preservation_match
+- requested_chin_length_visibility_finish_match
+- chin_length_edit_localized_to_chin_region
+- chin_length_mentolabial_transition_anatomically_coherent
+- chin_length_jaw_submental_neck_transition_coherent
+- chin_length_pose_perspective_occlusion_consistent
+- chin_length_identity_landmark_consistency
+- chin_length_expression_face_scene_global_state_preserved
+- chin_length_skin_facial_hair_detail_realistic
+- chin_length_lighting_shadow_color_integration
+- chin_length_boundary_contact_reconstruction_consistent
+- chin_length_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_chin_length_operation_match: 0.14
+    requested_source_adaptive_length_direction_match: 0.13
+    requested_chin_length_magnitude_match: 0.1
+    requested_lower_face_vertical_proportion_match: 0.11
+    requested_chin_vertical_extent_precision_match: 0.11
+    requested_chin_width_preservation_match: 0.07
+    requested_chin_projection_preservation_match: 0.07
+    requested_chin_tip_shape_cleft_preservation_match: 0.07
+    requested_chin_centerline_bilateral_balance_match: 0.05
+    requested_mouth_chin_relationship_preservation_match: 0.08
+    requested_jaw_width_face_shape_preservation_match: 0.04
+    requested_chin_length_visibility_finish_match: 0.03
+  Localization and Anatomical Integration:
+    chin_length_edit_localized_to_chin_region: 0.22
+    chin_length_mentolabial_transition_anatomically_coherent: 0.3
+    chin_length_jaw_submental_neck_transition_coherent: 0.3
+    chin_length_pose_perspective_occlusion_consistent: 0.18
+  Subject Preservation:
+    chin_length_identity_landmark_consistency: 0.8
+    chin_length_expression_face_scene_global_state_preserved: 0.2
+  Task Realism and Image Quality:
+    chin_length_skin_facial_hair_detail_realistic: 0.24
+    chin_length_lighting_shadow_color_integration: 0.2
+    chin_length_boundary_contact_reconstruction_consistent: 0.28
+    chin_length_artifact_sharpness_no_warp_mask: 0.28
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Chin-Length Operation:
+      requested_chin_length_operation_match:
+        title: Requested chin-length operation match
+        definition: Judge whether the chin's vertical extent is genuinely adjusted toward a more balanced source-appropriate
+          proportion. Do not credit width, projection, pointed-chin, jaw, mouth, pose, or camera changes as substitutes.
+        anchors:
+          0: The requested chin-length operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of vertical chin adjustment is visible.
+          2: A small relevant attempt exists, but a substitute operation dominates.
+          3: The chin is weakly edited and the primary length operation is mostly wrong.
+          4: A recognizable attempt exists, but a major part is missing or substituted.
+          5: The operation is partially correct with several substantial errors.
+          6: Chin-length adjustment is mostly correct, but one clear operation error remains.
+          7: The requested operation is clear with only a minor mismatch.
+          8: The operation is highly accurate with only a tiny local issue.
+          9: The chin's vertical extent is precisely adjusted with no substitute operation.
+        rubric: Judge whether the edit truly changes vertical chin length in the requested/source-adaptive direction. Score
+          low for V-face, pointed chin, jaw slimming, projection movement, mouth movement, face stretch, pose/camera change,
+          or beauty filtering instead of length adjustment.
+      requested_source_adaptive_length_direction_match:
+        title: Requested source-adaptive length direction match
+        definition: Judge whether a short chin is lengthened, an overlong chin is shortened, or a nearly balanced chin receives
+          a conservative refinement. Do not apply one universal beauty direction.
+        anchors:
+          0: The direction is clearly reversed, unrelated, or unusable.
+          1: Only a negligible trace of the appropriate direction is visible.
+          2: A small change exists, but the net direction is severely wrong or contradictory.
+          3: The direction is weakly attempted and remains largely inappropriate.
+          4: The adaptive intent is recognizable, but a major directional mismatch remains.
+          5: The direction is partially appropriate with several visible contradictions.
+          6: The net direction is mostly correct, but one clear source-proportion inconsistency remains.
+          7: The source-adaptive direction is strong with only a minor mismatch.
+          8: The direction is highly accurate with only a tiny local issue.
+          9: The exact source-appropriate lengthening, shortening, or conservative refinement direction is achieved.
+        rubric: 'Judge whether the direction matches the source: shorten an overlong chin, lengthen a short chin, or conservatively
+          refine a near-balanced chin. Score low for wrong direction, universal beauty shaping, or ambiguous/no visible direction.'
+      requested_chin_length_magnitude_match:
+        title: Requested chin-length magnitude match
+        definition: Judge whether the length change is clearly visible at normal viewing size but remains believable, identity-preserving,
+          and compatible with the prompt's retouching intensity.
+        anchors:
+          0: Magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible length change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The magnitude is weakly attempted but clearly mismatched.
+          4: The effect is recognizable, but the amount has a major mismatch.
+          5: Magnitude is partially appropriate with several visible issues.
+          6: The amount is mostly correct, but one clear under- or over-edit remains.
+          7: The magnitude is strong and believable with only a minor mismatch.
+          8: The amount is highly accurate with only a tiny excess or residual.
+          9: The length adjustment is exactly visible enough, balanced, and realistic.
+        rubric: Judge whether the amount of vertical length change is strong but believable. Score low for barely visible
+          change, overdone elongation/shortening, surgical exaggeration, or magnitude created by non-length substitutions.
+      requested_lower_face_vertical_proportion_match:
+        title: Requested lower-face vertical proportion match
+        definition: Judge the relationship among lower lip, mentolabial fold, chin, jaw, and total facial height after editing.
+          Use source-specific balance rather than a rigid universal facial-third formula.
+        anchors:
+          0: Lower-face proportion is severely wrong, reversed, unrelated, or unusable.
+          1: Only a negligible improvement in vertical balance is visible.
+          2: The lower face remains severely compressed or elongated.
+          3: Proportion is weakly improved and major imbalance remains.
+          4: The edit is recognizable, but a major lower-face vertical mismatch remains.
+          5: Proportion is partially balanced with several visible problems.
+          6: The lower face is mostly balanced, but one clear vertical issue remains.
+          7: The proportion is strong and source-appropriate with only a minor mismatch.
+          8: Vertical balance is highly accurate with only a tiny discrepancy.
+          9: The lower face has an exact source-appropriate and identity-compatible vertical balance.
+        rubric: Judge whether lower-face vertical proportion improves naturally. Score low if proportion is improved by V-line
+          slimming, jaw narrowing, projection change, mouth movement, or whole-face stretch rather than chin length.
+      requested_chin_vertical_extent_precision_match:
+        title: Requested chin vertical-extent precision match
+        definition: Judge whether the distance from the mentolabial transition to the lowest visible chin point changes cleanly
+          without moving the mouth, stretching the whole face, or shifting unrelated jaw regions.
+        anchors:
+          0: Vertical extent is unchanged, reversed, replaced, or unusable.
+          1: Only a negligible correct vertical change is visible.
+          2: A small attempt exists, but most apparent change comes from unrelated movement.
+          3: The intended vertical extent is weakly achieved and largely incorrect.
+          4: The correct change is recognizable, but a major endpoint or region error remains.
+          5: Extent adjustment is partial with several visible inconsistencies.
+          6: Vertical extent is mostly correct, but one clear precision issue remains.
+          7: The chin extent is strong and clean with only a minor mismatch.
+          8: Extent is highly accurate with only a tiny local issue.
+          9: The mentolabial-to-chin-tip vertical extent is precisely adjusted and correctly bounded.
+        rubric: Judge precision of the edited vertical extent between mentolabial region and lowest chin point. Score low
+          for imprecise, melted, shifted, off-center, or non-local vertical changes.
+      requested_chin_width_preservation_match:
+        title: Requested chin-width preservation match
+        definition: Preserve frontal chin width and side-contour breadth while changing only vertical chin length.
+        anchors:
+          0: Chin width is severely changed, replaced, or unusable.
+          1: Only a negligible amount of source width remains.
+          2: Major narrowing, widening, pinching, or broadening is visible.
+          3: Width preservation is weak and clear redesign remains.
+          4: The chin is recognizable, but a major width mismatch remains.
+          5: Preservation is partial with several width differences.
+          6: Chin width is mostly preserved, but one clear change remains.
+          7: Width preservation is strong with only a minor discrepancy.
+          8: The width is nearly source-identical with only a tiny difference.
+          9: Chin width and side-contour breadth remain exactly source-consistent.
+        rubric: Judge preservation of chin width while length changes. Score low if the chin narrows, widens, pinches, becomes
+          V-shaped, or changes face-width character.
+    Chin Character, Adjacent Geometry, and Finish:
+      requested_chin_projection_preservation_match:
+        title: Requested chin-projection preservation match
+        definition: Preserve forward or backward chin projection and profile depth; length adjustment must not create protrusion
+          or recession.
+        anchors:
+          0: Chin projection is severely changed, reversed, or unusable.
+          1: Only a negligible amount of source projection remains.
+          2: Major protrusion, recession, or profile displacement is visible.
+          3: Projection preservation is weak and clear redesign remains.
+          4: The chin is recognizable, but a major depth mismatch remains.
+          5: Preservation is partial with several projection differences.
+          6: Projection is mostly preserved, but one clear change remains.
+          7: Projection preservation is strong with only a minor discrepancy.
+          8: The profile depth is nearly source-identical with only a tiny difference.
+          9: Forward projection and profile depth remain exactly source-consistent.
+        rubric: Judge preservation of chin projection/depth. Score low if the chin moves forward/back, becomes protrusive/recessed,
+          or projection change carries the perceived improvement.
+      requested_chin_tip_shape_cleft_preservation_match:
+        title: Requested chin-tip shape and cleft preservation match
+        definition: Preserve apex roundness or angularity, cleft or dimple character, center notch, soft-tissue contour, and
+          source-specific chin-tip family while changing length.
+        anchors:
+          0: Chin-tip shape or cleft is severely replaced, erased, or unusable.
+          1: Only a negligible trace of source tip character remains.
+          2: The apex, cleft, dimple, or contour family is substantially redesigned.
+          3: Preservation is weak and major tip-character change remains.
+          4: The chin is recognizable, but one major apex or cleft mismatch remains.
+          5: Preservation is partial with several visible character differences.
+          6: Tip character is mostly preserved, but one clear change remains.
+          7: Apex and cleft preservation are strong with only a minor discrepancy.
+          8: The tip is nearly source-identical with only a tiny difference.
+          9: Apex shape, cleft or dimple, and all source-specific tip characteristics remain exactly preserved.
+        rubric: Judge preservation of source chin tip family, cleft/dimple, roundness, and local identity. Score low for pointed-chin
+          creation, erased cleft, doll-like tip, or replaced chin identity.
+      requested_chin_centerline_bilateral_balance_match:
+        title: Requested chin centerline and pose-aware bilateral balance match
+        definition: Judge chin-tip alignment to the facial axis and left-right contour balance according to source pose, perspective,
+          expression, and natural asymmetry rather than forced mirror symmetry.
+        anchors:
+          0: Centerline and balance are absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct alignment remains.
+          2: The chin is severely off-center or asymmetrically pulled.
+          3: Balance is weak and major axis or side-to-side errors remain.
+          4: The result is recognizable, but a major centerline or bilateral mismatch remains.
+          5: Balance is partial with several perspective or asymmetry problems.
+          6: Alignment is mostly correct, but one clear side or centerline issue remains.
+          7: Pose-aware balance is strong with only a minor mismatch.
+          8: Balance is highly accurate with only a tiny local issue.
+          9: The chin remains perfectly aligned and naturally balanced for the source pose and perspective.
+        rubric: Judge centerline and bilateral balance of the chin-length edit. Score low for shifted centerline, asymmetric
+          length, tilted chin, or perspective-inconsistent balance.
+      requested_mouth_chin_relationship_preservation_match:
+        title: Requested mouth-to-chin relationship preservation match
+        definition: Preserve lower-lip position and shape, mouth corners, teeth visibility, mentolabial fold location, mouth
+          state, and expression while adapting the chin below them.
+        anchors:
+          0: The mouth-to-chin relationship is severely changed or unusable.
+          1: Only a negligible amount of source relationship remains.
+          2: Major lower-lip, mouth, teeth, or mentolabial displacement is visible.
+          3: Preservation is weak and clear adjacent-feature movement remains.
+          4: The face is recognizable, but a major mouth, fold, or lip relationship mismatch remains.
+          5: Preservation is partial with several visible differences.
+          6: The relationship is mostly preserved, but one clear change remains.
+          7: Mouth-to-chin preservation is strong with only a minor discrepancy.
+          8: The relationship is nearly source-identical with only a tiny difference.
+          9: Lower lip, mouth, teeth, mentolabial fold, and expression remain source-consistent while chin length changes.
+        rubric: Judge mouth-to-chin relationship, lower lip, and mentolabial fold preservation. Score low if mouth/lips move,
+          fold geometry breaks, or the edited length changes expression/mouth placement.
+      requested_jaw_width_face_shape_preservation_match:
+        title: Requested jaw-width and face-shape preservation match
+        definition: Preserve jaw width, jaw angles, lower-cheek width, face shape family, cheekbones, and global face height.
+          The task is chin-length adjustment, not V-line or face reshaping.
+        anchors:
+          0: Jaw width or face shape is severely changed, replaced, or unusable.
+          1: Only a negligible amount of source facial character remains.
+          2: Major jaw, cheek, face-width, or face-shape redesign is visible.
+          3: Preservation is weak and clear global reshaping remains.
+          4: The person is recognizable, but a major jaw or face-shape mismatch remains.
+          5: Preservation is partial with several visible differences.
+          6: Jaw and face shape are mostly preserved, but one clear change remains.
+          7: Preservation is strong with only a minor discrepancy.
+          8: The surrounding face shape is nearly source-identical with only a tiny difference.
+          9: Jaw width, jaw angles, cheeks, cheekbones, face height, and face-shape family remain exactly source-consistent.
+        rubric: Judge preservation of jaw width, jaw character, and overall face shape. Score low for jaw slimming, V-face,
+          face narrowing, cheek/neck reshaping, or changed lower-face identity.
+      requested_chin_length_visibility_finish_match:
+        title: Requested normal-view visibility and retouching-finish match
+        definition: Judge whether the length adjustment is easy to perceive at normal portrait size and matches the requested
+          premium, app-style, studio, editorial, commercial, social-media, or polished finish.
+        anchors:
+          0: The requested visibility and finish are absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible improvement is present.
+          2: The result is severely too weak, excessive, or artificial.
+          3: The finish is weakly attempted and clearly mismatched.
+          4: The edit is recognizable, but a major visibility or naturalness problem remains.
+          5: Finish is partial with several substantial issues.
+          6: The result is mostly correct, but one clear finish issue remains.
+          7: The presentation is strong with only a minor mismatch.
+          8: Visibility and naturalness are highly accurate with only a tiny issue.
+          9: The length adjustment is clearly visible, fully believable, photorealistic, and seamlessly finished.
+        rubric: Judge whether the vertical length adjustment is visible at normal viewing size with a realistic finish. Score
+          low for invisible edits, filter-like beautification, excessive glamorization, or unclear target evidence.
+  Localization and Anatomical Integration:
+    Chin Placement and Transition Anatomy:
+      chin_length_edit_localized_to_chin_region:
+        title: Chin-length editing is localized to the chin region
+        definition: Keep geometric changes within the chin body and minimum mentolabial, jawline, submental, facial-hair,
+          skin, neck, clothing, accessory, and background blending zones.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: Large non-target facial or scene regions are altered.
+          3: Localization is weak and major spill remains.
+          4: The target is recognizable, but one major mouth, jaw, neck, or scene region is changed.
+          5: Localization is partial with several spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed region remains.
+          7: The edit is well localized with only a minor spill.
+          8: Localization is highly accurate with only a tiny issue.
+          9: Editing is precisely confined to the chin and minimum required blending zones.
+        rubric: Judge whether changes are localized to vertical chin extent and minimal blending area. Score low for edits
+          spreading to jaw, mouth, neck, cheeks, skin, background, pose, crop, or camera.
+      chin_length_mentolabial_transition_anatomically_coherent:
+        title: Mentolabial transition is anatomically coherent
+        definition: Judge the lower-lip-to-mentolabial-fold-to-chin slope, fold depth, soft-tissue continuity, and natural
+          relationship to the mouth after length adjustment.
+        anchors:
+          0: Mentolabial anatomy is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of coherent transition remains.
+          2: The lower-lip, fold, or chin connection is severely broken or impossible.
+          3: Continuity is weak and major anatomical contradictions remain.
+          4: The transition is recognizable, but a major fold, shelf, gap, or slope error remains.
+          5: Anatomy is partial with several structural problems.
+          6: The transition is mostly coherent, but one clear anatomical issue remains.
+          7: Mentolabial continuity is strong with only a minor mismatch.
+          8: The transition is highly accurate with only a tiny local issue.
+          9: The lower lip, mentolabial fold, and chin form a fully natural and continuous anatomical transition.
+        rubric: Judge anatomical coherence of lower lip, mentolabial fold, and upper chin transition. Score low for broken
+          crease, stretched skin, melted contour, or mouth-chin mismatch.
+      chin_length_jaw_submental_neck_transition_coherent:
+        title: Jaw, submental, and neck transitions are coherent
+        definition: Judge continuity from chin sides into jawline, chin underside into submental contour, and the chin-neck
+          relationship without shelves, stretched neck, doubled folds, floating tissue, or abrupt cutoffs.
+        anchors:
+          0: Jaw-submental-neck anatomy is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of coherent lower-chin anatomy remains.
+          2: The jaw, chin underside, or neck connection is severely broken or impossible.
+          3: Continuity is weak and major contradictions remain.
+          4: The anatomy is recognizable, but a major shelf, fold, gap, stretch, or detached transition remains.
+          5: Continuity is partial with several structural problems.
+          6: The anatomy is mostly coherent, but one clear transition issue remains.
+          7: Jaw, submental, and neck continuity is strong with only a minor mismatch.
+          8: The transition is highly accurate with only a tiny local issue.
+          9: Chin sides, jawline, submental contour, and neck remain fully continuous and anatomically natural.
+        rubric: Judge coherence from chin to jaw, submental area, and upper neck. Score low for detached chin, neck deformation,
+          fake shadows, jaw discontinuity, or impossible chin-neck angle.
+      chin_length_pose_perspective_occlusion_consistent:
+        title: Pose, perspective, depth, and local occlusions are consistent
+        definition: Judge head rotation, tilt, foreshortening, lens perspective, chin depth, facial-hair layering, hand or
+          clothing occlusions, and source-supported asymmetry after the length adjustment.
+        anchors:
+          0: Pose, perspective, or occlusion consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct spatial integration remains.
+          2: The chin has severe depth, perspective, or layering contradictions.
+          3: Consistency is weak and major spatial or occlusion errors remain.
+          4: The result is recognizable, but a major foreshortening, depth, facial-hair, or overlap mismatch remains.
+          5: Consistency is partial with several spatial or layering problems.
+          6: Pose and occlusions are mostly correct, but one clear issue remains.
+          7: Integration is strong with only a minor mismatch.
+          8: The spatial relationship is highly accurate with only a tiny issue.
+          9: Chin geometry, depth, pose, perspective, natural asymmetry, facial hair, and all local occlusions are fully coherent.
+        rubric: Judge consistency with source pose, camera angle, perspective, hair/clothing/hand occlusions, and visible
+          foreshortening. Score low for pose/crop/camera change or perspective-inconsistent chin geometry.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      chin_length_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare source and result as the same individual. Judge eyes, brows, nose, mouth, cheeks, ears, jaw, characteristic
+          chin width and projection, age impression, sex presentation, skin tone, asymmetry, stable marks, and same-person
+          impression. Only intended chin vertical extent may change.
+        anchors:
+          0: The edited subject is effectively a different person, severely distorted, or unusable.
+          1: Identity correspondence is extremely weak.
+          2: Major identity drift affects several defining facial regions.
+          3: Substantial drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a changed-person impression.
+          5: The person remains recognizable, but multiple landmarks or identity cues drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity preservation is strong with only a minor visible drift.
+          8: The face is nearly source-identical apart from intended chin length.
+          9: Identity, facial landmarks, age impression, skin tone, and characteristic details remain source-identical apart
+            from the intended chin-length adjustment.
+        rubric: Judge whether the result remains the same person with stable facial landmarks. Score low for changed face
+          outline, eyes, nose, mouth, age impression, chin identity, jaw character, or generic beautified substitute.
+      chin_length_expression_face_scene_global_state_preserved:
+        title: Expression, face, hair, scene, camera, and global state are preserved
+        definition: Preserve gaze, expression, mouth state, teeth, all non-target facial features, hair, facial hair, neck,
+          clothing, accessories, background, lighting, crop, camera angle, composition, color, aspect ratio, and resolution.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are inconsistent with the source.
+          2: Several major changes affect expression, face, scene, camera, or global state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image is recognizable, but a clear important non-target mismatch remains.
+          5: Preservation is moderate with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Preservation is strong with only a minor discrepancy.
+          8: Expression, face, hair, scene, camera, and global color are nearly source-identical.
+          9: All non-target subject, scene, camera, lighting, color, composition, and resolution properties remain source-consistent.
+        rubric: Judge preservation of expression, gaze, face state, background, lighting, clothing, crop, and camera. Score
+          low for source-state drift even if the chin looks more attractive.
+  Task Realism and Image Quality:
+    Chin Rendering Quality:
+      chin_length_skin_facial_hair_detail_realistic:
+        title: Skin and facial-hair detail are realistic
+        definition: Judge pores, fine lines, makeup, beard or stubble, chin hairs, skin microtexture, focus, sensor grain,
+          compression, and source-level sharpness after reconstruction.
+        anchors:
+          0: Detail realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic detail remains.
+          2: The chin region is severely blurred, plastic, repeated, or synthetic.
+          3: Realism is weak and major detail damage remains.
+          4: The face is recognizable, but a major blur, smoothing, texture, or facial-hair error remains.
+          5: Realism is partial with several visible problems.
+          6: Detail is mostly realistic, but one clear issue remains.
+          7: Skin and facial-hair detail are strong with only a minor mismatch.
+          8: Detail is highly realistic with only a tiny local issue.
+          9: All skin, facial-hair, focus, grain, and fine detail remain fully photorealistic and source-consistent.
+        rubric: Judge local skin, pores, fine texture, beard/stubble/facial hair, and regional detail. Score low for smoothing,
+          blur, waxy skin, texture loss, or damaged facial hair.
+      chin_length_lighting_shadow_color_integration:
+        title: Lighting, shadows, and color integrate with the source
+        definition: Judge chin highlights, mentolabial shadows, submental shadows, jaw and neck shading, skin tone, white
+          balance, and scene illumination without false contour painting or global relighting.
+        anchors:
+          0: Lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct illumination remains.
+          2: Shadows or color are severely false or inconsistent.
+          3: Integration is weak and major lighting errors remain.
+          4: The lighting is recognizable, but a major halo, false shadow, flat patch, or color mismatch remains.
+          5: Integration is partial with several shadow or color problems.
+          6: Lighting is mostly correct, but one clear local issue remains.
+          7: Integration is strong with only a minor mismatch.
+          8: Integration is highly accurate with only a tiny issue.
+          9: All chin, mouth, jaw, neck, skin, and nearby scene illumination perfectly match the source.
+        rubric: Judge lighting, shadow, and color integration around the edited chin. Score low for painted shadows, exposure
+          shift, white-balance change, local color islands, or fake contouring.
+      chin_length_boundary_contact_reconstruction_consistent:
+        title: Chin boundaries, contacts, and reconstructed regions are consistent
+        definition: Judge chin outline, jawline contact, submental edge, facial-hair boundaries, neck, clothing, hands, accessories,
+          and any newly exposed or occluded background for clean but natural physical relationships.
+        anchors:
+          0: Boundary and reconstruction consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or reconstruction remains.
+          2: Major leakage, gaps, repeated texture, or impossible overlap is visible.
+          3: Consistency is weak and major boundary errors remain.
+          4: The relationships are recognizable, but a major seam, cutout, overlap, or reconstruction error remains.
+          5: Consistency is partial with several visible problems.
+          6: Boundaries are mostly correct, but one clear issue remains.
+          7: Boundary and reconstruction quality are strong with only a minor mismatch.
+          8: Consistency is highly accurate with only a tiny issue.
+          9: All chin, jaw, submental, facial-hair, neck, clothing, accessory, and background boundaries are seamless and
+            physically coherent.
+        rubric: Judge boundary/contact reconstruction around chin, mouth, jaw, neck, hair, clothing, and background intersections.
+          Score low for halos, seams, duplicated edges, cutout contours, or broken occlusion.
+      chin_length_artifact_sharpness_no_warp_mask:
+        title: Artifact control, source sharpness, and absence of warp or mask
+        definition: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched beard,
+          warped lips or jaw, bent neck or clothing, liquify waves, mask transitions, and background deformation.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: Severe warping, masking, blur, duplication, or liquify distortion dominates.
+          3: Artifact control is weak and major defects remain.
+          4: The result is recognizable, but a major seam, warp, duplicate edge, mask, or sharpness mismatch remains.
+          5: Quality is partial with several visible artifacts.
+          6: The result is mostly clean, but one clear artifact remains.
+          7: Artifact control is strong with only a minor defect.
+          8: The result is nearly artifact-free with only a tiny issue.
+          9: The image is source-sharp, seamless, and free of warping, masking, duplication, liquify waves, or background
+            deformation.
+        rubric: Judge absence of blur, oversharpening, warping, clone patches, mask seams, dents, stretching, or background
+          deformation. Score low when artifacts reveal the edit.
+identity_preservation_protocol:
+  purpose: Prevent a visually nicer or more proportionate lower face from hiding identity/source-state drift.
+  checklist:
+  - same person and age impression at normal viewing size
+  - stable mouth/lips/teeth, mentolabial fold, chin width/projection/tip character, jaw width, face shape, skin/facial-hair
+    texture, expression, and gaze
+  - stable lighting, background color, clothing, crop, camera angle, and photographic style
+  strict_rules:
+  - Do not reward a different but attractive chin or face as identity-preserved.
+  - Only vertical chin extent may change; width, projection, tip family, jaw width, and mouth relationship remain constrained.
+  - Beauty filtering, skin smoothing, V-face shaping, or source-state changes must lower relevant preservation facets.

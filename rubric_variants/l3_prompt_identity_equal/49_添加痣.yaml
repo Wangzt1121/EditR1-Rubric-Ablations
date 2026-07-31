@@ -1,0 +1,847 @@
+task_key: facial_mole_addition
+task_title: Facial Mole Addition
+task_title_zh: 添加痣
+version: v48_fixed_integer_22_l3_facial_mole_addition_successgate_hybrid_compact_deep_review_compact_secondpass_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator specializing in localized facial mole addition, facial landmark placement, subject-side
+  laterality, skin-surface integration, identity preservation, and artifact control.
+judge_instructions: 'Strictly compare SOURCE, EDIT PROMPT, and EDITED IMAGE.
+
+
+  Task target: Add exactly one natural mole at the requested facial landmark/side, without changing face geometry, features,
+  skin outside the tiny blending area, expression, hair, clothing, background, lighting, composition, aspect ratio, or resolution.
+
+
+  Before returning JSON, privately run this judging protocol. Do not output private notes; use them only to produce the final
+  score_vector.
+
+
+  1) Task-state card.
+
+  Classify the candidate as clean_success, minor_flaws_success, partial_success, no_visible_edit, under_edited, wrong_direction,
+  wrong_region, wrong_operation, substitute_edit, correct_but_non_target_changed, correct_but_artifact, artifact_driven, or
+  unusable. Identify the actual visible edit, target region, and any changed non-target regions.
+
+
+  2) Defect-first scoring.
+
+  For every active L3 facet, first decide the visible defect level: none, tiny, minor, clear, major, severe, absent_or_reversed,
+  or unusable. Then choose the integer score. 7 is not a default score; it means strong evidence with only a minor flaw.
+
+
+  Score calibration:
+
+  - 9 = essentially exact, rare, clean positive evidence.
+
+  - 8 = near-exact with only a tiny local issue.
+
+  - 7 = strong but visibly imperfect.
+
+  - 6 = mostly correct with one clear issue.
+
+  - 4-5 = partial, mediocre, or mixed evidence.
+
+  - 2-3 = weak attempt with major visible failure.
+
+  - 0-1 = absent, reversed, wrong-region, unrelated, or unusable.
+
+
+  Task-specific defects to check:
+
+  - no new mole, wrong type of mark, acne/freckle/scar/makeup dot/stain/tattoo instead of mole, or mole invisible/dominant;
+
+  - wrong facial region, wrong side relative to the subject, wrong distance from nose/cheek landmark, or inconsistent with
+  head pose;
+
+  - multiple new marks, duplicated dots, wrong size, wrong shape, sticker-like edge, clipped black/bright color, or unnatural
+  contrast;
+
+  - mole floats above skin, ignores facial curvature/perspective/focus, erases pores, creates blur patch, halo, ring, or pasted
+  texture;
+
+  - nearby nostril, cheek, lip, eyelid, brow, hair, makeup, existing marks, or facial boundary is deformed or occluded;
+
+  - broad skin smoothing, beautification, face reshaping, identity drift, expression/gaze change, or non-target scene/clothing/hair
+  change;
+
+  - compression artifacts, smears, duplicated marks, lighting mismatch, global color shift, or background/camera change.
+
+
+  3) Failure propagation.
+
+  Apply global_scoring_policy.failure_propagation after raw facet scoring. If a failure is detected, cap every affected L3
+  by the corresponding severity cap. Do not allow good preservation, clean background, or photorealism to compensate for missing
+  or wrong target editing.
+
+
+  4) Positive-case check.
+
+  High scores are allowed when the requested edit is clearly correct. Before giving 8 or 9, verify that the relevant positive-case
+  conditions in global_scoring_policy are visibly satisfied.
+
+
+  5) Flat-vector review.
+
+  Privately rescore if all scores are 7, 14+ scores are 7, 18+ scores are identical, all scores are 7-9, or visible defects
+  exist but no affected score is below 7.
+
+
+  Task-specific focus: precise single facial mole addition. Success requires exactly one natural, readable mole at the requested
+  subject-side facial landmark, embedded into local skin. Do not reward acne, freckle clusters, makeup dots, scars, stains,
+  noise, broad skin retouching, face beautification, or identity/feature changes as mole addition.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-location, wrong-type, mostly unchanged, wrong-region, or mainly a substitute
+  operation, apply failure_propagation before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, wrong-location, wrong-region, or wrong-substitute attempts; use 5-6 for mixed but recognizable
+  attempts; reserve 0-1 and 8-9 for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  file_claimed_prompt_count: 500
+  actual_numbered_prompts: 499
+  numbering_range: 1-499
+  unique_prompt_locations: 499
+  shared_target: add exactly one balanced-size natural mole
+  variable_dimensions:
+  - anatomical facial location
+  - left, right, or center placement
+  - relative position to nearby landmarks such as eyes, brows, nose, lips, cheekbones, chin, and jawline
+  location_coverage:
+  - forehead, hairline, temples, and brow-adjacent skin
+  - inner-eye, outer-eye, under-eye, tear-trough, and upper-cheek skin
+  - cheeks, cheekbones, smile lines, nasolabial areas, and preauricular regions
+  - nose bridge, nose sides, nostril-adjacent skin, and nose-tip regions
+  - philtrum, Cupid's-bow-adjacent skin, mouth corners, and lip-adjacent skin
+  - chin, lower face, mandibular contour, and jawline
+  common_preservation_requirements:
+  - preserve pose, head size, facial features, expression, hair, and clothing
+  - preserve background, lighting, composition, aspect ratio, and resolution
+  - only add the requested mole
+target_region: One prompt-specified facial skin location. The permitted edit area is the mole itself and only the minimum
+  subpixel blending area required to integrate it with the local skin surface. Eyes, brows, lips, nostrils, hair, and other
+  landmarks remain non-target unless the prompt explicitly places the mole on adjacent skin.
+target_action_summary: Add exactly one balanced-size, natural-looking facial mole at the requested anatomical location, here
+  the subject-side right cheek beside the nose wing unless the prompt states otherwise. The mole must follow local skin curvature,
+  perspective, pores, pigmentation, lighting, and focus while leaving all other image content unchanged.
+task_boundary:
+  allowed:
+  - adding one localized pigmented skin mark with natural shape and tonal variation
+  - subpixel blending with local pores, skin texture, and illumination
+  - natural partial occlusion by existing hair or brow strands when physically appropriate
+  not_equivalent_tasks:
+  - adding freckles, acne, scars, tattoos, piercings, makeup dots, or multiple moles
+  - removing or changing existing moles
+  - changing skin tone, smoothing skin, reshaping the face, or editing facial features
+  - placing the mole on the lip, eye, hair, or nostril opening when the prompt specifies nearby skin
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Prioritize whether one natural mole is added at the exact requested location. Separate
+    semantic placement, skin integration, non-target preservation, and rendering quality. High preservation scores must not
+    compensate for an absent or misplaced mole.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge the mole relative to visible anatomical landmarks and head perspective.
+  - Do not reward multiple marks, freckles, scars, makeup dots, or unrelated skin editing.
+  - Do not force mirror symmetry; follow the requested left, right, or center location.
+  - A severe location, count, identity, or facial-feature error must not be averaged away.
+  - No hard caps, rank bonuses, external metrics, or manual failure deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_location: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request adding one mole and specify an assessable facial skin location.
+  wrong_task_examples:
+  - add freckles, acne, a scar, tattoo, piercing, or makeup dot
+  - remove or recolor an existing mole
+  - smooth or recolor the whole face
+  - add several moles when only one is requested
+  conflict_examples:
+  - add and remove the same mole
+  - place the mole on both left and right sides while requiring exactly one
+  - preserve the exact target pixels while requiring a visible new mole
+  visibility_failures:
+  - the requested facial region is outside the frame or fully occluded
+  - head resolution is too low to distinguish a mole from compression noise
+  - the named landmark cannot be reliably identified because of extreme pose or obstruction
+  partial_visibility_rule: Evaluate only when the requested location and its reference landmarks are visible enough to verify
+    placement. Otherwise skip rather than guessing.
+location_interpretation:
+  rules:
+  - Left and right are interpreted from the subject's anatomical perspective.
+  - Center means the visible facial midline adjusted for head rotation and perspective.
+  - Terms such as above, below, beside, near, between, inner, outer, upper, and lower must be judged relative to the named
+    landmark.
+  - On the skin only means the mole must not overlap the lip vermilion, eye surface, brow hair, nostril opening, or hair itself.
+  - Near a boundary does not permit moving the mole onto the adjacent anatomical structure.
+  - Natural facial asymmetry and foreshortening must be preserved.
+mole_appearance_protocol:
+  rules:
+  - Use one compact natural mark rather than a perfectly geometric or sticker-like dot.
+  - Balanced-size means clearly visible at portrait scale but not dominant or lesion-like.
+  - Color should be a plausible brown, dark brown, or source-compatible pigmented tone.
+  - Preserve slight internal tonal variation and soft skin-integrated edges.
+  - Avoid pure black clipping, bright color casts, raised bead appearance, glow, or strong cast shadow.
+  - The mole must not erase pores or produce a blurred skin patch around it.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Return one independent integer score for every active_l3 item in order. Score each facet from visible evidence
+    in SOURCE, EDIT PROMPT, and EDITED IMAGE.
+  output_order_rule: The score_vector must contain exactly 22 integers in active_l3 order; never reorder, omit, rename, or
+    explain facets.
+  anchor_interpolation: Use 1, 2, 4, 6, and 8 as intermediate severities. Do not round uncertainty upward.
+  anti_saturation: 0-3 = failed or damaging; 4-5 = partial/mediocre; 6 = mostly correct with one clear issue; 7 = strong but
+    visibly imperfect; 8 = near-exact; 9 = rare, essentially complete and clean.
+  no_cross_compensation: A clean face or attractive retouch cannot compensate for missing mole, wrong location/laterality,
+    multiple marks, sticker-like integration, identity drift, or broad skin beautification.
+  primary_edit_success_rule: If exactly one natural mole is not visibly added at the requested facial location, the candidate
+    is a weak/negative edit even when the portrait is otherwise clean.
+  preservation_only_no_success_rule: A clean unchanged source-like image is not a successful edit. If the requested target
+    change is absent, preservation and photorealism may score high only on truly pure preservation facets, but they must not
+    lift task, localization, integration, or local realism facets into the successful range.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, choose its severity from the scale below. The final score for every affected L3 must be
+      min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score. Do not reveal propagation reasoning;
+      return only the final adjusted vector.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, wrong-region, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_wrong_mark_type:
+        detect_when: No new mole is visible, the mark is an acne spot, freckle cluster, scar, tattoo, makeup dot, stain, noise,
+          blur, or unrelated texture rather than a natural mole.
+        severity_guidance: Tiny but recognizable natural mole evidence may be severity 1. Barely readable or ambiguous mark
+          should be severity 2-3. No visible mole, wrong mark type such as acne/freckle cluster/scar/makeup/stain/noise, or
+          unrelated texture replacing the target must be severity 4-5.
+        affected_l3:
+        - mole_primary_addition_outcome_match
+        - mole_single_count_uniqueness_match
+        - mole_balanced_size_scale_match
+        - mole_natural_shape_boundary_match
+        - mole_pigment_tone_contrast_match
+        - mole_normal_view_visibility_match
+        - mole_edit_localized_to_target_skin_area
+        - mole_photorealistic_surface_detail_realism
+        - mole_local_color_lighting_consistency
+        - mole_edge_blending_sharpness_quality
+        - mole_requested_anatomical_location_match
+        - mole_requested_laterality_centerline_match
+        - mole_landmark_relative_position_precision
+        - mole_subject_identity_face_geometry_preservation
+        - mole_facial_features_expression_gaze_preservation
+        - mole_existing_skin_marks_makeup_preservation
+        - mole_hair_clothing_body_preservation
+        - mole_scene_camera_composition_preservation
+        - mole_artifact_duplication_global_stability
+      wrong_location_or_laterality:
+        detect_when: The mole is placed on the wrong facial region, wrong subject-side, wrong relation to the nose wing/cheek
+          landmark, wrong vertical/horizontal position, or impossible relation under head pose.
+        severity_guidance: Slight landmark imprecision with correct side/region may be severity 1-2. Clear offset from requested
+          cheek/nose relation should be severity 3. Wrong facial region, wrong subject-side, impossible pose relation, or
+          location that defeats the prompt must be severity 4-5.
+        affected_l3:
+        - mole_primary_addition_outcome_match
+        - mole_requested_anatomical_location_match
+        - mole_requested_laterality_centerline_match
+        - mole_landmark_relative_position_precision
+        - mole_face_surface_curvature_perspective_alignment
+        - mole_normal_view_visibility_match
+      count_scale_shape_color_failure:
+        detect_when: There are multiple new marks, duplicated dots, an overly tiny/dominant/lesion-like mark, a perfect sticker
+          circle, irregular smear, clipped black, bright color, wrong hue, or implausible contrast.
+        affected_l3:
+        - mole_single_count_uniqueness_match
+        - mole_balanced_size_scale_match
+        - mole_natural_shape_boundary_match
+        - mole_pigment_tone_contrast_match
+        - mole_normal_view_visibility_match
+        - mole_photorealistic_surface_detail_realism
+        - mole_local_color_lighting_consistency
+        - mole_edge_blending_sharpness_quality
+        - mole_artifact_duplication_global_stability
+        - mole_primary_addition_outcome_match
+        - mole_edit_localized_to_target_skin_area
+        - mole_landmark_relative_position_precision
+        - mole_face_surface_curvature_perspective_alignment
+        - mole_skin_texture_pore_continuity
+        - mole_hair_brow_feature_occlusion_consistency
+        severity_guidance: Minor size/contrast/color imperfection may be severity 1. Clear scale, shape, color, contrast,
+          or edge mismatch should be severity 2-3. Multiple marks, duplicated dots, lesion-like appearance, sticker circle,
+          smear, clipped black dot, or implausible color dominating the edit must be severity 4-5.
+      skin_surface_integration_failure:
+        detect_when: The mole floats, faces the camera incorrectly, ignores skin curvature/perspective/focus, erases pores,
+          creates blur/plastic skin, halo, cutout edge, over-sharpened ring, or pasted texture.
+        affected_l3:
+        - mole_edit_localized_to_target_skin_area
+        - mole_face_surface_curvature_perspective_alignment
+        - mole_skin_texture_pore_continuity
+        - mole_photorealistic_surface_detail_realism
+        - mole_local_color_lighting_consistency
+        - mole_edge_blending_sharpness_quality
+        - mole_primary_addition_outcome_match
+        - mole_requested_anatomical_location_match
+        - mole_requested_laterality_centerline_match
+        - mole_single_count_uniqueness_match
+        - mole_balanced_size_scale_match
+        - mole_natural_shape_boundary_match
+        - mole_pigment_tone_contrast_match
+        - mole_normal_view_visibility_match
+        - mole_landmark_relative_position_precision
+        - mole_hair_brow_feature_occlusion_consistency
+        - mole_subject_identity_face_geometry_preservation
+        - mole_artifact_duplication_global_stability
+        severity_guidance: Tiny local blend issue may be severity 1. Clear floating mark, halo, cutout edge, pore/focus mismatch,
+          over-sharpened ring, or local blur/plastic skin should be severity 2-3. Pasted/fake mark, strong perspective/curvature
+          failure, or destroyed local skin texture must be severity 4-5.
+      broad_face_retouch_or_identity_drift:
+        detect_when: The edit smooths/beautifies skin broadly, changes face shape, age impression, skin tone, eyes, brows,
+          nose, lips, jaw, expression, gaze, head size, identity, or existing makeup/marks outside the tiny mole blend area.
+        severity_guidance: Minor local tone/texture drift around the mole may be severity 1. Clear broad skin smoothing, beautification,
+          tone shift, existing-mark/makeup change, or feature drift should be severity 2-3. Face geometry, identity, age impression,
+          expression, gaze, or head-size change must be severity 4-5.
+        affected_l3:
+        - mole_edit_localized_to_target_skin_area
+        - mole_skin_texture_pore_continuity
+        - mole_subject_identity_face_geometry_preservation
+        - mole_facial_features_expression_gaze_preservation
+        - mole_existing_skin_marks_makeup_preservation
+        - mole_hair_clothing_body_preservation
+        - mole_scene_camera_composition_preservation
+        - mole_artifact_duplication_global_stability
+        - mole_primary_addition_outcome_match
+        - mole_photorealistic_surface_detail_realism
+        - mole_local_color_lighting_consistency
+        - mole_edge_blending_sharpness_quality
+        - mole_requested_anatomical_location_match
+        - mole_requested_laterality_centerline_match
+        - mole_single_count_uniqueness_match
+        - mole_balanced_size_scale_match
+        - mole_natural_shape_boundary_match
+        - mole_pigment_tone_contrast_match
+        - mole_normal_view_visibility_match
+        - mole_landmark_relative_position_precision
+      feature_occlusion_or_landmark_damage:
+        detect_when: The mole or its blending deforms, covers, blurs, or changes nearby nostril, cheek contour, lip, eyelid,
+          brow, hair strand, facial edge, makeup boundary, or existing mark.
+        affected_l3:
+        - mole_landmark_relative_position_precision
+        - mole_hair_brow_feature_occlusion_consistency
+        - mole_subject_identity_face_geometry_preservation
+        - mole_facial_features_expression_gaze_preservation
+        - mole_existing_skin_marks_makeup_preservation
+        - mole_edge_blending_sharpness_quality
+        - mole_primary_addition_outcome_match
+        - mole_natural_shape_boundary_match
+        - mole_normal_view_visibility_match
+        - mole_edit_localized_to_target_skin_area
+        - mole_face_surface_curvature_perspective_alignment
+        - mole_skin_texture_pore_continuity
+        - mole_photorealistic_surface_detail_realism
+        - mole_local_color_lighting_consistency
+        - mole_artifact_duplication_global_stability
+        severity_guidance: Tiny local boundary issue may be severity 1. Clear nearby nostril, cheek contour, lip, eyelid,
+          brow, hair strand, makeup boundary, facial edge, or existing mark disturbance should be severity 2-3. Deformation,
+          occlusion, blur, or damage to a nearby facial feature/landmark must be severity 4-5.
+      artifact_or_global_scene_change:
+        detect_when: Duplicate dots, smears, compression blocks, color/light shifts, background/camera/crop changes, hair/clothing/body
+          changes, or global instability are introduced.
+        affected_l3:
+        - mole_hair_clothing_body_preservation
+        - mole_scene_camera_composition_preservation
+        - mole_local_color_lighting_consistency
+        - mole_edge_blending_sharpness_quality
+        - mole_artifact_duplication_global_stability
+        - mole_primary_addition_outcome_match
+        - mole_requested_anatomical_location_match
+        - mole_requested_laterality_centerline_match
+        - mole_single_count_uniqueness_match
+        - mole_balanced_size_scale_match
+        - mole_natural_shape_boundary_match
+        - mole_pigment_tone_contrast_match
+        - mole_normal_view_visibility_match
+        - mole_edit_localized_to_target_skin_area
+        - mole_landmark_relative_position_precision
+        - mole_subject_identity_face_geometry_preservation
+        - mole_facial_features_expression_gaze_preservation
+        - mole_existing_skin_marks_makeup_preservation
+        - mole_photorealistic_surface_detail_realism
+        severity_guidance: Minor compression or edge artifact may be severity 1. Clear duplicate dot, smear, block artifact,
+          lighting/color drift, hair/clothing/background/camera/crop instability should be severity 2-3. Global scene change,
+          severe artifact, or unstable image reconstruction must be severity 4-5.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive mole-addition sample shows exactly one readable, natural, balanced-size mole at the
+    requested cheek/nose landmark and subject-side relation, integrated into local skin without changing the rest of the face
+    or image.
+  success_gate_conditions:
+  - Exactly one new mole is clearly visible, natural-looking, balanced in size, and not confused with acne, freckle clusters,
+    makeup, scars, stains, or noise.
+  - The mole is placed on the correct subject-side facial region and precise landmark relation, following head pose and cheek/nose-wing
+    geometry.
+  - Pigment tone, contrast, shape, edge softness, pore continuity, facial curvature, focus, and local lighting make the mole
+    look embedded in the skin.
+  - Face identity, head size, facial features, expression, gaze, hair, clothing, existing marks/makeup, background, composition,
+    aspect ratio, and resolution are preserved.
+  - No duplicate marks, broad skin smoothing, face beautification, blur patch, halo, pasted edge, global color/light shift,
+    or scene artifact is introduced.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, wrong-type/wrong-category, unusable, or clearly source-breaking target editing.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  no_compensation_rule: A clean face or attractive retouch cannot compensate for missing mole, wrong location/laterality,
+    multiple marks, sticker-like integration, identity drift, or broad skin beautification.
+  task_disambiguation_rule: Add exactly one balanced-size, natural-looking facial mole at the requested anatomical location,
+    here the subject-side right cheek beside the nose wing unless the prompt states otherwise. The mole must follow local
+    skin curvature, perspective, pores, pigmentation, lighting, and focus while leaving all other image content unchanged.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- mole_primary_addition_outcome_match
+- mole_requested_anatomical_location_match
+- mole_requested_laterality_centerline_match
+- mole_single_count_uniqueness_match
+- mole_balanced_size_scale_match
+- mole_natural_shape_boundary_match
+- mole_pigment_tone_contrast_match
+- mole_normal_view_visibility_match
+- mole_edit_localized_to_target_skin_area
+- mole_landmark_relative_position_precision
+- mole_face_surface_curvature_perspective_alignment
+- mole_skin_texture_pore_continuity
+- mole_hair_brow_feature_occlusion_consistency
+- mole_subject_identity_face_geometry_preservation
+- mole_facial_features_expression_gaze_preservation
+- mole_existing_skin_marks_makeup_preservation
+- mole_hair_clothing_body_preservation
+- mole_scene_camera_composition_preservation
+- mole_photorealistic_surface_detail_realism
+- mole_local_color_lighting_consistency
+- mole_edge_blending_sharpness_quality
+- mole_artifact_duplication_global_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  high_score_note: Do not copy a fixed example vector. Give 8-9 only when the matching facet has visible positive evidence
+    and no propagated failure cap.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Skin Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    mole_primary_addition_outcome_match: 0.2
+    mole_requested_anatomical_location_match: 0.2
+    mole_requested_laterality_centerline_match: 0.14
+    mole_single_count_uniqueness_match: 0.13
+    mole_balanced_size_scale_match: 0.11
+    mole_natural_shape_boundary_match: 0.09
+    mole_pigment_tone_contrast_match: 0.07
+    mole_normal_view_visibility_match: 0.06
+  Localization and Skin Integration:
+    mole_edit_localized_to_target_skin_area: 0.22
+    mole_landmark_relative_position_precision: 0.24
+    mole_face_surface_curvature_perspective_alignment: 0.18
+    mole_skin_texture_pore_continuity: 0.2
+    mole_hair_brow_feature_occlusion_consistency: 0.16
+  Subject Preservation:
+    mole_subject_identity_face_geometry_preservation: 0.27
+    mole_facial_features_expression_gaze_preservation: 0.25
+    mole_existing_skin_marks_makeup_preservation: 0.2
+    mole_hair_clothing_body_preservation: 0.14
+    mole_scene_camera_composition_preservation: 0.14
+  Task Realism and Image Quality:
+    mole_photorealistic_surface_detail_realism: 0.3
+    mole_local_color_lighting_consistency: 0.25
+    mole_edge_blending_sharpness_quality: 0.25
+    mole_artifact_duplication_global_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.65 * P + 0.17 * L + 0.12 * S + 0.06 * Q
+  outcome_score: O = score(mole_primary_addition_outcome_match) / 9.0
+  location_score: R = score(mole_requested_anatomical_location_match) / 9.0
+  final_formula: reward = base_reward * (O ** 0.28) * (R ** 0.24)
+taxonomy:
+  Prompt Compliance:
+    Requested Mole Addition:
+      mole_primary_addition_outcome_match:
+        title: Primary mole-addition outcome
+        definition: Whether exactly one new natural mole is visibly added to the main subject. Do not give credit for freckles,
+          acne, scars, tattoos, makeup dots, skin smoothing, or unrelated facial edits.
+        anchors:
+          0: No mole, removed mole, wrong edit type, multiple freckles/marks, or unrelated skin-editing task.
+          3: Ambiguous, barely recognizable, or very weak mole-like addition.
+          5: A mole-like mark exists but is materially incomplete, artificial, or wrong in a major detail.
+          7: Clear single mole addition with one notable issue.
+          9: Exactly one clear, balanced, natural mole is successfully added.
+        rubric: Whether exactly one new natural mole is visibly added to the main subject. Do not give credit for freckles,
+          acne, scars, tattoos, makeup dots, skin smoothing, or unrelated facial edits. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      mole_requested_anatomical_location_match:
+        title: Requested anatomical location
+        definition: 'Whether the mole is placed at the exact requested anatomical region: the right cheek beside the nose
+          wing, judged relative to the subject''s anatomy and head pose.
+
+          '
+        anchors:
+          0: Wrong facial region, wrong cheek, non-facial placement, or location absent/unverifiable.
+          3: Large displacement from the right-cheek beside-nose-wing region.
+          5: Correct broad cheek region but clearly wrong subregion or distance from nose wing.
+          7: Correct requested area with a minor offset.
+          9: Placement precisely matches the right cheek beside the nose wing.
+        rubric: 'Whether the mole is placed at the exact requested anatomical region: the right cheek beside the nose wing,
+          judged relative to the subject''s anatomy and head pose. Apply this facet''s 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.'
+      mole_requested_laterality_centerline_match:
+        title: Laterality and centerline
+        definition: Whether left, right, or center placement matches the subject's anatomy and head pose.
+        anchors:
+          0: Wrong side or opposite centerline relation.
+          3: Strong lateral or midline error.
+          5: Correct general side with clear positional ambiguity.
+          7: Correct side with one minor offset.
+          9: Laterality or centerline placement is exact.
+        rubric: Whether left, right, or center placement matches the subject's anatomy and head pose. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      mole_single_count_uniqueness_match:
+        title: Single count and uniqueness
+        definition: Whether exactly one new mole is added without duplicated or extra marks.
+        anchors:
+          0: No mole, several obvious new marks, freckles, duplicated moles, or texture noise mistaken as moles.
+          3: Multiple or duplicated marks dominate, or count is very unclear.
+          5: One intended mole plus a clear extra mark, residue, or ambiguous spot.
+          7: Exactly one mole with a minor ambiguous artifact.
+          9: Exactly one unique new mole and no extras.
+        rubric: Whether exactly one new mole is added without duplicated or extra marks. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      mole_balanced_size_scale_match:
+        title: Balanced size and scale
+        definition: Whether the mole is medium-balanced relative to the face and local landmark.
+        anchors:
+          0: Microscopic, dominant, lesion-like, or physically implausible size.
+          3: Severely too small or too large.
+          5: Readable but clearly inaccurate scale.
+          7: Appropriate size with one minor issue.
+          9: Size is visible, restrained, and perfectly balanced.
+        rubric: Whether the mole is medium-balanced relative to the face and local landmark. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      mole_natural_shape_boundary_match:
+        title: Natural shape and boundary
+        definition: Whether the mark has a plausible compact mole shape rather than a perfect sticker dot or irregular smear.
+        anchors:
+          0: Clearly artificial shape, smear, hole, or unrelated mark.
+          3: Strong geometric, jagged, or deformed appearance.
+          5: Mole-like but visibly synthetic or poorly bounded.
+          7: Natural with one minor shape issue.
+          9: Shape and boundary are fully natural and skin-compatible.
+        rubric: Whether the mark has a plausible compact mole shape rather than a perfect sticker dot or irregular smear.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_pigment_tone_contrast_match:
+        title: Pigment tone and contrast
+        definition: Whether the mole has plausible pigmentation and readable but non-clipped contrast.
+        anchors:
+          0: Wrong bright color, pure-white mark, or severe black clipping.
+          3: Strong hue or contrast mismatch.
+          5: Plausible general tone with clear tonal problems.
+          7: Natural tone with one minor difference.
+          9: Pigment color and contrast are fully convincing.
+        rubric: Whether the mole has plausible pigmentation and readable but non-clipped contrast. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      mole_normal_view_visibility_match:
+        title: Normal-view visibility
+        definition: Whether the mole is identifiable at ordinary portrait viewing size without becoming dominant.
+        anchors:
+          0: Invisible or overwhelmingly prominent.
+          3: Very difficult to see or excessively attention-grabbing.
+          5: Visible but clearly too weak or too dominant.
+          7: Readable with one minor visibility issue.
+          9: Clearly readable and naturally understated.
+        rubric: Whether the mole is identifiable at ordinary portrait viewing size without becoming dominant. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Skin Integration:
+    Placement and Local Surface Integration:
+      mole_edit_localized_to_target_skin_area:
+        title: Edit localization
+        definition: Whether changes are confined to the mole and minimum blending area.
+        anchors:
+          0: Broad skin, face, hair, or scene editing.
+          3: Significant non-target changes around the face.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to the requested skin point.
+        rubric: Whether changes are confined to the mole and minimum blending area. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      mole_landmark_relative_position_precision:
+        title: Landmark-relative position
+        definition: Whether above, below, beside, near, between, inner, outer, upper, or lower relations to named landmarks
+          are accurate.
+        anchors:
+          0: Relationship to the landmark is opposite or impossible.
+          3: Major relative-position error.
+          5: Correct landmark but clearly inaccurate relation.
+          7: Accurate relation with one minor offset.
+          9: Relative placement is precise and unambiguous.
+        rubric: Whether above, below, beside, near, between, inner, outer, upper, or lower relations to named landmarks are
+          accurate. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_face_surface_curvature_perspective_alignment:
+        title: Surface curvature and perspective
+        definition: Whether the mole follows facial curvature, foreshortening, head rotation, and visible surface orientation.
+        anchors:
+          0: Mole floats, faces the camera incorrectly, or contradicts the facial surface.
+          3: Major curvature, scale, or perspective mismatch.
+          5: Generally attached with one clear spatial inconsistency.
+          7: Coherent with one minor issue.
+          9: Fully aligned with the local three-dimensional facial surface.
+        rubric: Whether the mole follows facial curvature, foreshortening, head rotation, and visible surface orientation.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_skin_texture_pore_continuity:
+        title: Skin texture and pore continuity
+        definition: Whether pores and fine skin detail continue naturally through and around the mole.
+        anchors:
+          0: Skin is erased, blurred, repeated, or replaced around the mark.
+          3: Major plasticity, texture loss, or cloned pattern.
+          5: Generally integrated with one clear texture problem.
+          7: Natural with one minor texture issue.
+          9: Pores and fine detail remain fully continuous.
+        rubric: Whether pores and fine skin detail continue naturally through and around the mole. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      mole_hair_brow_feature_occlusion_consistency:
+        title: Hair, brow, and feature-boundary consistency
+        definition: Whether nearby hair, brow strands, eyelids, lips, nostrils, and facial edges retain correct boundaries
+          and occlusion.
+        anchors:
+          0: Mole wrongly covers or deforms a protected feature.
+          3: Major boundary, penetration, or occlusion error.
+          5: Mostly correct with one clear interaction issue.
+          7: Correct with one minor issue.
+          9: All nearby landmark and occlusion relationships remain exact.
+        rubric: Whether nearby hair, brow strands, eyelids, lips, nostrils, and facial edges retain correct boundaries and
+          occlusion. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      mole_subject_identity_face_geometry_preservation:
+        title: Identity and face-geometry preservation
+        definition: Whether the same person, head size, face shape, age impression, and facial proportions remain unchanged.
+        anchors:
+          0: Different person or major facial redesign.
+          3: Strong identity, face-shape, or head-size drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and facial geometry remain unchanged.
+        rubric: Whether the same person, head size, face shape, age impression, and facial proportions remain unchanged. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_facial_features_expression_gaze_preservation:
+        title: Facial features, expression, and gaze preservation
+        definition: Whether eyes, brows, nose, lips, ears, jaw, expression, and gaze remain stable.
+        anchors:
+          0: Major feature, expression, or gaze change.
+          3: Strong drift in one or more facial features.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All facial features, expression, and gaze remain unchanged.
+        rubric: Whether eyes, brows, nose, lips, ears, jaw, expression, and gaze remain stable. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      mole_existing_skin_marks_makeup_preservation:
+        title: Existing skin marks and makeup preservation
+        definition: Whether existing moles, freckles, scars, pores, makeup, skin tone, and natural shadows remain unchanged
+          outside the target point.
+        anchors:
+          0: Existing marks are removed, duplicated, or broad skin appearance changes.
+          3: Strong makeup, color, texture, or mark alteration.
+          5: Mostly preserved with one obvious change.
+          7: Preserved with one minor difference.
+          9: All original skin details and makeup remain unchanged.
+        rubric: Whether existing moles, freckles, scars, pores, makeup, skin tone, and natural shadows remain unchanged outside
+          the target point. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_hair_clothing_body_preservation:
+        title: Hair, clothing, and body preservation
+        definition: Whether hairstyle, hair color, facial hair, clothing, accessories, body, and pose remain unchanged.
+        anchors:
+          0: Major hair, clothing, body, or pose replacement.
+          3: Strong non-target appearance drift.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: Hair, clothing, body, and pose remain unchanged.
+        rubric: Whether hairstyle, hair color, facial hair, clothing, accessories, body, and pose remain unchanged. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_scene_camera_composition_preservation:
+        title: Scene, camera, and composition preservation
+        definition: Whether background, lighting, crop, camera angle, composition, aspect ratio, and resolution remain stable.
+        anchors:
+          0: Major scene, framing, or camera replacement.
+          3: Strong background, crop, lighting, or scale drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: Scene and image geometry remain unchanged.
+        rubric: Whether background, lighting, crop, camera angle, composition, aspect ratio, and resolution remain stable.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      mole_photorealistic_surface_detail_realism:
+        title: Photorealistic surface detail
+        definition: Whether the mole has natural pigmentation, microtexture, and skin-level depth without looking painted,
+          raised, or pasted.
+        anchors:
+          0: Clearly synthetic, sticker-like, glowing, or physically impossible.
+          3: Strong flatness, bead-like depth, or texture artifact.
+          5: Mole-like but visibly generated or processed.
+          7: Realistic with one minor surface issue.
+          9: Fully photorealistic and naturally embedded in the skin.
+        rubric: Whether the mole has natural pigmentation, microtexture, and skin-level depth without looking painted, raised,
+          or pasted. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_local_color_lighting_consistency:
+        title: Local color and lighting consistency
+        definition: Whether mole tone and nearby skin shading remain compatible with source white balance and illumination.
+        anchors:
+          0: Color or lighting strongly contradicts the face.
+          3: Major halo, glow, cast, or shadow mismatch.
+          5: Generally plausible with one obvious tonal inconsistency.
+          7: Consistent with one minor issue.
+          9: Color, contrast, and lighting integrate perfectly.
+        rubric: Whether mole tone and nearby skin shading remain compatible with source white balance and illumination. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_edge_blending_sharpness_quality:
+        title: Edge blending and sharpness
+        definition: Whether the mole edge is softly skin-integrated but remains appropriately detailed at source focus.
+        anchors:
+          0: Severe cutout, halo, blur patch, or over-sharpened ring.
+          3: Strong edge seam, ringing, or focus mismatch.
+          5: Mostly blended with one clear boundary issue.
+          7: Clean with one minor issue.
+          9: Edge softness and sharpness perfectly match the source.
+        rubric: Whether the mole edge is softly skin-integrated but remains appropriately detailed at source focus. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      mole_artifact_duplication_global_stability:
+        title: Artifact and global stability
+        definition: Whether duplicate dots, stains, smears, warped features, compression artifacts, and background changes
+          are absent.
+        anchors:
+          0: Severe artifacts, duplicated marks, or image instability.
+          3: Multiple obvious distortions or residues.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; the entire image remains stable.
+        rubric: Whether duplicate dots, stains, smears, warped features, compression artifacts, and background changes are
+          absent. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+prompt_applicability:
+  purpose: All valid prompts share the same mole attributes and differ only in location, so every Prompt Compliance facet
+    is always applicable.
+  always_applicable:
+  - mole_primary_addition_outcome_match
+  - mole_requested_anatomical_location_match
+  - mole_requested_laterality_centerline_match
+  - mole_single_count_uniqueness_match
+  - mole_balanced_size_scale_match
+  - mole_natural_shape_boundary_match
+  - mole_pigment_tone_contrast_match
+  - mole_normal_view_visibility_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.

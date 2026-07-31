@@ -1,0 +1,827 @@
+task_key: female_waist_contouring
+task_title: Female Waist Contouring
+task_title_zh: 女性瘦腰
+version: v48_fixed_integer_22_l3_female_waist_contouring_successgate_hybrid_compact_deep_review_compact_secondpass_l3_identity_priority
+language: English
+judge_role: You are a strict expert evaluator for female waist contouring/hourglass editing, torso anatomy, clothing reconstruction,
+  and source-state preservation.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare waist width, side-curve, ribcage-waist-hip relation, chest/hip width, torso axis, clothing hems/patterns,
+  arms, head, legs, shoes, pose, body scale, background, framing, lighting, and camera geometry.
+
+
+  2) Task target. A successful edit locally reshapes the waist into the requested hourglass/contour style with a clear inward
+  waist side-curve while preserving chest width, hip width, torso position, body scale, pose, identity, clothing design, limbs,
+  background, framing, and lighting.
+
+
+  3) Task-specific failures. Treat absent/weak waist contouring, global scaling/torso compression substitute, over-cinched
+  or broken torso anatomy, clothing/background artifacts, and non-target body/scene drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear waist-local contour evidence. If thinness comes from global scaling, pose/camera
+  change, or broken anatomy, preservation/quality must not lift affected facets.
+
+
+  Task-specific focus: female waist contouring. Success requires localized inward waist side-curve/hourglass refinement while
+  preserving chest width, hip width, torso axis, body scale, limbs, clothing, background, framing, lighting, and camera. Do
+  not reward global body scaling, torso compression, pose/camera change, chest/hip resizing, or generic slimming as waist
+  slimming.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 204
+  shape_distribution:
+    A_shaped: 44
+    angular: 40
+    hourglass: 40
+    double_C: 40
+    straight: 40
+  note: 'The final four prompts repeat the first four A-shaped prompts. Straight-waist prompts request reduced inward curvature
+    and are not necessarily slimming prompts; evaluate the prompt-specific direction rather than always rewarding a narrower
+    waist.
+
+    '
+  recurring_requirements:
+  - edit only the waist contour
+  - preserve chest, shoulders, hips, limbs, head, pose, and body scale
+  - preserve clothing details and all background geometry
+  - keep the result clearly visible, balanced, and cleanly blended
+target_region: 'The visible lateral waist between the lower ribcage and the upper pelvis, including only the minimum necessary
+  clothing, skin, and shadow transition. Chest, hips, arms, hands, head, thighs, and legs are non-target regions.
+
+  '
+target_action_summary: 'Reshape only the waist into the requested powerful hourglass contour. The waist should show a clear
+  inward side-curve transformation while preserving chest width, hip width, torso position, body scale, pose, identity, clothing
+  design, arms, head, legs, shoes, background, framing, and lighting.
+
+  '
+shape_family_reference:
+  A_shaped: 'A visibly narrowed waist with a clear inward taper from the upper torso toward the waist while chest and hip
+    widths remain fixed.
+
+    '
+  angular: 'A sharply cinched waist with crisp inward bends or corner-like transitions.
+
+    '
+  hourglass: 'A strongly narrowed center with smooth continuous inward curves on both sides.
+
+    '
+  double_C: 'Balanced flowing mirrored C-shaped side curves from ribcage through waist toward the hips.
+
+    '
+  straight: 'Reduced inward waist curvature with more vertical, column-like side lines; do not force additional narrowing
+    unless explicitly requested.
+
+    '
+design_principle:
+  summary: 'Use exactly 22 fixed L3 scores. Separate requested shape accuracy from anatomical integration, non-target preservation,
+    and rendering quality. Do not reward a generally thinner body when the named waist family, width direction, chest or hip
+    preservation, or localization is incorrect.
+
+    '
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not invent hidden anatomy.
+  - Do not reward global horizontal scaling, torso stretching, pose change, or camera change.
+  - Do not assume narrower is always better; straight-waist prompts may require reduced cinching.
+  - Do not reward generic attractiveness when the requested waist family is wrong.
+  - One severe anatomy, identity, clothing, or background error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: 'The prompt must request a visible waist-width or waist-contour change, such as A-shaped, angular,
+    hourglass, double-C, straight, cinched, tapered, or column-like waist shaping.
+
+    '
+  wrong_task_examples:
+  - changing only hips, chest, shoulders, abdomen texture, or overall body size
+  - changing pose or camera framing to simulate a waist change
+  - slimming the whole torso without a localized waist target
+  conflict_examples:
+  - make the same waist both straight and strongly hourglass-shaped
+  - preserve the exact original waist contour while requiring a visible contour change
+  - widen and narrow the same waist region to incompatible degrees
+  visibility_failures:
+  - the waist is outside the frame
+  - clothing, arms, or objects fully hide both waist contours
+  - image quality prevents reliable comparison of ribcage, waist, and hip boundaries
+  deterministic_resolution:
+  - The named shape family controls side-curve geometry.
+  - Explicit width instructions control whether the waist narrows, widens, or becomes straighter.
+  - Preserve lists apply to all non-target regions; the requested waist change remains allowed.
+  partial_visibility_rule: 'Score only visible and assessable waist evidence. Do not penalize a fully occluded side, but penalize
+    missed or inconsistent visible target regions.
+
+    '
+anatomy_preservation_protocol:
+  strict_rules:
+  - Preserve torso centerline, ribcage position, pelvis position, chest width, and hip width.
+  - Preserve body height, shoulder position, leg placement, and overall pose.
+  - Keep the waist connected naturally to the unchanged ribcage and pelvis.
+  - Do not create pinched organs, detached torso segments, duplicated curves, or impossible anatomy.
+  - Clothing may follow the new waist contour only as necessary; preserve seams, folds, texture, pattern, and color.
+  - Do not bend window frames, floors, walls, flowers, furniture, image borders, or nearby objects.
+identity_preservation_protocol:
+  target_exemptions:
+  - Only the requested waist contour and minimum local clothing or shadow transition may change.
+  strict_rules:
+  - Preserve the same person, face, hair, skin tone, age impression, and body identity.
+  - Preserve chest, shoulders, hips, limbs, head, and all non-target proportions.
+  - Preserve clothing design, pose, camera angle, and photographic style.
+  - The intended waist edit must not itself be treated as identity drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: '0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+
+    '
+  no_cross_compensation: 'Correct narrowing cannot compensate for the wrong shape family, altered chest or hips, damaged anatomy,
+    identity drift, or background warping.
+
+    '
+  waist_contouring_disambiguation_rule: Correct waist contouring changes local waist side-curves. Global horizontal scaling,
+    torso stretching/compression, chest/hip resizing, pose change, camera/crop change, clothing pattern warp, and generic
+    thinness are substitute operations.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_shape_or_too_weak:
+        detect_when: Waist side-curve remains mostly unchanged, requested shape family is not achieved, width direction is
+          wrong, or contouring is too weak.
+        severity_guidance: Faint correct waist contour may be severity 1-2. Mostly unchanged/wrong shape must be at least
+          severity 3. Absent/reversed edit is severity 4-5.
+        affected_l3:
+        - waist_primary_requested_outcome_match
+        - waist_requested_shape_family_match
+        - waist_width_direction_magnitude_match
+        - waist_side_curve_profile_match
+        - waist_ribcage_waist_hip_relation_match
+        - waist_center_position_vertical_span_match
+        - waist_bilateral_balance_completeness_match
+        - waist_requested_intensity_match
+        - waist_edit_localized_to_target_region
+        - waist_ribcage_upper_transition_quality
+        - waist_chest_hip_non_target_proportion_preservation
+        - waist_limbs_head_pose_preservation
+        - waist_subject_identity_face_hair_preservation
+        - waist_person_scale_camera_framing_preservation
+        - waist_clothing_scene_illumination_preservation
+        - waist_artifact_background_stability
+      substitute_global_scaling_pose_camera_or_body_reshaping:
+        detect_when: The slimmer waist comes from global image/body scaling, torso stretch/compression, pose change, camera/framing
+          change, chest/hip resizing, limb movement, or generic body slimming rather than local waist contouring.
+        severity_guidance: Clear substitute operation must be at least severity 2. Body scale/camera/pose/chest-hip changes
+          must be severity 3-5.
+        affected_l3:
+        - waist_primary_requested_outcome_match
+        - waist_width_direction_magnitude_match
+        - waist_ribcage_waist_hip_relation_match
+        - waist_edit_localized_to_target_region
+        - waist_chest_hip_non_target_proportion_preservation
+        - waist_limbs_head_pose_preservation
+        - waist_person_scale_camera_framing_preservation
+        - waist_clothing_scene_illumination_preservation
+        - waist_requested_shape_family_match
+        - waist_side_curve_profile_match
+        - waist_center_position_vertical_span_match
+        - waist_bilateral_balance_completeness_match
+        - waist_requested_intensity_match
+        - waist_ribcage_upper_transition_quality
+        - waist_subject_identity_face_hair_preservation
+        - waist_artifact_background_stability
+      over_cinched_broken_torso_or_unrealistic_hourglass:
+        detect_when: Waist becomes pinched, unnaturally narrow, asymmetric, broken, dislocated from ribcage/hips, or creates
+          impossible torso axis/anatomy.
+        severity_guidance: Clear over-cinching/anatomy issue must be at least severity 2. Impossible torso axis, severe asymmetry,
+          or doll-like waist must be severity 3-5.
+        affected_l3:
+        - waist_width_direction_magnitude_match
+        - waist_side_curve_profile_match
+        - waist_ribcage_waist_hip_relation_match
+        - waist_bilateral_balance_completeness_match
+        - waist_requested_intensity_match
+        - waist_ribcage_upper_transition_quality
+        - waist_pelvis_hip_lower_transition_quality
+        - waist_torso_anatomy_axis_continuity
+        - waist_skin_fabric_surface_realism
+        - waist_artifact_background_stability
+        - waist_primary_requested_outcome_match
+        - waist_requested_shape_family_match
+        - waist_center_position_vertical_span_match
+        - waist_edit_localized_to_target_region
+        - waist_clothing_occlusion_contour_integration
+        - waist_chest_hip_non_target_proportion_preservation
+        - waist_local_lighting_shadow_consistency
+        - waist_contour_edge_blending_quality
+      clothing_occlusion_contour_or_background_artifact:
+        detect_when: Clothing contours, fabric patterns, occlusions, local shadows, body edges, background, or scene near
+          the waist become warped, repeated, smeared, cut, haloed, or inconsistent.
+        severity_guidance: Clear clothing/edge/background artifact must be at least severity 2. Severe pattern warp, mask
+          seam, or background deformation must be severity 3-5.
+        affected_l3:
+        - waist_clothing_occlusion_contour_integration
+        - waist_clothing_scene_illumination_preservation
+        - waist_skin_fabric_surface_realism
+        - waist_local_lighting_shadow_consistency
+        - waist_contour_edge_blending_quality
+        - waist_artifact_background_stability
+        - waist_primary_requested_outcome_match
+        - waist_edit_localized_to_target_region
+        - waist_ribcage_upper_transition_quality
+        - waist_pelvis_hip_lower_transition_quality
+        - waist_torso_anatomy_axis_continuity
+        - waist_requested_shape_family_match
+        - waist_width_direction_magnitude_match
+        - waist_side_curve_profile_match
+        - waist_ribcage_waist_hip_relation_match
+        - waist_center_position_vertical_span_match
+        - waist_bilateral_balance_completeness_match
+        - waist_requested_intensity_match
+        - waist_chest_hip_non_target_proportion_preservation
+      identity_pose_limb_or_scene_drift:
+        detect_when: Head/face identity, hair, limbs, pose, chest/hip non-target proportions, person scale, camera framing,
+          clothing design, lighting, background, shoes, or scene layout changes beyond waist editing.
+        severity_guidance: Minor local blend drift may be severity 1. Clear clothing/lighting/background drift must be at
+          least severity 2. Identity, pose, limb, or body-scale drift must be severity 3-5.
+        affected_l3:
+        - waist_chest_hip_non_target_proportion_preservation
+        - waist_limbs_head_pose_preservation
+        - waist_subject_identity_face_hair_preservation
+        - waist_person_scale_camera_framing_preservation
+        - waist_clothing_scene_illumination_preservation
+        - waist_artifact_background_stability
+        - waist_primary_requested_outcome_match
+        - waist_edit_localized_to_target_region
+        - waist_skin_fabric_surface_realism
+        - waist_local_lighting_shadow_consistency
+        - waist_contour_edge_blending_quality
+        - waist_requested_shape_family_match
+        - waist_width_direction_magnitude_match
+        - waist_side_curve_profile_match
+        - waist_ribcage_waist_hip_relation_match
+        - waist_center_position_vertical_span_match
+        - waist_bilateral_balance_completeness_match
+        - waist_requested_intensity_match
+        - waist_ribcage_upper_transition_quality
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive sample locally reshapes the female waist into the requested hourglass contour with a
+    clear inward side-curve while preserving chest/hip width, torso position, body scale, pose, clothing, limbs, and scene.
+  success_gate_conditions:
+  - Waist side-curves are visibly refined in the requested shape family and intensity at normal viewing size.
+  - Ribcage-waist-hip relation, waist center/span, bilateral balance, and torso axis remain anatomically plausible.
+  - Chest width, hip width, limbs, head, pose, person scale, camera framing, clothing design, lighting, background, shoes,
+    and scene remain preserved.
+  - The result is not global horizontal scaling, torso stretching/compression, pose/camera change, chest/hip resizing, or
+    generic body slimming.
+  - Clothing contours, fabric patterns, occlusions, body edges, shadows, and background reconstruction remain coherent with
+    no severe warp.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_compensation_rule: 'Correct narrowing cannot compensate for the wrong shape family, altered chest or hips, damaged anatomy,
+    identity drift, or background warping.
+
+    '
+  task_disambiguation_rule: Reshape only the waist into the requested powerful hourglass contour. The waist should show a
+    clear inward side-curve transformation while preserving chest width, hip width, torso position, body scale, pose, identity,
+    clothing design, arms, head, legs, shoes, background, framing, and lighting.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- waist_primary_requested_outcome_match
+- waist_requested_shape_family_match
+- waist_width_direction_magnitude_match
+- waist_side_curve_profile_match
+- waist_ribcage_waist_hip_relation_match
+- waist_center_position_vertical_span_match
+- waist_bilateral_balance_completeness_match
+- waist_requested_intensity_match
+- waist_edit_localized_to_target_region
+- waist_ribcage_upper_transition_quality
+- waist_pelvis_hip_lower_transition_quality
+- waist_torso_anatomy_axis_continuity
+- waist_clothing_occlusion_contour_integration
+- waist_chest_hip_non_target_proportion_preservation
+- waist_limbs_head_pose_preservation
+- waist_subject_identity_face_hair_preservation
+- waist_person_scale_camera_framing_preservation
+- waist_clothing_scene_illumination_preservation
+- waist_skin_fabric_surface_realism
+- waist_local_lighting_shadow_consistency
+- waist_contour_edge_blending_quality
+- waist_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    waist_primary_requested_outcome_match: 0.18
+    waist_requested_shape_family_match: 0.17
+    waist_width_direction_magnitude_match: 0.16
+    waist_side_curve_profile_match: 0.15
+    waist_ribcage_waist_hip_relation_match: 0.12
+    waist_center_position_vertical_span_match: 0.08
+    waist_bilateral_balance_completeness_match: 0.08
+    waist_requested_intensity_match: 0.06
+  Localization and Anatomical Integration:
+    waist_edit_localized_to_target_region: 0.22
+    waist_ribcage_upper_transition_quality: 0.18
+    waist_pelvis_hip_lower_transition_quality: 0.18
+    waist_torso_anatomy_axis_continuity: 0.27
+    waist_clothing_occlusion_contour_integration: 0.15
+  Subject Preservation:
+    waist_chest_hip_non_target_proportion_preservation: 0.28
+    waist_limbs_head_pose_preservation: 0.2
+    waist_subject_identity_face_hair_preservation: 0.18
+    waist_person_scale_camera_framing_preservation: 0.17
+    waist_clothing_scene_illumination_preservation: 0.17
+  Task Realism and Image Quality:
+    waist_skin_fabric_surface_realism: 0.27
+    waist_local_lighting_shadow_consistency: 0.24
+    waist_contour_edge_blending_quality: 0.29
+    waist_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: 'Weighted arithmetic mean over all 8 Prompt Compliance facets.
+
+    '
+  other_l1_blocks: 'Use the listed within-L1 weights for the remaining three blocks.
+
+    '
+  base_formula: base_reward = 0.58 * P + 0.20 * L + 0.15 * S + 0.07 * Q
+  anatomy_score: A = score(waist_torso_anatomy_axis_continuity) / 9.0
+  preservation_score: N = score(waist_chest_hip_non_target_proportion_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (N ** 0.20)
+taxonomy:
+  Prompt Compliance:
+    Requested Waist Shape:
+      waist_primary_requested_outcome_match:
+        title: Primary requested waist outcome
+        definition: 'Judge whether the waist itself is clearly reshaped into the requested powerful hourglass contour without
+          global body scaling, pose change, camera change, or non-target body reshaping.
+
+          '
+        anchors:
+          0: No visible waist edit, opposite change, or a different task such as pose/camera/body-scale change.
+          3: Very weak or doubtful waist change; source waist contour mostly remains.
+          5: Visible partial hourglass effect, but incomplete, inaccurate, or mixed with non-target changes.
+          7: Clear waist-only hourglass shaping with one visible issue.
+          9: The waist is cleanly and powerfully shaped into an hourglass contour while all non-target regions remain source-like.
+        rubric: Judge whether the waist itself is clearly reshaped into the requested powerful hourglass contour without global
+          body scaling, pose change, camera change, or non-target body reshaping. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      waist_requested_shape_family_match:
+        title: Requested shape-family match
+        definition: 'Judge whether the result specifically matches the requested hourglass family: a narrowed central waist
+          with smooth inward side curves. Do not reward generic torso slimming, straight-column shaping, A-shape, angular
+          pinching, or random curve smoothing as a correct hourglass result.
+
+          '
+        anchors:
+          0: Wrong or opposite shape family, no hourglass contour, or only global torso/body narrowing.
+          3: Slight resemblance to hourglass without clear defining geometry.
+          5: Recognizable hourglass tendency with major contour or proportion inaccuracies.
+          7: Correct hourglass family with one visible inconsistency.
+          9: Exact, unambiguous, and natural powerful hourglass waist contour.
+        rubric: 'Judge whether the result specifically matches the requested hourglass family: a narrowed central waist with
+          smooth inward side curves. Do not reward generic torso slimming, straight-column shaping, A-shape, angular pinching,
+          or random curve smoothing as a correct hourglass result. Apply this facet''s 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.'
+      waist_width_direction_magnitude_match:
+        title: Waist-width direction and magnitude
+        definition: 'Judge whether the waist narrows in the requested direction and amount. The prompt asks for a powerful
+          hourglass contour, so the change should be clearly visible but not anatomically extreme.
+
+          '
+        anchors:
+          0: Opposite direction, no useful narrowing, or destructive non-local distortion.
+          3: Barely visible, excessive, strongly uneven, or mostly caused by global scaling.
+          5: Correct general narrowing direction but clearly inaccurate magnitude.
+          7: Appropriate visible narrowing with one minor issue.
+          9: Direction and magnitude exactly match the powerful hourglass prompt.
+        rubric: Judge whether the waist narrows in the requested direction and amount. The prompt asks for a powerful hourglass
+          contour, so the change should be clearly visible but not anatomically extreme. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      waist_side_curve_profile_match:
+        title: Side-curve profile
+        definition: 'Judge the requested taper, sharp corners, smooth hourglass curves, mirrored C curves, or vertical straight
+          sides.
+
+          '
+        anchors:
+          0: Side profile contradicts the prompt.
+          3: Weak, lumpy, or unstable profile.
+          5: Requested profile is recognizable but materially inaccurate.
+          7: Correct profile with one minor contour issue.
+          9: Side contours precisely express the requested geometry.
+        rubric: Judge the requested taper, sharp corners, smooth hourglass curves, mirrored C curves, or vertical straight
+          sides. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_ribcage_waist_hip_relation_match:
+        title: Ribcage-waist-hip relation
+        definition: 'Judge whether the waist relates correctly to the unchanged chest and hips, including taper, central narrowing,
+          or column alignment.
+
+          '
+        anchors:
+          0: Width hierarchy is wrong or chest or hips are used to fake the result.
+          3: Relation is weak or strongly inconsistent.
+          5: General relation is present with clear proportion errors.
+          7: Correct relation with one minor issue.
+          9: Ribcage, waist, and hip relation exactly matches the request.
+        rubric: Judge whether the waist relates correctly to the unchanged chest and hips, including taper, central narrowing,
+          or column alignment. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_center_position_vertical_span_match:
+        title: Waist center and vertical span
+        definition: 'Judge whether the narrowest point, corners, curves, or straight section occupy a plausible and prompt-consistent
+          vertical location.
+
+          '
+        anchors:
+          0: Waist is displaced or the wrong torso section is edited.
+          3: Major vertical-position or span error.
+          5: Generally centered with a clear placement issue.
+          7: Correct placement with one minor difference.
+          9: Waist center and edited span are precisely positioned.
+        rubric: Judge whether the narrowest point, corners, curves, or straight section occupy a plausible and prompt-consistent
+          vertical location. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_bilateral_balance_completeness_match:
+        title: Bilateral balance and completeness
+        definition: 'Judge whether all visible requested sides are completed with pose- and perspective-aware balance.
+
+          '
+        anchors:
+          0: Wrong side, one visible side missed, or severe imbalance.
+          3: Major left-right inconsistency or incomplete edit.
+          5: Both sides attempted but visibly mismatched.
+          7: Complete and balanced with one minor difference.
+          9: All visible target regions are complete and naturally balanced.
+        rubric: Judge whether all visible requested sides are completed with pose- and perspective-aware balance. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_requested_intensity_match:
+        title: Requested contour intensity
+        definition: 'Judge whether words such as clear, strong, pronounced, deep, bold, or defined are matched without anatomical
+          exaggeration.
+
+          '
+        anchors:
+          0: Absent, opposite, or destructive intensity.
+          3: Severely weaker or stronger than requested.
+          5: General intensity is recognizable but inaccurate.
+          7: Appropriate intensity with one minor mismatch.
+          9: Intensity exactly matches the prompt and remains believable.
+        rubric: Judge whether words such as clear, strong, pronounced, deep, bold, or defined are matched without anatomical
+          exaggeration. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Waist Boundaries and Torso Structure:
+      waist_edit_localized_to_target_region:
+        title: Edit localization
+        definition: 'Judge whether changes remain within the waist and minimum necessary clothing or shadow transition.
+
+          '
+        anchors:
+          0: Broad torso, hip, limb, or scene editing.
+          3: Significant spill into chest, hips, arms, legs, or background.
+          5: Mostly localized with one clear non-target change.
+          7: Localized with a minor spill.
+          9: Precisely confined to the permitted waist region.
+        rubric: Judge whether changes remain within the waist and minimum necessary clothing or shadow transition. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_ribcage_upper_transition_quality:
+        title: Ribcage-to-waist transition
+        definition: 'Judge continuity from the unchanged lower ribcage into the edited waist without shelves, dents, pinching,
+          or abrupt cuts.
+
+          '
+        anchors:
+          0: Broken or anatomically impossible upper transition.
+          3: Major dents, shelves, pinching, or discontinuity.
+          5: Connected but visibly unnatural.
+          7: Natural with one minor issue.
+          9: Smooth and anatomically coherent upper transition.
+        rubric: Judge continuity from the unchanged lower ribcage into the edited waist without shelves, dents, pinching,
+          or abrupt cuts. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_pelvis_hip_lower_transition_quality:
+        title: Waist-to-pelvis transition
+        definition: 'Judge continuity into the unchanged pelvis and hips without widening, narrowing, shifting, or disconnecting
+          the hip structure.
+
+          '
+        anchors:
+          0: Broken transition or severe hip deformation.
+          3: Major notch, shelf, or pelvic inconsistency.
+          5: Plausible but visibly irregular.
+          7: Natural with one minor issue.
+          9: Smooth and anatomically coherent lower transition.
+        rubric: Judge continuity into the unchanged pelvis and hips without widening, narrowing, shifting, or disconnecting
+          the hip structure. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_torso_anatomy_axis_continuity:
+        title: Torso anatomy and body-axis continuity
+        definition: 'Judge preservation of torso centerline, ribcage-pelvis alignment, perspective, body posture, and plausible
+          soft-tissue anatomy.
+
+          '
+        anchors:
+          0: Collapsed, detached, duplicated, or impossible torso anatomy.
+          3: Major axis, alignment, or perspective distortion.
+          5: Generally plausible with one clear anatomical issue.
+          7: Coherent with one minor issue.
+          9: Torso anatomy and axis remain fully natural.
+        rubric: Judge preservation of torso centerline, ribcage-pelvis alignment, perspective, body posture, and plausible
+          soft-tissue anatomy. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_clothing_occlusion_contour_integration:
+        title: Clothing and occlusion integration
+        definition: 'Judge whether clothing follows the new contour naturally while seams, folds, texture, pattern, and front-back
+          layering remain coherent.
+
+          '
+        anchors:
+          0: Clothing is detached, melted, duplicated, or wrongly layered.
+          3: Major seam, fold, pattern, or occlusion damage.
+          5: Integrated but with obvious local inconsistencies.
+          7: Natural with one minor fabric issue.
+          9: Clothing and occlusion adapt seamlessly.
+        rubric: Judge whether clothing follows the new contour naturally while seams, folds, texture, pattern, and front-back
+          layering remain coherent. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Subject Preservation:
+    Body, Identity, and Scene Preservation:
+      waist_chest_hip_non_target_proportion_preservation:
+        title: Chest and hip proportion preservation
+        definition: 'Judge preservation of chest width, shoulder width, hip width, pelvis position, and all non-target torso
+          proportions.
+
+          '
+        anchors:
+          0: Major chest, shoulder, or hip redesign.
+          3: Significant non-target proportion changes.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All non-target torso proportions remain unchanged.
+        rubric: Judge preservation of chest width, shoulder width, hip width, pelvis position, and all non-target torso proportions.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_limbs_head_pose_preservation:
+        title: Limbs, head, and pose preservation
+        definition: 'Judge preservation of arms, hands, head, thighs, legs, shoes, body posture, and original placement.
+
+          '
+        anchors:
+          0: Major limb, head, or pose change.
+          3: Strong positional or anatomical drift.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: Limbs, head, and pose remain unchanged.
+        rubric: Judge preservation of arms, hands, head, thighs, legs, shoes, body posture, and original placement. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_subject_identity_face_hair_preservation:
+        title: Subject identity, face, and hair preservation
+        definition: 'Judge preservation of the same person, face, skin tone, age impression, expression, gaze, and hairstyle.
+
+          '
+        anchors:
+          0: Different person or severe identity drift.
+          3: Strong face, age, color, or hair alteration.
+          5: Same person remains recognizable with a clear change.
+          7: Identity preserved with one minor difference.
+          9: Identity, face, and hair are fully preserved.
+        rubric: Judge preservation of the same person, face, skin tone, age impression, expression, gaze, and hairstyle. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_person_scale_camera_framing_preservation:
+        title: Person scale, camera, and framing preservation
+        definition: 'Judge preservation of body scale, camera angle, crop, person-to-camera distance, composition, aspect
+          ratio, and resolution.
+
+          '
+        anchors:
+          0: Global scaling, crop, or camera change creates the result.
+          3: Major scale or framing drift.
+          5: Mostly stable with one clear composition change.
+          7: Stable with one minor difference.
+          9: Camera, scale, and framing remain unchanged.
+        rubric: Judge preservation of body scale, camera angle, crop, person-to-camera distance, composition, aspect ratio,
+          and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_clothing_scene_illumination_preservation:
+        title: Clothing, scene, and illumination preservation
+        definition: 'Judge preservation of dress design and color, flowers, windows, walls, floor, objects, global lighting,
+          shadows, and surrounding regions.
+
+          '
+        anchors:
+          0: Major garment, background, or lighting replacement.
+          3: Strong non-target scene or clothing alteration.
+          5: Mostly preserved with one obvious change.
+          7: Preserved with one minor difference.
+          9: Clothing and scene content remain unchanged.
+        rubric: Judge preservation of dress design and color, flowers, windows, walls, floor, objects, global lighting, shadows,
+          and surrounding regions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      waist_skin_fabric_surface_realism:
+        title: Skin and fabric surface realism
+        definition: 'Judge natural skin or fabric texture, folds, patterns, and local sharpness without smearing, repetition,
+          or plastic surfaces.
+
+          '
+        anchors:
+          0: Severely synthetic, smeared, or destroyed surface.
+          3: Strong skin or fabric texture artifacts.
+          5: Usable but visibly processed.
+          7: Realistic with one minor surface issue.
+          9: Fully photorealistic and source-consistent texture.
+        rubric: Judge natural skin or fabric texture, folds, patterns, and local sharpness without smearing, repetition, or
+          plastic surfaces. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_local_lighting_shadow_consistency:
+        title: Local lighting and shadow consistency
+        definition: 'Judge whether body shading, dress shadows, and contact shadows follow the new waist contour and source
+          illumination.
+
+          '
+        anchors:
+          0: Lighting or shadows strongly contradict the image.
+          3: Major missing, duplicated, or incorrect shadows.
+          5: Generally plausible with obvious local errors.
+          7: Consistent with one minor issue.
+          9: Lighting and shadows integrate perfectly.
+        rubric: Judge whether body shading, dress shadows, and contact shadows follow the new waist contour and source illumination.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: 'Judge clean boundaries without halos, jagged edges, dents, seams, over-sharpening, or local blur.
+
+          '
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, dents, or blur.
+          5: Mostly blended with visible boundary artifacts.
+          7: Clean with one minor edge issue.
+          9: Seamless, detailed, and naturally bounded.
+        rubric: Judge clean boundaries without halos, jagged edges, dents, seams, over-sharpening, or local blur. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      waist_artifact_background_stability:
+        title: Artifact and background stability
+        definition: 'Judge absence of warped windows, floors, walls, flowers, clothing, duplicated body contours, holes, or
+          geometric artifacts.
+
+          '
+        anchors:
+          0: Severe structural artifacts or background warping.
+          3: Multiple obvious distortions.
+          5: One clear artifact or moderate instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; all surrounding structures remain stable.
+        rubric: Judge absence of warped windows, floors, walls, flowers, clothing, duplicated body contours, holes, or geometric
+          artifacts. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+prompt_applicability:
+  purpose: 'Keep the fixed 22-score output and interpret each shape family correctly.
+
+    '
+  valid_prompt_rule: 'All 8 Prompt Compliance facets are applicable to every valid prompt.
+
+    '
+  family_terms:
+    A_shaped:
+    - A-shaped
+    - tapered waist
+    angular:
+    - angular
+    - cornered
+    - crisp inward bends
+    hourglass:
+    - hourglass
+    - smooth inward curves
+    - cinched center
+    double_C:
+    - double-C
+    - mirrored C curves
+    straight:
+    - straight waist
+    - column waist
+    - vertical side lines
+    - reduced inward curve
+  aggregation_rule: 'P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+
+    '

@@ -1,0 +1,740 @@
+task_key: localized_bilateral_jaw_angle_reduction
+task_title: Localized Bilateral Jaw-Angle Reduction
+task_title_zh: 下颚角
+version: v47_fixed_integer_22_l3_localized_bilateral_jaw_angle_reduction_compact_failurefix_l3_pi_equal
+target_region: both visible mandibular angles and immediately connected lower-cheek and jawline segments, plus only the minimum
+  adjacent skin, facial-hair, ear, hair, neck, clothing, accessory, and background blending zones needed for a natural localized
+  jaw-angle reduction
+target_action_summary: Reduce both jaw angles and refine the connected jawline into a smoother, narrower lower-face contour
+  while preserving the chin tip, cheekbones, mouth, internal facial landmarks, ears, hairline, neck, identity, expression,
+  skin texture, lighting, camera state, clothing, background, and every non-jaw region.
+judge_role: You are a strict expert evaluator specializing in mandibular-angle reduction, jawline contour retouching, lower-face
+  anatomy, identity preservation, and boundary reconstruction. Judge actual localized bilateral jaw-angle editing, not generic
+  attractiveness, V-line shaping, whole-face slimming, or image compression.
+judge_instructions: |
+  Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+  1) Source audit first. Compare the source mandibular angles, jaw width, lower-cheek contour, jaw-to-chin path, chin tip, cheekbones, mouth, ears, neck, hair/sideburns, identity, skin texture, lighting, background, clothing, and camera state.
+
+  2) Target definition. The requested edit is localized bilateral jaw-angle reduction: both mandibular corners should become visibly smaller/softer and the connected jawline smoother while preserving the chin tip, cheekbones, mouth, face height, identity, neck, and all non-jaw regions.
+
+  3) Reject substitutes. V-line conversion, pointed-chin editing, whole-face slimming/compression, head shrinking, neck slimming, crop/pose change, shadow painting, skin beautification, or generic attractiveness is not successful jaw-angle reduction.
+
+  4) Primary failure gates. If both jaw angles are unchanged, too weak, reversed, or only one side changes, activate target_absent_or_unbalanced. If the visible effect is V-line/pointed-chin/global slimming rather than localized jaw-angle reduction, activate substitute_vline_or_global_slimming. If jaw dents, shelves, hollowing, abrupt cuts, impossible mandibular path, or bent ear/hair/neck/background appear, activate jaw_anatomy_or_boundary_broken. If identity, skin texture, lighting, background, camera, or non-target facial structures change, activate source_state_not_preserved_or_beautified.
+
+  5) Failure propagation. Before outputting the final score_vector, detect failures in global_scoring_policy.failure_propagation, estimate severity 0-5, apply cap_by_severity to every affected L3, and output the adjusted scores rather than raw independent scores.
+
+  6) Score calibration and anti-template. 9 is rare; 8 is near-perfect; 7 is strong with only a minor flaw; 6 has one clear issue; 5 is partial; 4 is a major mismatch; 3 is weak; 2 is a small trace; 1 is negligible; 0 is absent/reversed/unusable. Do not use 7 as a default. If 14+ facets are 7 or most scores are identical, re-check failure propagation.
+
+  Task-specific focus: localized bilateral jaw-angle reduction. Do not reward V-line conversion, pointed-chin editing, whole-face slimming, or generic beauty retouching as jaw-angle success.
+
+  Hybrid scoring safeguards.
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation before considering any 7-9.
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit into a high reward.
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should not automatically become all 9s.
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak, partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9 for truly extreme evidence.
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+  Return only JSON:
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Bilateral jaw-angle reduction, mandibular width, target coverage,
+    corner softening, jawline continuity, chin preservation, anatomical integration, identity, and rendering are separated
+    without repeatedly scoring the same defect.
+  constraints:
+    - Exactly 22 active L3 facets; never add a twenty-third facet.
+    - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+    - Return exactly 22 integer scores in active_l3 order.
+    - No decimal L3 scores, N/A values, or per-facet explanations in the training path.
+    - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+    - Jaw-angle reduction must be distinguished from V-line shaping, whole-face narrowing, chin editing, and neck slimming.
+    - Bilateral coverage, mandibular-corner softening, jawline refinement, and width distribution are scored separately.
+    - Chin-tip preservation is a dedicated Prompt Compliance facet.
+    - Easy background, clothing, camera, and global-state checks are merged rather than expanded.
+    - Facial identity remains one dedicated, high-impact L3 facet.
+    - Subject Preservation contributes 42% of the final reward.
+    - Public floating-point values use at most three decimal places.
+evaluation_notes:
+  - The uploaded file contains 344 prompts and only one unique prompt template.
+  - 'Every prompt requests the same localized operation: reduce both jaw angles and refine the jawline for a smoother, narrower
+    lower-face contour.'
+  - Every prompt explicitly preserves the chin tip, cheekbones, mouth, nose, eyes, ears, hairline, neck, expression, skin
+    texture, identity, and all non-jaw regions.
+  - The task is not V-line sculpting. The chin apex must remain source-consistent while the mandibular angles and connected
+    jawline become less wide and less angular.
+  - The task is not overall-face narrowing. Upper-face width, cheekbone position, facial-feature geometry, face height, and
+    head size must remain unchanged.
+  - For rotated or tilted heads, near-side and far-side jaw changes should follow visible anatomy and perspective rather than
+    raw mirror symmetry.
+  - Newly exposed background and nearby hair, ears, sideburns, facial hair, collars, and accessories must be reconstructed
+    without stretching, duplication, halos, seams, or liquify waves.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. A 7 requires strong visible evidence after failure propagation;
+    8 requires near-exact source-preserving success; 9 is rare.
+  no_cross_compensation: Do not raise one facet because another is good. A clean or attractive image cannot compensate for
+    unchanged jaw angles, wrong substitute operation, broken mandibular anatomy, changed chin, identity, neck, camera, or
+    background.
+  task_disambiguation_rule: Jaw-angle reduction means localized softening/narrowing of the mandibular corner regions. It is
+    not generic V-line sculpting, pointed-chin creation, full-face slimming, skin beautification, head shrinking, or camera/crop
+    substitution.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the result as the same individual. Only jaw-angle and connected jawline contours may change; internal
+    landmarks, chin character, cheekbones, age impression, expression, skin tone, and same-person impression remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the result is attractive, symmetrical, realistic,
+    or prompt-compliant.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, crop, lighting
+    mood, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Include detected failure names and severity
+      in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_unbalanced:
+        detect_when: Both mandibular angles are unchanged, barely reduced, reversed, only one requested/visible side changes,
+          or bilateral strength is visibly incompatible with the source pose.
+        severity_guidance: Tiny but directionally correct localized reduction may be severity 1. Clear but weak/partial bilateral
+          reduction may be severity 2. Mostly unchanged jaw angles must be severity 3. Completely absent, reversed, or one-side-only
+          failure must be severity 4-5. Do not classify every subtle but correct change as total absence.
+        affected_l3:
+          - requested_jaw_angle_reduction_operation_match
+          - requested_bilateral_jaw_width_reduction_match
+          - requested_jaw_angle_edit_magnitude_match
+          - requested_bilateral_target_coverage_match
+          - requested_mandibular_corner_softening_match
+          - requested_jawline_refinement_match
+          - requested_pose_aware_bilateral_balance_match
+          - requested_natural_photorealistic_finish_match
+          - unrequested_nonjaw_properties_preserved
+          - jaw_angle_edit_localized_to_jaw_region
+          - jaw_angle_lower_cheek_jaw_chin_continuity
+          - jaw_angle_identity_landmark_consistency
+          - jaw_angle_expression_face_scene_global_state_preserved
+          - jaw_angle_boundary_background_reconstruction_consistent
+          - jaw_angle_artifact_sharpness_no_warp_mask
+          - jaw_angle_expression_face_scene_global_state_preserved
+          - jaw_angle_artifact_sharpness_no_warp_mask
+      substitute_vline_or_global_slimming:
+        detect_when: The visible effect is mainly V-line sculpting, pointed-chin editing, global face compression, head shrinking,
+          neck slimming, crop/framing change, shadow contouring, or beauty slimming rather than localized bilateral jaw-angle
+          reduction.
+        severity_guidance: If substitute operation contributes but jaw-angle reduction is still visible, severity should be
+          at least 2. If the substitute is the main visible edit, severity 3-4. If it replaces the target or changes identity/camera,
+          severity 4-5.
+        affected_l3:
+          - requested_jaw_angle_reduction_operation_match
+          - requested_bilateral_jaw_width_reduction_match
+          - requested_jaw_angle_edit_magnitude_match
+          - requested_mandibular_corner_softening_match
+          - requested_jawline_refinement_match
+          - requested_lower_face_narrowing_distribution_match
+          - requested_chin_tip_preservation_match
+          - requested_cheekbone_mouth_face_height_preservation_match
+          - requested_pose_aware_bilateral_balance_match
+          - unrequested_nonjaw_properties_preserved
+          - jaw_angle_edit_localized_to_jaw_region
+          - jaw_angle_lower_cheek_jaw_chin_continuity
+          - jaw_angle_identity_landmark_consistency
+      jaw_anatomy_or_boundary_broken:
+        detect_when: Jaw dents, abrupt inward cuts, shelves, hollowing, impossible mandibular path, asymmetric contour, bent
+          ear/hair/neck/clothing/background, mask seam, halo, liquify wave, or shadow-painted jawline appears.
+        severity_guidance: Clear anatomical or boundary break must be at least severity 2. Impossible jaw path or visible
+          warping must be severity 3-5.
+        affected_l3:
+          - requested_jaw_angle_reduction_operation_match
+          - requested_jaw_angle_edit_magnitude_match
+          - requested_mandibular_corner_softening_match
+          - requested_jawline_refinement_match
+          - requested_lower_face_narrowing_distribution_match
+          - requested_natural_photorealistic_finish_match
+          - jaw_angle_edit_localized_to_jaw_region
+          - jaw_angle_lower_cheek_jaw_chin_continuity
+          - jaw_angle_ear_hair_neck_background_occlusion_consistent
+          - jaw_angle_pose_perspective_depth_consistent
+          - jaw_angle_boundary_background_reconstruction_consistent
+          - jaw_angle_artifact_sharpness_no_warp_mask
+      source_state_not_preserved_or_beautified:
+        detect_when: Identity, expression, age impression, skin texture, skin tone, facial hair, mouth, cheekbones, lighting,
+          background, clothing, camera/framing, or non-target facial geometry changes, including unrequested smoothing, whitening,
+          younger-face filtering, or beautification.
+        severity_guidance: Minor non-target drift may be severity 1. Clear skin/facial-hair/lighting/background drift must
+          be at least severity 2. Age, identity, expression, mouth, or broad source-state change must be severity 3-5.
+        affected_l3:
+          - requested_jaw_angle_reduction_operation_match
+          - requested_natural_photorealistic_finish_match
+          - requested_chin_tip_preservation_match
+          - requested_cheekbone_mouth_face_height_preservation_match
+          - unrequested_nonjaw_properties_preserved
+          - jaw_angle_ear_hair_neck_background_occlusion_consistent
+          - jaw_angle_identity_landmark_consistency
+          - jaw_angle_expression_face_scene_global_state_preserved
+          - jaw_angle_skin_facial_hair_detail_realistic
+          - jaw_angle_lighting_shadow_color_integration
+          - jaw_angle_boundary_background_reconstruction_consistent
+          - jaw_angle_artifact_sharpness_no_warp_mask
+  no_compensation_rule: If jaw-angle reduction is absent, preservation/background/photorealism must not raise edit-dependent
+    facets. If the result is V-line, globally slimmed, beautified, or source-changing, a prettier lower face must not raise
+    source-preserving jaw-angle facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  success_gate_definition: A positive sample visibly reduces and softens both mandibular angles in a localized, pose-aware
+    way while preserving the same chin, mouth, cheekbones, identity, skin, lighting, background, and camera state.
+  success_gate_conditions:
+    - Both assessable jaw angles are smaller/softer and the connected jawline is smoother at normal viewing size.
+    - The effect is localized to mandibular corners and immediate jawline, not V-line conversion, pointed-chin editing, or
+      whole-face slimming.
+    - Chin tip, cheekbones, mouth, face height, neck, hair/ears, and source identity remain stable.
+    - Jaw contour, ear/hair/neck/background boundaries, lighting, and skin/facial-hair texture are anatomically and visually
+      coherent.
+    - No detected failure has severity 2 or higher; at most tiny local imperfections remain.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, do not automatically assign 8-9 to all preservation or quality facets. Unchanged non-target
+    regions may deserve moderate-to-good preservation scores, but a failed edit should not become high reward through many
+    unrelated 9s.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+  output_values:
+    - 0.0
+    - 0.111
+    - 0.222
+    - 0.333
+    - 0.444
+    - 0.556
+    - 0.667
+    - 0.778
+    - 0.889
+    - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+  - requested_jaw_angle_reduction_operation_match
+  - requested_bilateral_jaw_width_reduction_match
+  - requested_jaw_angle_edit_magnitude_match
+  - requested_bilateral_target_coverage_match
+  - requested_mandibular_corner_softening_match
+  - requested_jawline_refinement_match
+  - requested_lower_face_narrowing_distribution_match
+  - requested_chin_tip_preservation_match
+  - requested_cheekbone_mouth_face_height_preservation_match
+  - requested_pose_aware_bilateral_balance_match
+  - requested_natural_photorealistic_finish_match
+  - unrequested_nonjaw_properties_preserved
+  - jaw_angle_edit_localized_to_jaw_region
+  - jaw_angle_lower_cheek_jaw_chin_continuity
+  - jaw_angle_ear_hair_neck_background_occlusion_consistent
+  - jaw_angle_pose_perspective_depth_consistent
+  - jaw_angle_identity_landmark_consistency
+  - jaw_angle_expression_face_scene_global_state_preserved
+  - jaw_angle_skin_facial_hair_detail_realistic
+  - jaw_angle_lighting_shadow_color_integration
+  - jaw_angle_boundary_background_reconstruction_consistent
+  - jaw_angle_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+      - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_jaw_angle_reduction_operation_match: 0.18
+    requested_bilateral_jaw_width_reduction_match: 0.11
+    requested_jaw_angle_edit_magnitude_match: 0.07
+    requested_bilateral_target_coverage_match: 0.09
+    requested_mandibular_corner_softening_match: 0.1
+    requested_jawline_refinement_match: 0.1
+    requested_lower_face_narrowing_distribution_match: 0.08
+    requested_chin_tip_preservation_match: 0.08
+    requested_cheekbone_mouth_face_height_preservation_match: 0.06
+    requested_pose_aware_bilateral_balance_match: 0.05
+    requested_natural_photorealistic_finish_match: 0.04
+    unrequested_nonjaw_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    jaw_angle_edit_localized_to_jaw_region: 0.27
+    jaw_angle_lower_cheek_jaw_chin_continuity: 0.29
+    jaw_angle_ear_hair_neck_background_occlusion_consistent: 0.22
+    jaw_angle_pose_perspective_depth_consistent: 0.22
+  Subject Preservation:
+    jaw_angle_identity_landmark_consistency: 0.8
+    jaw_angle_expression_face_scene_global_state_preserved: 0.2
+  Task Realism and Image Quality:
+    jaw_angle_skin_facial_hair_detail_realistic: 0.27
+    jaw_angle_lighting_shadow_color_integration: 0.27
+    jaw_angle_boundary_background_reconstruction_consistent: 0.24
+    jaw_angle_artifact_sharpness_no_warp_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+    - 0.0
+    - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Jaw-Angle Operation:
+      requested_jaw_angle_reduction_operation_match:
+        title: Requested bilateral jaw-angle reduction operation match
+        definition: Judge whether both visible jaw angles are genuinely reduced and the connected jawline becomes smoother
+          and narrower without substitute operations.
+        anchors:
+          0: The requested operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of jaw-angle reduction is visible.
+          2: A small relevant attempt exists, but a substitute operation dominates.
+          3: The jaw is weakly edited and the primary operation is mostly wrong.
+          4: A recognizable attempt exists, but a major part is missing or substituted.
+          5: The operation is partially correct with several substantial errors.
+          6: Jaw-angle reduction is mostly correct, but one clear operation error remains.
+          7: The requested operation is clear with only a minor mismatch.
+          8: The operation is highly accurate with only a tiny local issue.
+          9: Both jaw angles and connected jawline are precisely refined with no substitute operation.
+        rubric: |-
+          Judge whether both visible jaw angles are genuinely reduced and the connected jawline becomes smoother and narrower without substitute operations. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_bilateral_jaw_width_reduction_match:
+        title: Requested bilateral jaw-width reduction match
+        definition: Judge whether visible width across the mandibular-angle region decreases on both assessable sides while
+          chin, neck, head, and internal features remain stable.
+        anchors:
+          0: Jaw width is unchanged, wider, reversed, unrelated, or unusable.
+          1: Only a negligible inward change is visible.
+          2: A small reduction exists, but the jaw remains essentially unchanged.
+          3: The direction is weak and largely ineffective.
+          4: Reduction is recognizable, but one major jaw-side region remains broad.
+          5: Reduction is partial with several regional inconsistencies.
+          6: Jaw width is mostly reduced, but one clear issue remains.
+          7: Both jaw sides are clearly narrower with only a minor mismatch.
+          8: Reduction is highly accurate with only a tiny local issue.
+          9: Bilateral mandibular width is precisely and naturally reduced.
+        rubric: |-
+          Judge whether visible width across the mandibular-angle region decreases on both assessable sides while chin, neck, head, and internal features remain stable. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_jaw_angle_edit_magnitude_match:
+        title: Requested jaw-angle edit magnitude match
+        definition: Judge whether the reduction is visible and cosmetically meaningful without excessive narrowing, skeletal
+          contour, or identity loss.
+        anchors:
+          0: Magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The magnitude is weakly attempted but clearly mismatched.
+          4: The effect is recognizable, but the amount has a major mismatch.
+          5: Magnitude is partially appropriate with several visible issues.
+          6: The amount is mostly correct, but one clear under- or over-edit remains.
+          7: The magnitude is strong and believable with only a minor mismatch.
+          8: The amount is highly accurate with only a tiny excess or residual.
+          9: The reduction is exactly visible enough, balanced, and natural.
+        rubric: |-
+          Judge whether the reduction is visible and cosmetically meaningful without excessive narrowing, skeletal contour, or identity loss. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_bilateral_target_coverage_match:
+        title: Requested bilateral target coverage match
+        definition: Judge whether every assessable part of both jaw angles and immediate jawline connections is treated without
+          missing a side or editing unrelated regions.
+        anchors:
+          0: Target coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible target segment is treated.
+          2: A small region changes, but most jaw-angle targets are missed.
+          3: Coverage is weak and one or both major regions remain untreated.
+          4: The target is recognizable, but one major side or segment is missed.
+          5: Coverage is partial with several omissions or unnecessary edits.
+          6: Coverage is mostly complete, but one clear side or segment remains inconsistent.
+          7: Both sides are well covered with only a minor local miss.
+          8: Coverage is highly complete with only a tiny imperfection.
+          9: Every assessable bilateral jaw-angle and connected jawline region is treated precisely.
+        rubric: |-
+          Judge whether every assessable part of both jaw angles and immediate jawline connections is treated without missing a side or editing unrelated regions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_mandibular_corner_softening_match:
+        title: Requested mandibular-corner softening match
+        definition: Judge whether broad or angular mandibular corners become less prominent without being erased, rounded
+          into a different face type, or cut inward abruptly.
+        anchors:
+          0: Corner softening is absent, reversed, unrelated, or unusable.
+          1: Only a negligible refinement is visible.
+          2: Corners remain dominant or become severely distorted.
+          3: Softening is weak and largely ineffective.
+          4: The change is recognizable, but a major residual corner, notch, or over-removal remains.
+          5: Softening is partial with several corner-shape problems.
+          6: The corners are mostly refined, but one clear issue remains.
+          7: Both corners are naturally softened with only a minor mismatch.
+          8: Refinement is highly accurate with only a tiny local issue.
+          9: Both mandibular corners are precisely softened while retaining plausible anatomy.
+        rubric: |-
+          Judge whether broad or angular mandibular corners become less prominent without being erased, rounded into a different face type, or cut inward abruptly. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_jawline_refinement_match:
+        title: Requested jawline refinement match
+        definition: Judge whether the jawline becomes smoother, cleaner, and more continuous from lower cheek through jaw
+          angle toward the unchanged chin-side contour.
+        anchors:
+          0: Jawline refinement is absent, reversed, unrelated, or unusable.
+          1: Only a negligible contour improvement is visible.
+          2: The jawline remains severely irregular, broken, or distorted.
+          3: Refinement is weak and major contour problems remain.
+          4: The jawline is recognizable, but a major dent, shelf, gap, or abrupt cut remains.
+          5: Refinement is partial with several visible contour issues.
+          6: The jawline is mostly smooth, but one clear transition error remains.
+          7: The jawline is clean and natural with only a minor mismatch.
+          8: Refinement is highly accurate with only a tiny local issue.
+          9: Both jawlines are fully smooth, continuous, and anatomically natural.
+        rubric: |-
+          Judge whether the jawline becomes smoother, cleaner, and more continuous from lower cheek through jaw angle toward the unchanged chin-side contour. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+    Lower-Face Proportion and Preservation:
+      requested_lower_face_narrowing_distribution_match:
+        title: Requested lower-face narrowing distribution match
+        definition: Judge whether reduction is concentrated around the jaw angles and tapers naturally into adjacent jawline
+          regions without cheek collapse or chin pinching.
+        anchors:
+          0: Width distribution is absent, reversed, unrelated, or unusable.
+          1: Only a negligible region shows appropriate reduction.
+          2: Reduction is severely uneven or anatomically wrong.
+          3: Distribution is weak with major pinching or residual bulges.
+          4: The change is recognizable, but a major hollow, bulge, or taper error remains.
+          5: Distribution is partial with several unevenness problems.
+          6: Distribution is mostly correct, but one clear local error remains.
+          7: Reduction is naturally distributed with only a minor imbalance.
+          8: Distribution is highly accurate with only a tiny local issue.
+          9: Jaw-angle narrowing is perfectly concentrated and smoothly tapered.
+        rubric: |-
+          Judge whether reduction is concentrated around the jaw angles and tapers naturally into adjacent jawline regions without cheek collapse or chin pinching. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_chin_tip_preservation_match:
+        title: Requested chin-tip preservation match
+        definition: Preserve chin-tip length, width, projection, centerline, cleft character, apex shape, and source-specific
+          contour.
+        anchors:
+          0: The chin tip is severely changed, replaced, reversed, or unusable.
+          1: Only a negligible amount of source chin geometry remains.
+          2: Major length, width, projection, centerline, or apex changes are visible.
+          3: Chin preservation is weak and clear redesign remains.
+          4: The chin is recognizable, but one major geometry mismatch remains.
+          5: Preservation is partial with several visible differences.
+          6: The chin is mostly preserved, but one clear change remains.
+          7: Chin-tip preservation is strong with only a minor discrepancy.
+          8: The chin tip is nearly source-identical with only a tiny difference.
+          9: All chin-tip geometry and characteristic shape remain exactly source-consistent.
+        rubric: |-
+          Preserve chin-tip length, width, projection, centerline, cleft character, apex shape, and source-specific contour. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_cheekbone_mouth_face_height_preservation_match:
+        title: Requested cheekbone, mouth, and face-height preservation match
+        definition: Preserve cheekbone position, cheek volume, mouth width and position, mouth corners, face height, and mouth-to-chin
+          relationship.
+        anchors:
+          0: Adjacent facial proportions are severely changed or unusable.
+          1: Only a negligible trace of source proportion remains.
+          2: Cheekbones, mouth, or face height are substantially redesigned.
+          3: Preservation is weak and major proportion errors remain.
+          4: The face is recognizable, but a major cheekbone, mouth, or height mismatch remains.
+          5: Preservation is partial with several visible changes.
+          6: The proportions are mostly preserved, but one clear change remains.
+          7: Cheekbone, mouth, and face-height preservation are strong with only a minor discrepancy.
+          8: The proportions are nearly source-identical with only a tiny difference.
+          9: Cheekbones, mouth, facial height, and lower-face relationships remain fully unchanged.
+        rubric: |-
+          Preserve cheekbone position, cheek volume, mouth width and position, mouth corners, face height, and mouth-to-chin relationship. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_pose_aware_bilateral_balance_match:
+        title: Requested pose-aware bilateral balance match
+        definition: Judge near-side and far-side jaw reduction according to head rotation, tilt, foreshortening, lens perspective,
+          and source asymmetry rather than raw mirror symmetry.
+        anchors:
+          0: Bilateral balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct balance is visible.
+          2: One side is missed or severe asymmetric pulling dominates.
+          3: Balance is weak and major perspective errors remain.
+          4: The result is recognizable, but a major side-to-side mismatch remains.
+          5: Balance is partial with several asymmetry or perspective problems.
+          6: Balance is mostly correct, but one clear side or perspective issue remains.
+          7: Pose-aware balance is strong with only a minor mismatch.
+          8: Balance is highly accurate with only a tiny local issue.
+          9: Both jaw angles are refined coherently with pose, perspective, and natural asymmetry.
+        rubric: |-
+          Judge near-side and far-side jaw reduction according to head rotation, tilt, foreshortening, lens perspective, and source asymmetry rather than raw mirror symmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_natural_photorealistic_finish_match:
+        title: Requested natural photorealistic finish match
+        definition: Judge whether the reduction is clearly visible at normal size while remaining naturally blended, source-sharp,
+          and free of an obvious beauty mask.
+        anchors:
+          0: The requested finish is absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible improvement is present.
+          2: The result is severely too weak, excessive, or artificial.
+          3: The finish is weakly attempted and clearly mismatched.
+          4: The edit is recognizable, but a major visibility or naturalness problem remains.
+          5: Finish is partial with several substantial issues.
+          6: The result is mostly correct, but one clear finish issue remains.
+          7: The presentation is strong with only a minor mismatch.
+          8: Visibility and naturalness are highly accurate with only a tiny issue.
+          9: The edit is clearly visible, fully believable, photorealistic, and seamlessly finished.
+        rubric: |-
+          Judge whether the reduction is clearly visible at normal size while remaining naturally blended, source-sharp, and free of an obvious beauty mask. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      unrequested_nonjaw_properties_preserved:
+        title: Unrequested non-jaw properties are preserved
+        definition: Preserve eyes, brows, nose, lips, teeth, ears, hairline, head size, neck, expression, skin, clothing,
+          camera, lighting, and scene.
+        anchors:
+          0: Non-jaw properties are severely changed or unusable.
+          1: Most listed non-target properties visibly drift.
+          2: Several major non-target changes are present.
+          3: One major or multiple obvious changes remain.
+          4: The image is recognizable, but a clear important non-jaw property is changed.
+          5: Preservation is moderate with several visible differences.
+          6: Most properties are preserved, but one clear change remains.
+          7: Preservation is strong with only a minor discrepancy.
+          8: Non-jaw properties are nearly source-identical with only a tiny difference.
+          9: Every unrequested subject, camera, lighting, and scene property remains source-consistent.
+        rubric: |-
+          Preserve eyes, brows, nose, lips, teeth, ears, hairline, head size, neck, expression, skin, clothing, camera, lighting, and scene. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Jaw Placement and Anatomy:
+      jaw_angle_edit_localized_to_jaw_region:
+        title: Jaw-angle editing is localized to the jaw region
+        definition: Keep geometric changes within both jaw angles, connected jawline segments, and minimum blending zones.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: Large non-target areas are altered.
+          3: Localization is weak and major spill remains.
+          4: The target is recognizable, but one major non-jaw region is changed.
+          5: Localization is partial with several spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed region remains.
+          7: The edit is well localized with only a minor spill.
+          8: Localization is highly accurate with only a tiny issue.
+          9: Editing is precisely confined to both jaw angles and minimum blending zones.
+        rubric: |-
+          Keep geometric changes within both jaw angles, connected jawline segments, and minimum blending zones. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_lower_cheek_jaw_chin_continuity:
+        title: Lower-cheek, jaw, and chin-side continuity is coherent
+        definition: Judge continuous contour and soft-tissue flow from lower cheek through the edited jaw angle into the unchanged
+          chin-side region.
+        anchors:
+          0: Anatomical continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of coherent anatomy remains.
+          2: The lower-face contour is severely broken or impossible.
+          3: Continuity is weak and major contradictions remain.
+          4: The anatomy is recognizable, but a major dent, shelf, gap, or cutout remains.
+          5: Continuity is partial with several structural problems.
+          6: The anatomy is mostly coherent, but one clear transition error remains.
+          7: Continuity is strong with only a minor mismatch.
+          8: Continuity is highly accurate with only a tiny issue.
+          9: The complete lower-cheek-to-jaw-to-chin-side contour is anatomically continuous and natural.
+        rubric: |-
+          Judge continuous contour and soft-tissue flow from lower cheek through the edited jaw angle into the unchanged chin-side region. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_ear_hair_neck_background_occlusion_consistent:
+        title: Ear, hair, neck, and background occlusion integration is consistent
+        definition: Judge ears, sideburns, hair, facial hair, earrings, glasses, neck, collar, clothing, accessories, and
+          nearby background for correct attachment and layering.
+        anchors:
+          0: Occlusion integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct layering remains.
+          2: Nearby structures are severely distorted or wrongly layered.
+          3: Integration is weak and major overlap errors remain.
+          4: The relationships are recognizable, but a major penetration, gap, stretch, or boundary error remains.
+          5: Integration is partial with several occlusion or reconstruction problems.
+          6: Integration is mostly correct, but one clear boundary or layering issue remains.
+          7: Integration is strong with only a minor mismatch.
+          8: Integration is highly accurate with only a tiny issue.
+          9: All local ear, hair, facial-hair, neck, clothing, accessory, and background relationships are physically coherent.
+        rubric: |-
+          Judge ears, sideburns, hair, facial hair, earrings, glasses, neck, collar, clothing, accessories, and nearby background for correct attachment and layering. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_pose_perspective_depth_consistent:
+        title: Jaw editing is consistent with pose, perspective, and depth
+        definition: Judge mandibular visibility, near-side and far-side scale, foreshortening, head rotation, tilt, lens perspective,
+          and source-supported asymmetry.
+        anchors:
+          0: Pose and perspective consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of source-consistent depth remains.
+          2: The edited jaw has severe pose or depth contradictions.
+          3: Consistency is weak and major spatial errors remain.
+          4: The result is recognizable, but a major rotation or foreshortening mismatch remains.
+          5: Consistency is partial with several perspective problems.
+          6: Pose and depth are mostly correct, but one clear spatial issue remains.
+          7: Consistency is strong with only a minor mismatch.
+          8: The spatial relationship is highly accurate with only a tiny issue.
+          9: Both edited jaw angles fully match source pose, perspective, depth, and natural asymmetry.
+        rubric: |-
+          Judge mandibular visibility, near-side and far-side scale, foreshortening, head rotation, tilt, lens perspective, and source-supported asymmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      jaw_angle_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare source and result as the same individual. Only jaw angles and connected jawline segments may change.
+        anchors:
+          0: The edited subject is effectively a different person, severely distorted, or unusable.
+          1: Identity correspondence is extremely weak.
+          2: Major identity drift affects several defining facial regions.
+          3: Substantial drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a changed-person impression.
+          5: The person remains recognizable, but multiple landmarks or identity cues drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity preservation is strong with only a minor visible drift.
+          8: The face is nearly source-identical apart from jaw-angle reduction.
+          9: Identity, facial landmarks, age impression, skin tone, and characteristic details remain source-identical apart
+            from the intended jaw edit.
+        rubric: |-
+          Compare source and result as the same individual. Only jaw angles and connected jawline segments may change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_expression_face_scene_global_state_preserved:
+        title: Expression, face, scene, camera, and global state are preserved
+        definition: Preserve gaze, expression, mouth state, all facial features, hair, neck, clothing, background, lighting,
+          crop, camera angle, composition, color, and resolution.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are inconsistent with the source.
+          2: Several major changes affect expression, face, scene, camera, or global state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image is recognizable, but a clear important non-target mismatch remains.
+          5: Preservation is moderate with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Preservation is strong with only a minor discrepancy.
+          8: Expression, face, scene, camera, and global color are nearly source-identical.
+          9: All non-target subject, scene, camera, lighting, color, composition, and resolution properties remain source-consistent.
+        rubric: |-
+          Preserve gaze, expression, mouth state, all facial features, hair, neck, clothing, background, lighting, crop, camera angle, composition, color, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Jaw Rendering Quality:
+      jaw_angle_skin_facial_hair_detail_realistic:
+        title: Skin and facial-hair detail are realistic
+        definition: Judge pores, fine lines, makeup, facial hair, sideburns, neck hair, skin microtexture, focus, grain, and
+          source-level sharpness.
+        anchors:
+          0: Detail realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic detail remains.
+          2: The jaw region is severely blurred, plastic, repeated, or synthetic.
+          3: Realism is weak and major detail damage remains.
+          4: The face is recognizable, but a major blur, smoothing, texture, or facial-hair error remains.
+          5: Realism is partial with several visible problems.
+          6: Detail is mostly realistic, but one clear issue remains.
+          7: Skin and facial-hair detail are strong with only a minor mismatch.
+          8: Detail is highly realistic with only a tiny local issue.
+          9: All skin, facial-hair, focus, grain, and fine detail remain fully photorealistic and source-consistent.
+        rubric: |-
+          Judge pores, fine lines, makeup, facial hair, sideburns, neck hair, skin microtexture, focus, grain, and source-level sharpness. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_lighting_shadow_color_integration:
+        title: Lighting, shadows, and color integrate with the source
+        definition: Judge cheek and jaw shading, ear and neck shadows, skin tone, contact shadows, white balance, and global
+          illumination without false contour painting.
+        anchors:
+          0: Lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct illumination remains.
+          2: Shadows or color are severely false or inconsistent.
+          3: Integration is weak and major lighting errors remain.
+          4: The lighting is recognizable, but a major halo, false shadow, flat patch, or color mismatch remains.
+          5: Integration is partial with several shadow or color problems.
+          6: Lighting is mostly correct, but one clear local issue remains.
+          7: Integration is strong with only a minor mismatch.
+          8: Integration is highly accurate with only a tiny issue.
+          9: All jaw, cheek, ear, neck, skin, and background illumination perfectly match the source.
+        rubric: |-
+          Judge cheek and jaw shading, ear and neck shadows, skin tone, contact shadows, white balance, and global illumination without false contour painting. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_boundary_background_reconstruction_consistent:
+        title: Jaw boundaries and background reconstruction are consistent
+        definition: Judge lower-cheek, jaw-angle, jawline, ear, hair, facial-hair, accessory, neck, clothing, and newly exposed
+          background boundaries.
+        anchors:
+          0: Boundary consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or reconstruction remains.
+          2: Major leakage, gaps, repeated background, or impossible overlap is visible.
+          3: Consistency is weak and major boundary errors remain.
+          4: The relationships are recognizable, but a major seam, cutout, overlap, or reconstruction error remains.
+          5: Consistency is partial with several visible problems.
+          6: Boundaries are mostly correct, but one clear issue remains.
+          7: Boundary and reconstruction quality are strong with only a minor mismatch.
+          8: Consistency is highly accurate with only a tiny issue.
+          9: All jaw, ear, hair, neck, clothing, accessory, and background boundaries are seamless and physically coherent.
+        rubric: |-
+          Judge lower-cheek, jaw-angle, jawline, ear, hair, facial-hair, accessory, neck, clothing, and newly exposed background boundaries. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      jaw_angle_artifact_sharpness_no_warp_mask:
+        title: Artifact control, source sharpness, and absence of warp or mask
+        definition: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched hair,
+          warped ears, bent background, thin neck, distorted clothing, liquify waves, and mask transitions.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: Severe warping, masking, blur, duplication, or liquify distortion dominates.
+          3: Artifact control is weak and major defects remain.
+          4: The result is recognizable, but a major seam, warp, duplicate edge, mask, or sharpness mismatch remains.
+          5: Quality is partial with several visible artifacts.
+          6: The result is mostly clean, but one clear artifact remains.
+          7: Artifact control is strong with only a minor defect.
+          8: The result is nearly artifact-free with only a tiny issue.
+          9: The image is source-sharp, seamless, and free of warping, masking, duplication, liquify waves, or background
+            deformation.
+        rubric: |-
+          Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched hair, warped ears, bent background, thin neck, distorted clothing, liquify waves, and mask transitions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful jaw-angle reduction from hiding identity, chin, cheekbone, mouth, neck, camera, or background
+    drift.
+  comparison_checklist:
+    - eyes, brows, nose, mouth, lips, teeth, and expression
+    - cheekbone position, cheek volume, facial height, and upper-face width
+    - chin-tip length, width, projection, centerline, and apex shape
+    - ears, hairline, hairstyle, sideburns, facial hair, neck width, and head pose
+    - age impression, gender presentation, skin tone, stable marks, and facial texture
+    - clothing, accessories, body pose, and shoulder geometry
+    - background hue, texture, brightness, contrast, white balance, and composition
+    - camera angle, crop, framing, lighting, aspect ratio, and resolution
+    - overall same-person impression at normal viewing size
+  strict_rules:
+    - Do not increase identity because the result is attractive, narrow-jawed, symmetrical, or prompt-compliant.
+    - Do not treat a photorealistic but different-looking person as identity-preserved.
+    - A score of 7 still requires a strong same-person match with only minor drift.
+    - A changed-person impression must score 4 or below on the dedicated identity facet.
+    - Only bilateral jaw angles and immediate jawline transitions may change.
+    - Jaw-angle correctness, chin preservation, identity, expression, neck, background, camera state, and rendering quality
+      are independent.
+  task_specific_exception: only bilateral mandibular-angle reduction, immediate connected jawline refinement, and the minimum
+    adjacent skin, facial-hair, ear, hair, neck, clothing, accessory, and background blending zones

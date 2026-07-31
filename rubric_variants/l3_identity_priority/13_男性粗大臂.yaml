@@ -1,0 +1,906 @@
+task_key: male_arm_bulking
+task_title: Male Arm Bulking
+task_title_zh: 男性粗大臂
+version: v35_fixed_22_l3_male_arm_bulking_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority_unique_ids
+target_region: male upper arms, biceps, triceps, forearms when visible, shoulders, sleeves, cuffs, torso contact, and arm-background
+  boundaries
+target_action_summary: Increase or refine male arm thickness/muscularity according to the prompt while preserving pose, clothing,
+  identity, and scene consistency.
+judge_role: You are a strict expert evaluator specializing in male arm bulking, muscular-arm editing, and body-proportion
+  preservation. Judge the edited image against the exact requested edit family, direction, target region, strength, component
+  details, preservation constraints, and realism, not against generic attractiveness or plausibility.
+judge_instructions: '- First infer the exact requested edit family from the prompt, such as thicker arms, stronger arms, muscular
+  upper arms, biceps/triceps enhancement, sleeve-filled arms, subtle arm bulking, or arm-size reduction/removal.
+
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct
+  unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong
+  direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+
+  - Target regions for this task include upper arms, biceps, triceps, forearms, shoulders, sleeves, cuffs, torso, hands, pose,
+  clothing, background, and face identity. Judge the requested target area and the preservation of all non-target regions
+  independently.
+
+
+  - Common non-equivalent substitutions: arm bulking is not shoulder widening, torso enlargement, pose change, clothing inflation,
+  or full-body scaling. These should be penalized even if the image looks plausible.
+
+
+  - Preserve the source person''s identity, face/body proportions not requested to change, expression when not targeted, skin
+  texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target
+  regions independently from target edit quality.
+
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong
+  region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change,
+  background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that
+  supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence
+  is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning;
+  output only the JSON score vector.
+
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a
+  minor flaw.
+
+
+  - If you are uncertain between two scores, choose the lower score.
+
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally
+  be 0-5.
+
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score
+  Prompt Compliance above 5.
+
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should
+  be 0-6.
+
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond
+  the request, Subject Preservation should be 0-6.
+
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation
+  constraints are satisfied.
+
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but
+  visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a
+  recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant
+  trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.'
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add extra rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial/body identity must remain a dedicated, high-impact preservation signal rather than being diluted across easy preservation
+    checks.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, arm bulking is not shoulder widening, torso enlargement, pose
+  change, clothing inflation, or full-body scaling.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited subject against the source as the same individual. A plausible or attractive subject
+    is not sufficient. Visible drift in landmark geometry, feature spacing, face/body outline, age impression, gender presentation,
+    or characteristic details must lower identity-related scores.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. thicker
+    arms, stronger arms, muscular upper arms, biceps/triceps enhancement, sleeve-filled arms, subtle arm bulking, or arm-size
+    reduction/removal must not substitute for each other when the prompt specifies one.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific
+    reason for that exact L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet,
+    or any visible defect remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+  failure_propagation:
+    instruction: 'Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence
+      score.
+
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+
+      color, lighting, background, clothing, or other non-target drift.'
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: 'The requested Male Arm Bulking is absent, barely visible, reversed in direction, or mostly indistinguishable
+          from the source.
+
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+
+          Increase or refine male arm thickness/muscularity according to the prompt while preserving pose, clothing,'
+        severity_guidance: 'If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially
+          visible, use severity 2.
+
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+
+          or impossible to assess, use severity 4-5.
+
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit
+          is
+
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+
+          severity 4-5 even when identity, background, and photorealism are excellent.'
+        affected_l3:
+        - target_edit_applied
+        - primary_instruction_fulfilled
+        - target_region_correct
+        - all_requested_attributes_covered
+        - edit_strength_appropriate
+        - no_wrong_edit_type
+        - unrequested_target_attributes_preserved
+        - arm_bulk_amount_match
+        - sleeve_fill_and_arm_outline_match
+        - arm_anatomy_pose_plausible
+        - cuffs_sleeves_torso_preserved_armbulk
+        - body_scale_distance_preserved_armbulk
+        - edit_confined_to_target_region
+        - boundary_blends_naturally
+        - occlusion_and_shadow_natural
+        - bilateral_balance_when_expected
+        - same_person_identity
+        - body_pose_preserved
+        - arm_anatomy_pose_plausible
+        - target_texture_realistic
+        - color_light_integration
+        - no_obvious_artifacts
+      wrong_operation_or_substitute_edit:
+        detect_when: 'The result substitutes another edit family or generic beautification for the requested Male Arm Bulking.
+          This includes changing a
+
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive
+          but
+
+          semantically wrong edit instead of the requested operation on male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background.'
+        severity_guidance: 'Related but visibly wrong substitute edits should be severity at least 2. If the substitute is
+          the dominant visible
+
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity
+          4-5.'
+        affected_l3:
+        - target_edit_applied
+        - primary_instruction_fulfilled
+        - target_region_correct
+        - all_requested_attributes_covered
+        - edit_strength_appropriate
+        - no_wrong_edit_type
+        - unrequested_target_attributes_preserved
+        - arm_bulk_amount_match
+        - sleeve_fill_and_arm_outline_match
+        - arm_anatomy_pose_plausible
+        - cuffs_sleeves_torso_preserved_armbulk
+        - body_scale_distance_preserved_armbulk
+        - edit_confined_to_target_region
+        - boundary_blends_naturally
+        - occlusion_and_shadow_natural
+        - bilateral_balance_when_expected
+        - same_person_identity
+        - body_pose_preserved
+        - no_obvious_artifacts
+      overdone_or_anatomically_implausible_edit:
+        detect_when: 'The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended
+          source character,
+
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.'
+        severity_guidance: 'Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious
+          imbalance should be
+
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.'
+        affected_l3:
+        - primary_instruction_fulfilled
+        - target_region_correct
+        - all_requested_attributes_covered
+        - edit_strength_appropriate
+        - no_wrong_edit_type
+        - unrequested_target_attributes_preserved
+        - arm_bulk_amount_match
+        - sleeve_fill_and_arm_outline_match
+        - arm_anatomy_pose_plausible
+        - cuffs_sleeves_torso_preserved_armbulk
+        - body_scale_distance_preserved_armbulk
+        - edit_confined_to_target_region
+        - boundary_blends_naturally
+        - occlusion_and_shadow_natural
+        - bilateral_balance_when_expected
+        - target_texture_realistic
+        - color_light_integration
+        - no_obvious_artifacts
+      localization_boundary_or_integration_failure:
+        detect_when: 'The edit spills outside the intended target area, misses important parts of male upper arms, biceps,
+          triceps, forearms when visible, shoulders, sleeves, cuffs, torso contact, and arm-background, damages adjacent structures,
+
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.'
+        severity_guidance: 'Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion,
+          broken contact, or local
+
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity
+          4-5.'
+        affected_l3:
+        - target_region_correct
+        - all_requested_attributes_covered
+        - edit_strength_appropriate
+        - no_wrong_edit_type
+        - unrequested_target_attributes_preserved
+        - arm_bulk_amount_match
+        - sleeve_fill_and_arm_outline_match
+        - arm_anatomy_pose_plausible
+        - cuffs_sleeves_torso_preserved_armbulk
+        - body_scale_distance_preserved_armbulk
+        - edit_confined_to_target_region
+        - boundary_blends_naturally
+        - occlusion_and_shadow_natural
+        - bilateral_balance_when_expected
+        - target_texture_realistic
+        - color_light_integration
+        - no_obvious_artifacts
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: 'The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing,
+          accessories,
+
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+
+          by the prompt.'
+        severity_guidance: 'Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background,
+          or scene drift should
+
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should
+          be
+
+          severity 3-5.
+
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.'
+        affected_l3:
+        - target_edit_applied
+        - primary_instruction_fulfilled
+        - target_region_correct
+        - all_requested_attributes_covered
+        - edit_strength_appropriate
+        - no_wrong_edit_type
+        - unrequested_target_attributes_preserved
+        - arm_bulk_amount_match
+        - sleeve_fill_and_arm_outline_match
+        - arm_anatomy_pose_plausible
+        - cuffs_sleeves_torso_preserved_armbulk
+        - body_scale_distance_preserved_armbulk
+        - edit_confined_to_target_region
+        - boundary_blends_naturally
+        - occlusion_and_shadow_natural
+        - bilateral_balance_when_expected
+        - same_person_identity
+        - body_pose_preserved
+        - arm_anatomy_pose_plausible
+        - target_texture_realistic
+        - color_light_integration
+        - no_obvious_artifacts
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: 'The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures,
+          warped
+
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or
+          other
+
+          rendering artifacts that make the edit unreliable for reward training.'
+        severity_guidance: 'Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material
+          mismatch
+
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity
+          4-5.'
+        affected_l3:
+        - edit_confined_to_target_region
+        - boundary_blends_naturally
+        - occlusion_and_shadow_natural
+        - bilateral_balance_when_expected
+        - arm_anatomy_pose_plausible
+        - target_texture_realistic
+        - color_light_integration
+        - no_obvious_artifacts
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- target_edit_applied
+- primary_instruction_fulfilled
+- target_region_correct
+- all_requested_attributes_covered
+- edit_strength_appropriate
+- no_wrong_edit_type
+- unrequested_target_attributes_preserved
+- arm_bulk_amount_match
+- sleeve_fill_and_arm_outline_match
+- arm_anatomy_pose_plausible
+- cuffs_sleeves_torso_preserved_armbulk
+- body_scale_distance_preserved_armbulk
+- edit_confined_to_target_region
+- boundary_blends_naturally
+- occlusion_and_shadow_natural
+- bilateral_balance_when_expected
+- same_person_identity
+- body_pose_preserved
+- arm_anatomy_pose_quality
+- target_texture_realistic
+- color_light_integration
+- no_obvious_artifacts
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.4
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    target_edit_applied: 0.08
+    primary_instruction_fulfilled: 0.12
+    target_region_correct: 0.08
+    all_requested_attributes_covered: 0.08
+    edit_strength_appropriate: 0.08
+    no_wrong_edit_type: 0.08
+    unrequested_target_attributes_preserved: 0.05
+    arm_bulk_amount_match: 0.11
+    sleeve_fill_and_arm_outline_match: 0.09
+    arm_anatomy_pose_plausible: 0.09
+    cuffs_sleeves_torso_preserved_armbulk: 0.07
+    body_scale_distance_preserved_armbulk: 0.07
+  Localization and Anatomical Integration:
+    edit_confined_to_target_region: 0.28
+    boundary_blends_naturally: 0.28
+    occlusion_and_shadow_natural: 0.22
+    bilateral_balance_when_expected: 0.22
+  Subject Preservation:
+    same_person_identity: 0.8
+    body_pose_preserved: 0.2
+  Task Realism and Image Quality:
+    arm_anatomy_pose_quality: 0.28
+    target_texture_realistic: 0.26
+    color_light_integration: 0.24
+    no_obvious_artifacts: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Instruction and Task-Specific Target Checks:
+      target_edit_applied:
+        title: Target edit applied
+        definition: Judge target edit applied for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      primary_instruction_fulfilled:
+        title: Primary instruction fulfilled
+        definition: Judge primary instruction fulfilled for Male Arm Bulking. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when
+          visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated
+          change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak,
+          anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      target_region_correct:
+        title: Target region correct
+        definition: Judge target region correct for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      all_requested_attributes_covered:
+        title: All requested attributes covered
+        definition: Judge all requested attributes covered for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      edit_strength_appropriate:
+        title: Edit strength appropriate
+        definition: Judge edit strength appropriate for Male Arm Bulking. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when
+          visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated
+          change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak,
+          anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      no_wrong_edit_type:
+        title: No wrong edit type
+        definition: Judge no wrong edit type for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      unrequested_target_attributes_preserved:
+        title: Unrequested target attributes preserved
+        definition: Judge unrequested target attributes preserved for Male Arm Bulking. Compare the source image, edit prompt,
+          and edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      arm_bulk_amount_match:
+        title: Arm bulk amount match
+        definition: Judge arm bulk amount match for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      sleeve_fill_and_arm_outline_match:
+        title: Sleeve fill and arm outline match
+        definition: Judge sleeve fill and arm outline match for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      arm_anatomy_pose_plausible:
+        title: Arm anatomy and pose plausible
+        definition: Judge arm anatomy and pose plausible for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      cuffs_sleeves_torso_preserved_armbulk:
+        title: Cuffs, sleeves, and torso preserved
+        definition: Judge cuffs, sleeves, and torso preserved for Male Arm Bulking. Compare the source image, edit prompt,
+          and edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      body_scale_distance_preserved_armbulk:
+        title: Body scale and distance preserved
+        definition: Judge body scale and distance preserved for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+  Localization and Anatomical Integration:
+    Localization, Boundary, and Anatomy:
+      edit_confined_to_target_region:
+        title: Edit confined to target region
+        definition: Judge edit confined to target region for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      boundary_blends_naturally:
+        title: Boundary blends naturally
+        definition: Judge boundary blends naturally for Male Arm Bulking. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when
+          visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated
+          change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak,
+          anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      occlusion_and_shadow_natural:
+        title: Occlusion and shadow natural
+        definition: Judge occlusion and shadow natural for Male Arm Bulking. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when
+          visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated
+          change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak,
+          anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      bilateral_balance_when_expected:
+        title: Bilateral balance when expected
+        definition: Judge bilateral balance when expected for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+  Subject Preservation:
+    Identity, Expression, Pose, and Non-target Preservation:
+      same_person_identity:
+        title: Same person identity
+        definition: Judge same person identity for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      body_pose_preserved:
+        title: Body pose preserved
+        definition: Judge body pose preserved for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+  Task Realism and Image Quality:
+    Rendering Realism and Artifacts:
+      arm_anatomy_pose_quality:
+        title: Arm anatomy and pose plausible
+        definition: Judge arm anatomy and pose plausible for Male Arm Bulking. Compare the source image, edit prompt, and
+          edited image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms
+          when visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      target_texture_realistic:
+        title: Target texture realistic
+        definition: Judge target texture realistic for Male Arm Bulking. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when
+          visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated
+          change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak,
+          anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      color_light_integration:
+        title: Color and light integration
+        definition: Judge color and light integration for Male Arm Bulking. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when
+          visible, shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated
+          change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak,
+          anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      no_obvious_artifacts:
+        title: No obvious artifacts
+        definition: Judge no obvious artifacts for Male Arm Bulking. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside male upper arms, biceps, triceps, forearms when visible,
+          shoulders, sleeves, cuffs, torso contact, and arm-background boundaries, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.

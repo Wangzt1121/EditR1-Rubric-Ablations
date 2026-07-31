@@ -1,0 +1,703 @@
+task_key: male_pointed_chin_adjustment
+task_title: Male Pointed Chin Adjustment
+task_title_zh: 男性尖下巴
+version: v48_fixed_integer_22_l3_male_pointed_chin_adjustment_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+language: English
+training_prompt_profile:
+  total_prompts_reviewed: 100
+  unique_prompt_templates: 10
+  template_frequency: Each unique template appears 10 times.
+  target_function: chin
+  fine_control: pointed_chin
+  shared_target: make the chin tip more delicate and slightly pointed
+  recurring_requirements:
+  - use a visible but believable pointedness adjustment
+  - preserve male identity, age impression, expression, and head pose
+  - preserve pores, fine skin texture, facial hair, local shadows, and photographic style
+  - keep unrelated facial features, hair, clothing, background, lighting, and camera conditions unchanged
+  - avoid plastic skin, warped edges, duplicated anatomy, broken teeth, and background deformation
+  important_interpretation: The prompts request localized chin-tip pointedness. They do not request chin lengthening, forward
+    projection, jaw narrowing, V-line reshaping, or global lower-face slimming.
+target_region: The visible chin tip and its immediate left-right taper from the lower mentolabial region to the lowest chin
+  contour. Only the minimum adjacent mandibular and submental skin needed for a natural pointed-tip transition may change.
+target_action_summary: Make the male subject's chin tip slightly more delicate and pointed while preserving the source-specific
+  masculine facial character. Keep chin length, forward projection, jaw width, mouth position, expression, facial identity,
+  head pose, skin texture, lighting, and all non-target content unchanged.
+task_boundary:
+  allowed:
+  - localized refinement of chin-tip sharpness and taper
+  - small contour redistribution near the chin tip
+  - minimal reconstruction of skin, facial hair, shadows, and adjacent transitions
+  - perspective-aware asymmetry when required by head rotation
+  not_equivalent_tasks:
+  - lengthening or shortening the chin as the main operation
+  - increasing or decreasing chin projection
+  - narrowing the jaw or creating a global V-line face
+  - changing the cleft, mouth, lower lip, teeth, or entire lower face
+  - using crop, pose, or global image stretching to simulate a pointed chin
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate pointed-tip compliance, local anatomy, identity preservation, and rendering
+    quality. Do not reward a narrow or elongated lower face when the actual chin tip is not correctly refined.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible chin-tip evidence.
+  - Do not reward chin length, projection, jaw width, mouth position, crop, or pose changes.
+  - Preserve source-specific male facial identity rather than forcing a generic narrow chin.
+  - Use perspective-aware balance rather than forced mirror symmetry.
+  - One severe anatomy, identity, mouth, jaw, or background error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request increased chin-tip pointedness, delicacy, sharpness, or taper.
+  wrong_task_examples:
+  - change only chin length or projection
+  - narrow the jaw or create a V-line face
+  - reshape the entire lower face
+  - change the cleft, mouth, teeth, or expression
+  conflict_examples:
+  - make the chin more pointed and more rounded simultaneously
+  - preserve the exact chin-tip contour while requiring visible pointedness
+  - change only chin length while requiring no chin-tip shape change
+  visibility_failures:
+  - the chin tip is outside the frame or fully occluded
+  - resolution is insufficient to identify the chin tip and jaw transitions
+  - facial hair or objects completely prevent contour assessment
+anatomy_interpretation:
+  rules:
+  - Pointedness is a controlled reduction of chin-tip roundness, not a needle-like spike.
+  - The taper must begin gradually from both lower mandibular sides and converge naturally.
+  - Preserve chin length, forward projection, jaw width, jaw angle, and source chin character.
+  - Preserve the lower lip and mentolabial fold position.
+  - Maintain chin-tip alignment with head rotation, facial centerline, and perspective.
+  - Avoid triangular cutouts, pinched lower face, hooked tips, double contours, or filler-like bulges.
+  - Facial hair and stubble must follow the edited surface without stretching or duplication.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: A polished image cannot compensate for an unchanged or rounded chin tip, excessive spikiness, V-line
+    reshaping, changed jaw width, identity drift, or broken anatomy.
+  male_pointed_chin_disambiguation_rule: Correct editing changes chin-tip pointedness/delicacy only. V-line sculpting, jaw
+    narrowing, chin lengthening, projection change, mouth movement, neck thinning, feminizing beauty retouching, pose/crop
+    change, and shadow painting are substitute operations.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: The chin tip remains unchanged/round/blunt, becomes less pointed, or the pointedness change is too weak
+          to satisfy the prompt.
+        severity_guidance: Tiny but correct chin-tip refinement may be severity 1. Correct but weak/partial pointedness should
+          be severity 2. Mostly unchanged chin tip must be severity 3. Wrong direction, absent target, or less pointed result
+          must be severity 4-5.
+        affected_l3:
+        - male_pointed_chin_primary_outcome_match
+        - male_pointed_chin_pointedness_direction_match
+        - male_pointed_chin_magnitude_intensity_match
+        - male_pointed_chin_taper_profile_match
+        - male_pointed_chin_tip_radius_delicacy_match
+        - male_pointed_chin_requested_finish_visibility_match
+        - male_pointed_chin_edit_localized_to_chin_tip_region
+        - male_pointed_chin_length_width_projection_control_match
+        - male_pointed_chin_centerline_bilateral_balance_match
+        - male_pointed_chin_lower_lip_mentolabial_transition_quality
+        - male_pointed_chin_identity_masculine_character_preservation
+        - male_pointed_chin_mouth_teeth_expression_preservation
+        - male_pointed_chin_jaw_width_length_projection_preservation
+        - male_pointed_chin_non_target_facial_feature_preservation
+        - male_pointed_chin_skin_hair_clothing_scene_camera_preservation
+        - male_pointed_chin_contour_edge_artifact_stability
+      over_pointed_feminized_or_unmasculine_chin:
+        detect_when: The chin becomes too sharp, narrow, delicate, doll-like, feminine, V-idol-like, surgically pinched, or
+          inconsistent with the source male facial character.
+        severity_guidance: Slight over-sharpness may be severity 1-2. Clear feminine/idol-like/doll-like or surgically pinched
+          appearance must be severity 3-4. Strong masculine identity loss or replaced chin must be severity 4-5.
+        affected_l3:
+        - male_pointed_chin_primary_outcome_match
+        - male_pointed_chin_magnitude_intensity_match
+        - male_pointed_chin_taper_profile_match
+        - male_pointed_chin_tip_radius_delicacy_match
+        - male_pointed_chin_length_width_projection_control_match
+        - male_pointed_chin_centerline_bilateral_balance_match
+        - male_pointed_chin_identity_masculine_character_preservation
+        - male_pointed_chin_jaw_width_length_projection_preservation
+        - male_pointed_chin_contour_edge_artifact_stability
+        - male_pointed_chin_pointedness_direction_match
+        - male_pointed_chin_requested_finish_visibility_match
+        - male_pointed_chin_edit_localized_to_chin_tip_region
+        - male_pointed_chin_lower_lip_mentolabial_transition_quality
+        - male_pointed_chin_mandibular_side_transition_quality
+        - male_pointed_chin_tip_axis_perspective_consistency
+        - male_pointed_chin_submental_neck_transition_quality
+        - male_pointed_chin_skin_facial_hair_occlusion_integration
+        - male_pointed_chin_skin_facial_hair_detail_realism
+        - male_pointed_chin_local_lighting_shadow_color_consistency
+      substitute_vline_jaw_slimming_length_or_projection_change:
+        detect_when: The result mainly uses V-line sculpting, jaw slimming, chin lengthening/shortening, projection movement,
+          lower-face compression, neck thinning, or beauty filtering instead of localized chin-tip refinement.
+        severity_guidance: Clear substitute operation must be at least severity 2. Changed jaw/chin length/projection/mouth
+          relation or source face character must be severity 3-5.
+        affected_l3:
+        - male_pointed_chin_primary_outcome_match
+        - male_pointed_chin_pointedness_direction_match
+        - male_pointed_chin_length_width_projection_control_match
+        - male_pointed_chin_mandibular_side_transition_quality
+        - male_pointed_chin_submental_neck_transition_quality
+        - male_pointed_chin_jaw_width_length_projection_preservation
+        - male_pointed_chin_non_target_facial_feature_preservation
+        - male_pointed_chin_skin_hair_clothing_scene_camera_preservation
+        - male_pointed_chin_magnitude_intensity_match
+        - male_pointed_chin_taper_profile_match
+        - male_pointed_chin_tip_radius_delicacy_match
+        - male_pointed_chin_centerline_bilateral_balance_match
+        - male_pointed_chin_requested_finish_visibility_match
+        - male_pointed_chin_edit_localized_to_chin_tip_region
+        - male_pointed_chin_lower_lip_mentolabial_transition_quality
+        - male_pointed_chin_identity_masculine_character_preservation
+        - male_pointed_chin_mouth_teeth_expression_preservation
+        - male_pointed_chin_contour_edge_artifact_stability
+      chin_transition_perspective_or_boundary_broken:
+        detect_when: Lower lip/mentolabial fold, mandibular side transition, chin axis, submental/neck transition, skin/facial-hair
+          occlusion, contour edge, lighting, or boundary reconstruction becomes warped, melted, cut, haloed, or anatomically
+          implausible.
+        severity_guidance: Clear local anatomy or boundary break must be at least severity 2. Melted chin, impossible perspective,
+          broken mouth/chin/neck relation, or severe artifact must be severity 3-5.
+        affected_l3:
+        - male_pointed_chin_lower_lip_mentolabial_transition_quality
+        - male_pointed_chin_mandibular_side_transition_quality
+        - male_pointed_chin_tip_axis_perspective_consistency
+        - male_pointed_chin_submental_neck_transition_quality
+        - male_pointed_chin_skin_facial_hair_occlusion_integration
+        - male_pointed_chin_skin_facial_hair_detail_realism
+        - male_pointed_chin_local_lighting_shadow_color_consistency
+        - male_pointed_chin_contour_edge_artifact_stability
+        - male_pointed_chin_primary_outcome_match
+        - male_pointed_chin_pointedness_direction_match
+        - male_pointed_chin_magnitude_intensity_match
+        - male_pointed_chin_taper_profile_match
+        - male_pointed_chin_tip_radius_delicacy_match
+        - male_pointed_chin_length_width_projection_control_match
+        - male_pointed_chin_centerline_bilateral_balance_match
+        - male_pointed_chin_requested_finish_visibility_match
+        - male_pointed_chin_edit_localized_to_chin_tip_region
+        - male_pointed_chin_identity_masculine_character_preservation
+      identity_mouth_facial_hair_or_source_state_drift:
+        detect_when: Male identity, masculine character, mouth/teeth/expression, facial hair, skin texture, hair, clothing,
+          lighting, background, pose, crop, or camera state changes beyond the chin-tip edit.
+        severity_guidance: Minor local texture drift may be severity 1. Clear mouth/expression/facial-hair/skin/lighting drift
+          should be severity 2-3. Identity, masculine character, camera/framing, or broad source-state change must be severity
+          4-5.
+        affected_l3:
+        - male_pointed_chin_identity_masculine_character_preservation
+        - male_pointed_chin_mouth_teeth_expression_preservation
+        - male_pointed_chin_non_target_facial_feature_preservation
+        - male_pointed_chin_skin_hair_clothing_scene_camera_preservation
+        - male_pointed_chin_skin_facial_hair_detail_realism
+        - male_pointed_chin_local_lighting_shadow_color_consistency
+        - male_pointed_chin_contour_edge_artifact_stability
+        - male_pointed_chin_primary_outcome_match
+        - male_pointed_chin_edit_localized_to_chin_tip_region
+        - male_pointed_chin_jaw_width_length_projection_preservation
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Male pointed-chin adjustment means localized chin-tip pointedness refinement while preserving
+    masculine source character. It is not V-line sculpting, jaw slimming, chin length/projection change, face compression,
+    or beauty filtering.
+  no_compensation_rule: If chin-tip pointedness is absent, preservation/background/photorealism must not raise edit-dependent
+    facets. If the result is V-line, feminized, globally slimmed, length/projection-changed, or source-changing, a prettier
+    chin must not raise source-preserving male pointed-chin facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample makes the male chin tip slightly more delicate and pointed while preserving masculine
+    facial character, chin length/projection/width, mouth, jaw, identity, facial hair, and scene state.
+  success_gate_conditions:
+  - The chin tip radius/taper is visibly refined in the requested pointed direction at normal viewing size.
+  - The result remains masculine and source-consistent, not feminine, doll-like, over-sharp, or identity-changing.
+  - Chin length, projection, width, jaw sides, lower lip/mentolabial relation, mouth, and neck remain stable.
+  - The edit is localized to the chin tip/lower-chin contour, not V-line sculpting, jaw slimming, neck thinning, or beauty
+    retouching.
+  - Chin boundaries, facial hair/skin occlusion, lighting, color, and local texture remain natural.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- male_pointed_chin_primary_outcome_match
+- male_pointed_chin_pointedness_direction_match
+- male_pointed_chin_magnitude_intensity_match
+- male_pointed_chin_taper_profile_match
+- male_pointed_chin_tip_radius_delicacy_match
+- male_pointed_chin_length_width_projection_control_match
+- male_pointed_chin_centerline_bilateral_balance_match
+- male_pointed_chin_requested_finish_visibility_match
+- male_pointed_chin_edit_localized_to_chin_tip_region
+- male_pointed_chin_lower_lip_mentolabial_transition_quality
+- male_pointed_chin_mandibular_side_transition_quality
+- male_pointed_chin_tip_axis_perspective_consistency
+- male_pointed_chin_submental_neck_transition_quality
+- male_pointed_chin_skin_facial_hair_occlusion_integration
+- male_pointed_chin_identity_masculine_character_preservation
+- male_pointed_chin_mouth_teeth_expression_preservation
+- male_pointed_chin_jaw_width_length_projection_preservation
+- male_pointed_chin_non_target_facial_feature_preservation
+- male_pointed_chin_skin_hair_clothing_scene_camera_preservation
+- male_pointed_chin_skin_facial_hair_detail_realism
+- male_pointed_chin_local_lighting_shadow_color_consistency
+- male_pointed_chin_contour_edge_artifact_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    male_pointed_chin_primary_outcome_match: 0.19
+    male_pointed_chin_pointedness_direction_match: 0.17
+    male_pointed_chin_magnitude_intensity_match: 0.14
+    male_pointed_chin_taper_profile_match: 0.14
+    male_pointed_chin_tip_radius_delicacy_match: 0.12
+    male_pointed_chin_length_width_projection_control_match: 0.11
+    male_pointed_chin_centerline_bilateral_balance_match: 0.07
+    male_pointed_chin_requested_finish_visibility_match: 0.06
+  Localization and Anatomical Integration:
+    male_pointed_chin_edit_localized_to_chin_tip_region: 0.2
+    male_pointed_chin_lower_lip_mentolabial_transition_quality: 0.18
+    male_pointed_chin_mandibular_side_transition_quality: 0.2
+    male_pointed_chin_tip_axis_perspective_consistency: 0.22
+    male_pointed_chin_submental_neck_transition_quality: 0.12
+    male_pointed_chin_skin_facial_hair_occlusion_integration: 0.08
+  Subject Preservation:
+    male_pointed_chin_identity_masculine_character_preservation: 0.28
+    male_pointed_chin_mouth_teeth_expression_preservation: 0.22
+    male_pointed_chin_jaw_width_length_projection_preservation: 0.23
+    male_pointed_chin_non_target_facial_feature_preservation: 0.17
+    male_pointed_chin_skin_hair_clothing_scene_camera_preservation: 0.1
+  Task Realism and Image Quality:
+    male_pointed_chin_skin_facial_hair_detail_realism: 0.3
+    male_pointed_chin_local_lighting_shadow_color_consistency: 0.3
+    male_pointed_chin_contour_edge_artifact_stability: 0.4
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.50 * P + 0.24 * L + 0.16 * S + 0.10 * Q
+  pointedness_score: D = score(male_pointed_chin_pointedness_direction_match) / 9.0
+  anatomy_score: A = score(male_pointed_chin_tip_axis_perspective_consistency) / 9.0
+  identity_score: I = score(male_pointed_chin_identity_masculine_character_preservation) / 9.0
+  final_formula: reward = base_reward * (D ** 0.28) * (A ** 0.20) * (I ** 0.18)
+taxonomy:
+  Prompt Compliance:
+    Requested Pointed Chin:
+      male_pointed_chin_primary_outcome_match:
+        title: Primary pointed-chin outcome
+        definition: Whether the chin tip becomes visibly more delicate and slightly pointed.
+        anchors:
+          0: No target edit, rounder chin, or a different task.
+          3: Weak or inconsistent pointedness change.
+          5: Partial result with major incompleteness.
+          7: Clear successful refinement with one material issue.
+          9: The chin tip is clearly, naturally, and precisely more pointed.
+        rubric: Whether the chin tip becomes visibly more delicate and slightly pointed. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      male_pointed_chin_pointedness_direction_match:
+        title: Pointedness direction
+        definition: Whether chin-tip roundness decreases in the requested direction.
+        anchors:
+          0: Chin becomes rounder, flatter, or broader.
+          3: Direction is largely absent or inconsistent.
+          5: General pointedness increase exists but remains weak or uneven.
+          7: Correct direction with one minor issue.
+          9: Pointedness direction is unmistakably correct.
+        rubric: Whether chin-tip roundness decreases in the requested direction. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      male_pointed_chin_magnitude_intensity_match:
+        title: Magnitude and intensity
+        definition: Whether the amount is visible and prompt-appropriate without becoming extreme.
+        anchors:
+          0: No visible change or destructive over-sharpening.
+          3: Severely too weak, too strong, or uneven.
+          5: Recognizable but clearly inaccurate magnitude.
+          7: Appropriate magnitude with one minor issue.
+          9: Magnitude exactly matches the prompt and remains believable.
+        rubric: Whether the amount is visible and prompt-appropriate without becoming extreme. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_taper_profile_match:
+        title: Chin taper profile
+        definition: Whether both chin sides narrow gradually toward the tip rather than forming an abrupt triangle.
+        anchors:
+          0: No taper, reversed taper, or impossible triangular cutout.
+          3: Major abruptness, pinching, or asymmetric taper.
+          5: General taper exists with one clear profile error.
+          7: Natural taper with one minor issue.
+          9: Both sides converge smoothly and anatomically.
+        rubric: Whether both chin sides narrow gradually toward the tip rather than forming an abrupt triangle. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_tip_radius_delicacy_match:
+        title: Tip radius and delicacy
+        definition: Whether the final tip is refined and compact without becoming needle-like.
+        anchors:
+          0: Tip is blunt, broken, hooked, or needle-like.
+          3: Strong mismatch in sharpness or tip radius.
+          5: More delicate but clearly too round or too sharp.
+          7: Appropriate with one minor issue.
+          9: Tip radius is precise, refined, and natural.
+        rubric: Whether the final tip is refined and compact without becoming needle-like. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_length_width_projection_control_match:
+        title: Length, width, and projection control
+        definition: Whether pointedness is achieved without materially changing chin length, base width, or forward projection.
+        anchors:
+          0: Major lengthening, shortening, narrowing, widening, or projection shift.
+          3: Strong non-target chin geometry change.
+          5: Mostly controlled with one clear extra change.
+          7: Controlled with one minor difference.
+          9: Only tip pointedness changes; other chin dimensions remain source-consistent.
+        rubric: Whether pointedness is achieved without materially changing chin length, base width, or forward projection.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_centerline_bilateral_balance_match:
+        title: Centerline and bilateral balance
+        definition: Whether the tip remains aligned with the lower-face axis and source asymmetry.
+        anchors:
+          0: Severe off-center tip or unilateral deformation.
+          3: Major centerline or left-right imbalance.
+          5: Generally centered with one clear asymmetry error.
+          7: Balanced with one minor issue.
+          9: Tip alignment and bilateral contour are fully natural.
+        rubric: Whether the tip remains aligned with the lower-face axis and source asymmetry. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_requested_finish_visibility_match:
+        title: Requested finish and visibility
+        definition: Whether studio, editorial, app-style, commercial, premium, or high-fashion finish is visible at normal
+          size.
+        anchors:
+          0: Finish is absent, opposite, or destructive.
+          3: Strong style, visibility, or realism mismatch.
+          5: Requested finish is recognizable but inaccurate.
+          7: Appropriate finish with one minor mismatch.
+          9: Finish, visibility, and realism precisely match the prompt.
+        rubric: Whether studio, editorial, app-style, commercial, premium, or high-fashion finish is visible at normal size.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Anatomical Integration:
+    Chin-Tip Anatomy and Transitions:
+      male_pointed_chin_edit_localized_to_chin_tip_region:
+        title: Edit localization
+        definition: Whether changes remain within the chin tip and minimum transition area.
+        anchors:
+          0: Broad jaw, mouth, cheek, neck, or full-face editing.
+          3: Significant spill into non-target regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to the permitted chin-tip region.
+        rubric: Whether changes remain within the chin tip and minimum transition area. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      male_pointed_chin_lower_lip_mentolabial_transition_quality:
+        title: Lower-lip and mentolabial transition
+        definition: Whether the lower lip, mentolabial fold, and upper chin remain naturally connected.
+        anchors:
+          0: Lower lip moves, fold disappears, or anatomy becomes impossible.
+          3: Major shelf, pinch, gap, or fold distortion.
+          5: Generally connected with one clear issue.
+          7: Natural with one minor issue.
+          9: Lower-lip-to-chin transition remains seamless.
+        rubric: Whether the lower lip, mentolabial fold, and upper chin remain naturally connected. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_mandibular_side_transition_quality:
+        title: Mandibular side transitions
+        definition: Whether both chin sides connect smoothly into the original jawline.
+        anchors:
+          0: Detached tip, broken jawline, or severe mandibular deformation.
+          3: Major ridge, notch, pinch, or contour discontinuity.
+          5: Generally plausible with one clear transition issue.
+          7: Natural with one minor issue.
+          9: Both chin-to-jaw transitions are smooth and source-consistent.
+        rubric: Whether both chin sides connect smoothly into the original jawline. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      male_pointed_chin_tip_axis_perspective_consistency:
+        title: Tip axis and perspective
+        definition: Whether the tip follows head rotation, facial centerline, depth, and lens perspective.
+        anchors:
+          0: Tip contradicts pose or creates impossible anatomy.
+          3: Major axis, depth, perspective, or centerline error.
+          5: Generally plausible with one clear inconsistency.
+          7: Coherent with one minor issue.
+          9: Tip geometry is fully compatible with anatomy and perspective.
+        rubric: Whether the tip follows head rotation, facial centerline, depth, and lens perspective. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_submental_neck_transition_quality:
+        title: Submental and neck transition
+        definition: Whether the underside of the chin remains naturally connected to the neck.
+        anchors:
+          0: Floating tip, broken underside, or impossible neck connection.
+          3: Major submental contour or shadow error.
+          5: Generally plausible with one clear issue.
+          7: Natural with one minor issue.
+          9: Submental and neck transitions remain fully coherent.
+        rubric: Whether the underside of the chin remains naturally connected to the neck. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_skin_facial_hair_occlusion_integration:
+        title: Skin, facial-hair, and occlusion integration
+        definition: Whether pores, beard, stubble, hands, collars, and nearby occlusions remain correctly layered.
+        anchors:
+          0: Skin, facial hair, or occluding objects are erased, duplicated, or wrongly layered.
+          3: Major stretching, penetration, or occlusion error.
+          5: Mostly integrated with one obvious inconsistency.
+          7: Natural with one minor issue.
+          9: All local texture and occlusion relationships remain seamless.
+        rubric: Whether pores, beard, stubble, hands, collars, and nearby occlusions remain correctly layered. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      male_pointed_chin_identity_masculine_character_preservation:
+        title: Identity and masculine facial-character preservation
+        definition: Whether the same man, age impression, source-specific lower-face character, and identity remain recognizable.
+        anchors:
+          0: Different person or major lower-face redesign.
+          3: Strong identity, age, or masculine-character drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and source-specific masculine facial character remain intact.
+        rubric: Whether the same man, age impression, source-specific lower-face character, and identity remain recognizable.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_mouth_teeth_expression_preservation:
+        title: Mouth, teeth, and expression preservation
+        definition: Whether lips, mouth corners, teeth, jaw opening, smile, and expression remain unchanged.
+        anchors:
+          0: Major mouth, teeth, or expression alteration.
+          3: Strong drift in one or more listed features.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: Mouth, teeth, and expression remain unchanged.
+        rubric: Whether lips, mouth corners, teeth, jaw opening, smile, and expression remain unchanged. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_jaw_width_length_projection_preservation:
+        title: Jaw width, chin length, and projection preservation
+        definition: Whether jaw width, jaw angle, chin length, projection, cleft character, and face shape remain unchanged.
+        anchors:
+          0: Major V-line reshaping, length change, or projection shift.
+          3: Strong lower-face geometry drift.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All non-target lower-face dimensions remain unchanged.
+        rubric: Whether jaw width, jaw angle, chin length, projection, cleft character, and face shape remain unchanged. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_non_target_facial_feature_preservation:
+        title: Non-target facial-feature preservation
+        definition: Whether eyes, gaze, brows, nose, cheeks, ears, forehead, hairline, and facial features remain stable.
+        anchors:
+          0: Multiple major non-target facial changes.
+          3: Strong alteration of one or more unrelated features.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target facial features remain unchanged.
+        rubric: Whether eyes, gaze, brows, nose, cheeks, ears, forehead, hairline, and facial features remain stable. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_skin_hair_clothing_scene_camera_preservation:
+        title: Skin, hair, clothing, scene, and camera preservation
+        definition: Whether skin tone, makeup, hair, clothing, background, lighting, crop, angle, framing, and resolution
+          remain stable.
+        anchors:
+          0: Major non-target replacement, reframing, or global warping.
+          3: Strong appearance, scene, crop, scale, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target appearance and camera conditions remain unchanged.
+        rubric: Whether skin tone, makeup, hair, clothing, background, lighting, crop, angle, framing, and resolution remain
+          stable. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      male_pointed_chin_skin_facial_hair_detail_realism:
+        title: Skin and facial-hair detail realism
+        definition: Whether pores, fine lines, beard, stubble, and skin texture remain natural over the edited chin.
+        anchors:
+          0: Severely synthetic, smeared, plastic, or textureless.
+          3: Strong texture loss, repeated stubble, or over-smoothing.
+          5: Usable but visibly processed.
+          7: Realistic with one minor detail issue.
+          9: Skin and facial-hair detail are fully photorealistic.
+        rubric: Whether pores, fine lines, beard, stubble, and skin texture remain natural over the edited chin. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_local_lighting_shadow_color_consistency:
+        title: Local lighting, shadow, and color consistency
+        definition: Whether chin highlights, mentolabial shadow, jaw shadow, skin tone, and submental shading follow source
+          light.
+        anchors:
+          0: Lighting, shadows, or colors strongly contradict the image.
+          3: Major missing, duplicated, or incorrect local illumination.
+          5: Generally plausible with one obvious inconsistency.
+          7: Consistent with one minor issue.
+          9: Color, lighting, and chin shadows integrate perfectly.
+        rubric: Whether chin highlights, mentolabial shadow, jaw shadow, skin tone, and submental shading follow source light.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      male_pointed_chin_contour_edge_artifact_stability:
+        title: Contour, edge, and artifact stability
+        definition: Whether chin boundaries remain free of halos, dents, spikes, double edges, warped hair, or background
+          deformation.
+        anchors:
+          0: Severe contour failure, structural artifacts, or image instability.
+          3: Multiple obvious seams, spikes, distortions, or duplicated anatomy.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor contour or artifact issue.
+          9: No visible artifacts; all edited boundaries are seamless.
+        rubric: Whether chin boundaries remain free of halos, dents, spikes, double edges, warped hair, or background deformation.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+prompt_applicability:
+  purpose: All prompts share one localized pointed-chin target. All eight Prompt Compliance facets are always applicable.
+  always_applicable:
+  - male_pointed_chin_primary_outcome_match
+  - male_pointed_chin_pointedness_direction_match
+  - male_pointed_chin_magnitude_intensity_match
+  - male_pointed_chin_taper_profile_match
+  - male_pointed_chin_tip_radius_delicacy_match
+  - male_pointed_chin_length_width_projection_control_match
+  - male_pointed_chin_centerline_bilateral_balance_match
+  - male_pointed_chin_requested_finish_visibility_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+judge_role: You are a strict expert evaluator for male pointed-chin refinement, chin-tip anatomy, masculine identity preservation,
+  and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare original chin-tip radius, taper, centerline, chin length/width/projection, mentolabial fold, mouth,
+  jaw sides, submental/neck transition, facial hair, masculine facial character, identity, expression, lighting, clothing,
+  background, pose, and camera state.
+
+
+  2) Task target. A successful edit makes the male subject''s chin tip slightly more delicate/pointed while remaining believable
+  and masculine. The edit must stay localized to the chin tip/lower-chin contour and must not change chin length, forward
+  projection, jaw width, mouth position, facial identity, or non-target scene content.
+
+
+  3) Task-specific failures. Treat absent/weak pointedness, over-pointed/feminized chin, V-line/jaw-slimming/length/projection
+  substitute, broken chin transitions, or identity/source drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires concrete evidence for the exact L3. If the chin is unchanged or the result is a different
+  operation, preservation/realism must not lift affected facets into the successful range.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '

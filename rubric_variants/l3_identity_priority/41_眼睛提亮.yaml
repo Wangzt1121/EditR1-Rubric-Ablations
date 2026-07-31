@@ -1,0 +1,785 @@
+task_key: eye_brightening
+task_title: Eye Brightening
+task_title_zh: 眼睛提亮
+version: v52_fixed_integer_22_l3_eye_brightening_non_target_color_drift_gate_l3_identity_priority
+language: English
+judge_role: You are a strict expert evaluator for natural eye brightening, ocular optics, gaze/identity preservation, and
+  source-state consistency.
+judge_instructions: |-
+  Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+  1) Source audit. Compare original iris luminance/detail, sclera clarity, catchlights/reflections, eye color, pupil/iris
+  boundaries, gaze, eye shape, eyelids/lashes, expression, skin tone, makeup, hair, clothing, global lighting, background,
+  framing, and camera state.
+
+  2) Non-target color-state check. Before scoring, compare at least three non-eye regions: face skin, background, and hair/clothing
+  when visible. If two or more non-eye regions share a visible brightness, warmth, saturation, contrast, or white-balance shift,
+  treat it as non-target color/lighting drift rather than purely local eye brightening. Do not excuse this drift merely because
+  the eyes also became brighter.
+
+  3) Actual-edit classification. Before scoring, decide which case best describes the edited image:
+  correct_local_eye_brightening; weak_or_near_no_op; global_exposure_or_white_balance_substitute; face_skin_tone_or_beauty_filter_substitute;
+  non_target_color_white_balance_drift; overbright_synthetic_or_wrong_eye_color; gaze_anatomy_or_reflection_error; or source_state_drift.
+  Do not reward a generally brighter, warmer, smoother, prettier, higher-contrast, or globally relit face unless the eyes
+  themselves are locally and source-consistently improved.
+
+  4) Positive versus negative sample meaning. A positive training sample makes the eyes visibly brighter and livelier through
+  local iris/sclera/catchlight improvement while preserving eye color, pupil darkness, gaze, eye shape, skin tone, background
+  color, global white balance, and camera state. A negative sample includes no visible eye-local improvement, eye changes made
+  mainly by global exposure/white-balance shifts, warmer/yellower or paler face skin, background color drift, beauty filtering,
+  eye recoloring/enlargement, synthetic catchlights, or source-state drift.
+
+  5) Failure propagation. Treat absent/weak brightening, global exposure/face relighting/white-balance substitute, visible
+  skin-tone/background/hair/clothing color drift, overexposed/synthetic eyes, changed eye color/gaze/anatomy, and non-target
+  source drift as failures. Estimate severity 0-5 and apply global_scoring_policy.failure_propagation caps before final output.
+
+  6) Score calibration. 9 is rare. 8 is near-perfect. 7 requires concrete facet-specific evidence; for core eye-brightening
+  facets, 7 requires visible local ocular improvement without visible global color or lighting drift. 6 means mostly correct
+  with one clear issue. 4-5 means partial, weak, substituted, or visibly flawed. 0-3 means absent, wrong, severe, or source-breaking.
+
+  7) Anti-template review. If many facets are 7 or 8, re-audit face skin tone, background color, hair/clothing color, global
+  lighting, eye color, catchlights,
+  and localization. Lower every facet that lacks exact visual evidence. Preservation and quality can be moderate-to-good when
+  the source is not damaged, but they must not turn a global-filter or relighting substitute into a high reward.
+
+  Return only JSON:
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+training_prompt_profile:
+  total_prompts_reviewed: 349
+  unique_prompt_templates: 1
+  recurring_requirements:
+  - brighten only both eyes
+  - make the eyes look lively and expressive
+  - enhance natural highlights and reflections
+  - preserve eye structure, gaze, expression, skin tone, and face shape
+  - preserve hair, clothing, background, global lighting, and photographic style
+  - retain photorealistic ocular detail
+  data_note: All prompts are identical. Every Prompt Compliance facet is therefore applicable to every valid sample.
+target_region: The visible ocular interiors of both eyes, including iris, pupil, sclera, corneal reflection, and existing
+  catchlights. Eyelids, lashes, brows, under-eye skin, and surrounding face are non-target except for unavoidable subpixel
+  boundary blending.
+target_action_summary: Increase visible eye brightness and liveliness by enhancing source-consistent iris luminance, scleral
+  clarity, catchlights, and reflections. Preserve eye color, pupil structure, gaze, eye shape, expression, identity, skin
+  tone, global lighting, and every non-target region.
+task_boundary:
+  allowed:
+  - localized luminance and contrast refinement inside the visible eyes
+  - natural enhancement of existing catchlights and corneal reflections
+  - subtle recovery of iris and sclera detail lost in shadow
+  - minimum boundary blending around the ocular interior
+  not_equivalent_tasks:
+  - changing eye color or adding colored contact lenses
+  - enlarging eyes or changing eye shape
+  - changing gaze, pupil direction, eyelid position, or expression
+  - adding eye makeup or whitening surrounding skin
+  - globally brightening the face or image
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate visible brightening, optical plausibility, ocular anatomy, non-target
+    preservation, and rendering quality. Do not reward overexposed white eyes, synthetic catchlights, changed eye color, or
+    global facial brightening.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not invent hidden eye detail.
+  - Do not reward global exposure, face relighting, eye enlargement, recoloring, or gaze change.
+  - Do not require mirrored catchlights when source lighting or head angle is asymmetric.
+  - One severe gaze, anatomy, identity, or eye-color error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request brighter, livelier, clearer, or more reflective eyes without changing eye
+    geometry or identity.
+  wrong_task_examples:
+  - changing eye color, iris pattern, or contact-lens style
+  - enlarging eyes or changing eyelid shape
+  - adding eyeliner, eye shadow, lashes, or brows
+  - removing dark circles without brightening the eyes
+  - globally increasing face or image exposure
+  conflict_examples:
+  - make the same eyes both brighter and darker
+  - preserve the exact original eye brightness while requiring visible brightening
+  - enhance reflections while explicitly requiring all reflections to be removed
+  visibility_failures:
+  - both eyes are fully closed or outside the frame
+  - hair, glasses glare, hands, or objects completely hide both ocular interiors
+  - image quality is too poor to identify iris, pupil, sclera, and reflection structure
+  partial_visibility_rule: Score only assessable visible eye evidence. Do not penalize a fully occluded eye, but penalize
+    missed or inconsistent visible target regions.
+optical_interpretation:
+  rules:
+  - Brightening must increase readable ocular luminance without clipping iris or sclera detail.
+  - Catchlights and reflections must follow the source light direction, eye curvature, and head pose.
+  - Do not create identical mirrored highlights unless the source optics support them.
+  - Sclera should remain naturally off-white and vascular detail should not be erased.
+  - Pupils must remain dark enough to preserve depth and should not glow.
+  - Eye color and iris hue must remain source-consistent.
+identity_preservation_protocol:
+  target_exemptions:
+  - Only ocular luminance, existing reflections, and minimum local contrast may change.
+  strict_rules:
+  - Preserve eye shape, iris size, pupil size, gaze, eyelids, lashes, brows, and expression.
+  - Preserve the same person, face geometry, skin tone, age impression, and characteristic appearance.
+  - Preserve makeup, hair, clothing, pose, background, and photographic style.
+  - The intended eye-brightening change must not itself be treated as identity drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong with concrete
+    facet-specific evidence but visibly imperfect; 8 nearly exact; 9 complete and exact. Never use 7 as a neutral default.
+  no_cross_compensation: Good realism, clean background, or attractive skin cannot compensate for unchanged eyes, global exposure
+    substitute, face/background color drift, overbright/synthetic eyes, broken gaze/reflections, or identity/source drift.
+  eye_brightening_disambiguation_rule: Reward only source-preserving local eye optical brightening. Penalize global relighting,
+    filters, changed eye color, overexposure, pasted catchlights, makeup/shape changes, and source-state drift.
+  human_preference_alignment: Score the edited image as an instruction-following portrait edit, not as an independently attractive
+    portrait. A good sample improves eye liveliness locally while leaving the rest of the face and scene source-consistent.
+    A face that becomes warmer, yellower, paler, smoother, brighter, or globally relit is a weak or negative sample unless
+    the non-target change is imperceptible and the eye-local improvement is clearly dominant. If multiple non-eye regions
+    shift together, treat the result as a color/lighting drift even when the eyes are genuinely brighter.
+  positive_negative_sample_rule: Positive samples show localized, natural ocular brightening with stable iris hue, pupil darkness,
+    gaze, eyelids/lashes, skin tone, background color, white balance, and camera state. Negative samples include near no-op
+    eyes, global exposure or white-balance shifts, face-skin recoloring, beauty filtering, background color drift, eye recoloring,
+    eye enlargement, pasted/glowing catchlights, and expression or identity drift.
+  score_6_7_eligibility_rule: Core eye-brightening facets may reach 6 only with visible local ocular improvement, and may reach
+    7 or above only when the improvement is mainly inside the eyes and source color/lighting outside the eyes remains stable.
+    If face skin tone, background color, or global white balance changes visibly, affected preservation/localization/lighting
+    facets must stay at 0-5 and core task facets should not exceed 6.
+  score_8_9_strictness_rule: Scores 8-9 require near-perfect source-state preservation. If face skin, background, hair, clothing,
+    or global white balance visibly shifts outside the eyes, no affected preservation, localization, or color/lighting facet
+    may receive 8-9; use 3-5 for clear drift and 6 only for very minor isolated drift.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Eyes remain dull, dark, flat, or unchanged; iris/sclera/catchlight improvement is absent or too weak
+          at normal viewing size.
+        severity_guidance: Tiny but correct local eye brightening may be severity 1. Correct but weak/partial brightening
+          should be severity 2. Mostly unchanged eyes at normal viewing size must be severity 3. Absent, reversed/duller,
+          or unassessable brightening must be severity 4-5.
+        affected_l3:
+        - eye_brightening_primary_outcome_match
+        - eye_brightening_magnitude_match
+        - eye_brightening_lively_expressive_effect_match
+        - eye_brightening_iris_luminance_detail_match
+        - eye_brightening_sclera_natural_brightness_match
+        - eye_brightening_catchlight_reflection_enhancement_match
+        - eye_brightening_bilateral_balance_completeness_match
+        - eye_brightening_edit_localized_to_eye_region
+        - eye_brightening_original_eye_color_tonality_match
+        - eye_brightening_iris_pupil_boundary_integrity
+        - eye_brightening_eye_shape_eyelid_lash_brow_preservation
+        - eye_brightening_gaze_expression_identity_preservation
+        - eye_brightening_skin_tone_non_target_face_preservation
+        - eye_brightening_makeup_hair_clothing_scene_preservation
+        - eye_brightening_camera_global_lighting_framing_preservation
+        - eye_brightening_artifact_sharpness_background_stability
+      substitute_global_exposure_relighting_or_beauty_filter:
+        detect_when: The brighter-eye appearance comes from global exposure, face relighting, white-balance/color-temperature
+          shift, warmer/yellower or paler skin, contrast/saturation change, background color drift, full-image filter, makeup
+          change, or generic beauty retouching instead of localized ocular brightening.
+        severity_guidance: Minor local tone drift around eyes may be severity 1. Visible face-skin color change, background
+          color/white-balance shift, global exposure/contrast/saturation drift, or beauty-filter contribution should be at
+          least severity 2 even if eyes are brighter. If the global relighting/filter is the main visible edit, changes source
+          lighting/camera, or makes both face and background noticeably warmer/brighter/darker, use severity 3-5.
+        affected_l3:
+        - eye_brightening_primary_outcome_match
+        - eye_brightening_magnitude_match
+        - eye_brightening_edit_localized_to_eye_region
+        - eye_brightening_skin_tone_non_target_face_preservation
+        - eye_brightening_makeup_hair_clothing_scene_preservation
+        - eye_brightening_camera_global_lighting_framing_preservation
+        - eye_brightening_local_color_lighting_consistency
+        - eye_brightening_artifact_sharpness_background_stability
+        - eye_brightening_lively_expressive_effect_match
+        - eye_brightening_iris_luminance_detail_match
+        - eye_brightening_sclera_natural_brightness_match
+        - eye_brightening_catchlight_reflection_enhancement_match
+        - eye_brightening_bilateral_balance_completeness_match
+        - eye_brightening_original_eye_color_tonality_match
+        - eye_brightening_iris_pupil_boundary_integrity
+        - eye_brightening_eye_shape_eyelid_lash_brow_preservation
+        - eye_brightening_gaze_expression_identity_preservation
+      non_target_color_white_balance_drift:
+        detect_when: Face skin tone, background color, hair/clothing color, or global white balance changes visibly outside
+          the eyes, even if the eyes themselves are brighter. If two or more non-eye regions shift in the same direction
+          such as warmer/yellower, paler/brighter, darker, more saturated, or higher contrast, this failure is present.
+        severity_guidance: Tiny isolated color drift near the eyelids may be severity 1. Visible drift in one major non-eye
+          region such as face skin or background should be severity 2. Coordinated drift across face plus background, or face
+          plus hair/clothing, should be severity 3. Broad full-image filter, strong white-balance change, or color drift that
+          changes the perceived source lighting/camera state should be severity 4-5.
+        affected_l3:
+        - eye_brightening_primary_outcome_match
+        - eye_brightening_magnitude_match
+        - eye_brightening_lively_expressive_effect_match
+        - eye_brightening_edit_localized_to_eye_region
+        - eye_brightening_skin_tone_non_target_face_preservation
+        - eye_brightening_makeup_hair_clothing_scene_preservation
+        - eye_brightening_camera_global_lighting_framing_preservation
+        - eye_brightening_local_color_lighting_consistency
+        - eye_brightening_artifact_sharpness_background_stability
+      overbright_overexposed_synthetic_or_wrong_eye_color:
+        detect_when: Eyes become glowing, overexposed, pure white, glassy, synthetic, anime-like, or eye color/tonality changes
+          beyond source-consistent brightening.
+        severity_guidance: Slight over-brightness may be severity 1-2. Clear overexposed sclera, changed tonality, reduced
+          iris detail, or synthetic catchlight should be severity 3. Glowing/neon eyes, changed eye color, destroyed pupil/iris
+          structure, or identity-changing eyes must be severity 4-5.
+        affected_l3:
+        - eye_brightening_magnitude_match
+        - eye_brightening_lively_expressive_effect_match
+        - eye_brightening_iris_luminance_detail_match
+        - eye_brightening_sclera_natural_brightness_match
+        - eye_brightening_catchlight_reflection_enhancement_match
+        - eye_brightening_original_eye_color_tonality_match
+        - eye_brightening_ocular_texture_detail_realism
+        - eye_brightening_optical_highlight_reflection_realism
+        - eye_brightening_local_color_lighting_consistency
+        - eye_brightening_primary_outcome_match
+        - eye_brightening_bilateral_balance_completeness_match
+        - eye_brightening_edit_localized_to_eye_region
+        - eye_brightening_iris_pupil_boundary_integrity
+        - eye_brightening_cornea_sclera_tearline_integration
+        - eye_brightening_eyelid_lash_occlusion_consistency
+        - eye_brightening_eye_geometry_gaze_anatomy_consistency
+        - eye_brightening_eye_shape_eyelid_lash_brow_preservation
+        - eye_brightening_artifact_sharpness_background_stability
+      ocular_anatomy_gaze_reflection_or_boundary_broken:
+        detect_when: Iris/pupil boundary, cornea/sclera/tearline, eyelid/lash occlusion, gaze, eye geometry, highlight placement,
+          local texture, sharpness, or boundary blending becomes warped, pasted, misaligned, haloed, or anatomically implausible.
+        severity_guidance: Tiny reflection/blend irregularity may be severity 1. Clear pupil/iris boundary, catchlight direction,
+          eyelid/lash/tearline, gaze, or ocular integration issue should be severity 2-3. Misaligned gaze, pasted highlight,
+          broken eye anatomy, or impossible optical reflection must be severity 4-5.
+        affected_l3:
+        - eye_brightening_iris_pupil_boundary_integrity
+        - eye_brightening_cornea_sclera_tearline_integration
+        - eye_brightening_eyelid_lash_occlusion_consistency
+        - eye_brightening_eye_geometry_gaze_anatomy_consistency
+        - eye_brightening_ocular_texture_detail_realism
+        - eye_brightening_optical_highlight_reflection_realism
+        - eye_brightening_artifact_sharpness_background_stability
+        - eye_brightening_primary_outcome_match
+        - eye_brightening_magnitude_match
+        - eye_brightening_lively_expressive_effect_match
+        - eye_brightening_iris_luminance_detail_match
+        - eye_brightening_sclera_natural_brightness_match
+        - eye_brightening_catchlight_reflection_enhancement_match
+        - eye_brightening_bilateral_balance_completeness_match
+        - eye_brightening_original_eye_color_tonality_match
+        - eye_brightening_edit_localized_to_eye_region
+        - eye_brightening_eye_shape_eyelid_lash_brow_preservation
+        - eye_brightening_local_color_lighting_consistency
+      identity_expression_non_target_or_scene_drift:
+        detect_when: Gaze, expression, identity, eye shape, surrounding features, skin tone, makeup, hair, clothing, background
+          color, global lighting, white balance, framing, or camera state changes beyond eye brightening.
+        severity_guidance: Minor local skin/lighting drift may be severity 1. Clear expression/eye-shape/makeup/skin-tone/background-color/focus
+          drift should be severity 2-3. Identity, gaze, global lighting, white balance, framing, camera, or broad non-target
+          change must be severity 4-5.
+        affected_l3:
+        - eye_brightening_eye_shape_eyelid_lash_brow_preservation
+        - eye_brightening_gaze_expression_identity_preservation
+        - eye_brightening_skin_tone_non_target_face_preservation
+        - eye_brightening_makeup_hair_clothing_scene_preservation
+        - eye_brightening_camera_global_lighting_framing_preservation
+        - eye_brightening_local_color_lighting_consistency
+        - eye_brightening_artifact_sharpness_background_stability
+        - eye_brightening_primary_outcome_match
+        - eye_brightening_edit_localized_to_eye_region
+        - eye_brightening_ocular_texture_detail_realism
+        - eye_brightening_optical_highlight_reflection_realism
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. For Prompt Compliance facets, 7+ requires local eye brightening rather than global relighting.
+    For preservation and lighting facets, 7+ requires visibly stable face skin tone, background color, and white balance. If
+    any task-specific failure affects that L3, apply the severity cap first; if evidence is generic, ambiguous, or borrowed
+    from another facet, choose the lower score.
+  anti_template_rule: >-
+    Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. A vector with many 7s is suspicious when
+    the image shows visible face-skin, background-color, white-balance, lighting, or filter drift. Re-audit those non-target
+    changes and lower every affected facet without exact evidence. Also avoid a mechanical many-1s/many-9s split unless the
+    visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Eye brightening means localized optical enhancement of iris/sclera/catchlight liveliness while
+    preserving eye color, structure, gaze, identity, and global scene lighting. It is not global exposure, relighting, filter,
+    skin brightening, color change, or beauty retouching.
+  no_compensation_rule: If local eye brightening is absent or achieved by global lighting/filter substitute, preservation/background/photorealism
+    must not raise edit-dependent facets. A prettier/brighter face must not compensate for wrong eye color, overexposure,
+    synthetic highlights, non-target color drift, or source-state drift.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample makes the eyes visibly brighter and livelier through source-consistent iris luminance,
+    scleral clarity, catchlights, and reflections while preserving eye color, gaze, identity, global lighting, and non-target
+    regions.
+  success_gate_conditions:
+  - Eyes are locally brighter/livelier at normal viewing size through iris detail, natural sclera clarity, and plausible catchlights/reflections.
+  - Eye color, pupil structure, iris/pupil boundaries, gaze, eye shape, eyelids/lashes, and expression remain source-consistent.
+  - The result is not global exposure, face relighting, skin brightening, full-image filtering, eye enlargement, recoloring,
+    or makeup change.
+  - Highlights and reflections follow the source lighting direction and do not look pasted, glowing, overexposed, or synthetic.
+  - Skin tone, face color temperature, makeup, hair, clothing, background color, framing, camera state, global white balance,
+    and global lighting remain stable.
+  - At least two non-eye regions such as face skin, background, and hair/clothing must not show the same color, warmth, exposure,
+    saturation, contrast, or white-balance shift.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet. If the face skin tone or background color visibly shifts,
+    skin-tone/global-lighting/local-color facets cannot receive 7+, and core eye-brightening facets should not exceed 6 unless
+    the ocular improvement is clearly local and dominant.
+  score_8_9_usage_rule: Scores 8-9 mean near-perfect or perfect. Do not assign 8-9 to preservation, localization, or color/lighting
+    facets when any visible non-eye color-state drift exists. If multiple non-eye regions shift together, apply non_target_color_white_balance_drift
+    first and then cap the affected L3 scores.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- eye_brightening_primary_outcome_match
+- eye_brightening_magnitude_match
+- eye_brightening_lively_expressive_effect_match
+- eye_brightening_iris_luminance_detail_match
+- eye_brightening_sclera_natural_brightness_match
+- eye_brightening_catchlight_reflection_enhancement_match
+- eye_brightening_bilateral_balance_completeness_match
+- eye_brightening_original_eye_color_tonality_match
+- eye_brightening_edit_localized_to_eye_region
+- eye_brightening_iris_pupil_boundary_integrity
+- eye_brightening_cornea_sclera_tearline_integration
+- eye_brightening_eyelid_lash_occlusion_consistency
+- eye_brightening_eye_geometry_gaze_anatomy_consistency
+- eye_brightening_eye_shape_eyelid_lash_brow_preservation
+- eye_brightening_gaze_expression_identity_preservation
+- eye_brightening_skin_tone_non_target_face_preservation
+- eye_brightening_makeup_hair_clothing_scene_preservation
+- eye_brightening_camera_global_lighting_framing_preservation
+- eye_brightening_ocular_texture_detail_realism
+- eye_brightening_optical_highlight_reflection_realism
+- eye_brightening_local_color_lighting_consistency
+- eye_brightening_artifact_sharpness_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    eye_brightening_primary_outcome_match: 0.18
+    eye_brightening_magnitude_match: 0.15
+    eye_brightening_lively_expressive_effect_match: 0.13
+    eye_brightening_iris_luminance_detail_match: 0.14
+    eye_brightening_sclera_natural_brightness_match: 0.11
+    eye_brightening_catchlight_reflection_enhancement_match: 0.13
+    eye_brightening_bilateral_balance_completeness_match: 0.08
+    eye_brightening_original_eye_color_tonality_match: 0.08
+  Localization and Anatomical Integration:
+    eye_brightening_edit_localized_to_eye_region: 0.23
+    eye_brightening_iris_pupil_boundary_integrity: 0.2
+    eye_brightening_cornea_sclera_tearline_integration: 0.18
+    eye_brightening_eyelid_lash_occlusion_consistency: 0.16
+    eye_brightening_eye_geometry_gaze_anatomy_consistency: 0.23
+  Subject Preservation:
+    eye_brightening_eye_shape_eyelid_lash_brow_preservation: 0.2
+    eye_brightening_gaze_expression_identity_preservation: 0.23
+    eye_brightening_skin_tone_non_target_face_preservation: 0.24
+    eye_brightening_makeup_hair_clothing_scene_preservation: 0.15
+    eye_brightening_camera_global_lighting_framing_preservation: 0.18
+  Task Realism and Image Quality:
+    eye_brightening_ocular_texture_detail_realism: 0.28
+    eye_brightening_optical_highlight_reflection_realism: 0.28
+    eye_brightening_local_color_lighting_consistency: 0.24
+    eye_brightening_artifact_sharpness_background_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt in this dataset.
+  other_l1_blocks: Use the listed within-L1 weights for Localization and Anatomical Integration, Subject Preservation, and
+    Task Realism and Image Quality.
+  base_formula: base_reward = 0.58 * P + 0.20 * L + 0.17 * S + 0.05 * Q
+  anatomy_score: A = score(eye_brightening_eye_geometry_gaze_anatomy_consistency) / 9.0
+  identity_score: I = score(eye_brightening_gaze_expression_identity_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.20) * (I ** 0.18)
+taxonomy:
+  Prompt Compliance:
+    Requested Eye Brightening:
+      eye_brightening_primary_outcome_match:
+        title: Primary eye-brightening outcome
+        definition: Whether both assessable eyes themselves become visibly brighter, livelier, and clearer than the source
+          without another eye-editing task. Do not give credit for global exposure increase, face whitening, skin beautification,
+          eye enlargement, eye recoloring, or makeup changes.
+        anchors:
+          0: No local eye brightening, darker eyes, wrong edit type, or only global face/image brightening.
+          3: Very weak or inconsistent eye brightening; the source eye appearance mostly dominates.
+          5: Visible partial eye brightening, but incomplete, unnatural, or partly caused by global changes.
+          7: Clear localized eye brightening with one visible issue and no visible face/background color drift.
+          9: Both assessable eyes are cleanly, naturally, and selectively brightened with no material non-target change.
+        rubric: Whether both assessable eyes themselves become visibly brighter, livelier, and clearer than the source without
+          another eye-editing task. Do not give credit for global exposure increase, face whitening, skin beautification,
+          eye enlargement, eye recoloring, or makeup changes. Apply this facet's 0-9 anchors directly. If any global failure
+          affecting this facet is detected, apply failure_propagation caps. If multiple non-eye regions shift color or white
+          balance, treat the eye improvement as partially substituted and do not score above 6. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      eye_brightening_magnitude_match:
+        title: Brightening magnitude
+        definition: Whether the luminance increase is clearly visible but photorealistic. Avoid overexposed sclera, glowing
+          pupils, clipped iris detail, harsh whitening, or imperceptible change.
+        anchors:
+          0: No useful increase, darker eyes, destructive clipping, or glowing artificial eyes.
+          3: Barely visible, highly uneven, or clearly excessive brightening.
+          5: Noticeable but insufficient, overdone, locally unnatural, or partly driven by global exposure/color shift.
+          7: Appropriate visible eye-local magnitude with one minor issue and stable non-target lighting.
+          9: Natural, clearly visible, and prompt-matched brightening magnitude.
+        rubric: Whether the luminance increase is clearly visible but photorealistic. Avoid overexposed sclera, glowing pupils,
+          clipped iris detail, harsh whitening, or imperceptible change. Apply this facet's 0-9 anchors directly. If any global
+          failure affecting this facet is detected, apply failure_propagation caps. If the brightness increase is accompanied
+          by coordinated face/background color drift, do not score above 6. Do not let unrelated preservation, attractiveness,
+          or realism compensate for this facet.
+      eye_brightening_lively_expressive_effect_match:
+        title: Lively and expressive effect
+        definition: Whether the eyes gain alertness and vitality through brightness and reflection while the original expression
+          remains unchanged.
+        anchors:
+          0: Eyes look duller, expression changes, or the effect is absent.
+          3: Weak, artificial, or inconsistent vitality.
+          5: Some liveliness is present but incomplete, unnatural, or supported by face relighting/filtering.
+          7: Clear eye-local lively effect with one minor issue and unchanged expression/skin tone.
+          9: Eyes look naturally vivid and expressive without expression drift.
+        rubric: Whether the eyes gain alertness and vitality through brightness and reflection while the original expression
+          remains unchanged. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. If liveliness is helped by global warmth, relighting, or beauty filtering, do not
+          score above 6. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_iris_luminance_detail_match:
+        title: Iris luminance and detail
+        definition: Whether iris detail becomes more readable without flattening texture, changing hue, or washing out the
+          pupil.
+        anchors:
+          0: Iris detail is destroyed, recolored, or unchanged when hidden.
+          3: Major washout, blur, or weak recovery.
+          5: Partial detail recovery with clear tonal problems or global white-balance contamination.
+          7: Clear iris detail with one minor issue and source-consistent iris hue.
+          9: Iris luminance and fine structure are fully natural and readable.
+        rubric: Whether iris detail becomes more readable without flattening texture, changing hue, or washing out the pupil.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_sclera_natural_brightness_match:
+        title: Natural sclera brightness
+        definition: Whether sclera becomes cleaner and brighter while remaining naturally off-white with retained shading
+          and detail.
+        anchors:
+          0: Sclera is unchanged, discolored, clipped white, or glowing.
+          3: Strong whitening artifacts or uneven discoloration.
+          5: Brighter but visibly flat, gray, blue, yellow, or overprocessed.
+          7: Natural brightness with one minor issue and no global face-color shift.
+          9: Sclera brightness is clean, subtle, and optically natural.
+        rubric: Whether sclera becomes cleaner and brighter while remaining naturally off-white with retained shading and
+          detail. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_catchlight_reflection_enhancement_match:
+        title: Catchlight and reflection enhancement
+        definition: Whether existing highlights and reflections become clearer and more effective without invented or duplicated
+          light sources.
+        anchors:
+          0: Reflections are removed, contradictory, or obviously synthetic.
+          3: Weak, misplaced, duplicated, or mismatched highlights.
+          5: Recognizable enhancement with clear optical errors or global contrast/exposure dependence.
+          7: Natural eye-local enhancement with one minor inconsistency.
+          9: Highlights and reflections are precisely enhanced and source-consistent.
+        rubric: Whether existing highlights and reflections become clearer and more effective without invented or duplicated
+          light sources. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      eye_brightening_bilateral_balance_completeness_match:
+        title: Bilateral completeness and balance
+        definition: Whether all visible requested eye regions are edited with pose-, lighting-, and occlusion-aware balance.
+        anchors:
+          0: Wrong eye, one visible eye missed, or severe imbalance.
+          3: Major left-right inconsistency or incomplete editing.
+          5: Both eyes attempted but visibly mismatched.
+          7: Complete and balanced with one minor difference.
+          9: All assessable eye regions are complete and naturally balanced.
+        rubric: Whether all visible requested eye regions are edited with pose-, lighting-, and occlusion-aware balance. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Bilateral balance may be high only when both eyes improve locally without shared non-eye color drift. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_original_eye_color_tonality_match:
+        title: Original eye color and tonality
+        definition: Whether iris hue, pupil darkness, scleral tint, and overall eye color remain source-consistent after brightening.
+          Brightening should not recolor the iris, make pupils glow, flatten the eye, or add contact-lens/makeup-like effects
+          unless explicitly requested.
+        anchors:
+          0: Major eye-color replacement, impossible pupil tonality, glowing pupil, or contact-lens-like change.
+          3: Strong hue, saturation, sclera tint, or white-balance drift.
+          5: Original color remains recognizable but visibly altered or flattened.
+          7: Eye color and tonality are mostly preserved with one minor difference.
+          9: Iris hue, pupil darkness, sclera tone, and eye tonal relationships remain fully source-consistent.
+        rubric: Whether iris hue, pupil darkness, scleral tint, and overall eye color remain source-consistent after brightening.
+          Brightening should not recolor the iris, make pupils glow, flatten the eye, or add contact-lens/makeup-like effects
+          unless explicitly requested. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+  Localization and Anatomical Integration:
+    Ocular Boundaries and Anatomy:
+      eye_brightening_edit_localized_to_eye_region:
+        title: Edit localization
+        definition: Whether the change remains inside the ocular interiors and minimum necessary boundary blending.
+        anchors:
+          0: Broad face, skin, makeup, or scene brightening.
+          3: Significant spill into eyelids, under-eye skin, brows, or nearby face.
+          5: Mostly localized with one clear non-target alteration, skin-tone shift, or background color drift.
+          7: Localized with one minor spill and no visible global color/lighting shift.
+          9: Precisely confined to the permitted eye region.
+        rubric: Whether the change remains inside the ocular interiors and minimum necessary boundary blending. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Coordinated color or white-balance changes in face skin, background, hair, or clothing are evidence that the
+          edit is not localized to the eye region and should cap this facet at 5. Do not let unrelated preservation, attractiveness,
+          or realism compensate for this facet.
+      eye_brightening_iris_pupil_boundary_integrity:
+        title: Iris-pupil boundary integrity
+        definition: Whether pupil shape, iris rings, radial texture, and boundaries remain clean and anatomically coherent.
+        anchors:
+          0: Pupil or iris is malformed, duplicated, melted, or detached.
+          3: Major boundary blur, deformation, or texture loss.
+          5: Broadly plausible with one obvious structural issue.
+          7: Coherent with one minor boundary issue.
+          9: Pupil and iris structure remain fully precise and natural.
+        rubric: Whether pupil shape, iris rings, radial texture, and boundaries remain clean and anatomically coherent. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_cornea_sclera_tearline_integration:
+        title: Cornea, sclera, and tearline integration
+        definition: Whether corneal shine, scleral shading, moisture line, and eye-corner transitions remain continuous and
+          realistic.
+        anchors:
+          0: Broken, pasted, dry-looking, or impossible ocular surface.
+          3: Major tearline, corner, shading, or corneal inconsistency.
+          5: Generally integrated with an obvious local issue.
+          7: Natural with one minor issue.
+          9: All ocular-surface transitions are seamless and anatomically plausible.
+        rubric: Whether corneal shine, scleral shading, moisture line, and eye-corner transitions remain continuous and realistic.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_eyelid_lash_occlusion_consistency:
+        title: Eyelid and lash occlusion consistency
+        definition: Whether eyelids, lashes, hair, and reflections preserve correct front-back relationships around the brightened
+          eye.
+        anchors:
+          0: Severe penetration, erased lashes, or impossible layering.
+          3: Major eyelid, lash, hair, or reflection occlusion error.
+          5: Mostly correct with one clear inconsistency.
+          7: Correct with one minor issue.
+          9: All boundary and occlusion relationships remain exact.
+        rubric: Whether eyelids, lashes, hair, and reflections preserve correct front-back relationships around the brightened
+          eye. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_eye_geometry_gaze_anatomy_consistency:
+        title: Eye geometry, gaze, and anatomy
+        definition: Whether eye shape, globe direction, iris placement, pupil alignment, perspective, and gaze remain anatomically
+          coherent.
+        anchors:
+          0: Severe geometry change, crossed gaze, or impossible anatomy.
+          3: Major gaze, placement, perspective, or symmetry error.
+          5: Generally plausible with one clear anatomical inconsistency.
+          7: Coherent with one minor issue.
+          9: Eye geometry and gaze remain fully natural and source-consistent.
+        rubric: Whether eye shape, globe direction, iris placement, pupil alignment, perspective, and gaze remain anatomically
+          coherent. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      eye_brightening_eye_shape_eyelid_lash_brow_preservation:
+        title: Eye-shape and surrounding-feature preservation
+        definition: Preservation of eye aperture, eyelids, corners, lashes, brows, and surrounding makeup.
+        anchors:
+          0: Major eye-shape or surrounding-feature redesign.
+          3: Strong eyelid, lash, brow, corner, or makeup alteration.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: All eye geometry and surrounding features remain unchanged.
+        rubric: Preservation of eye aperture, eyelids, corners, lashes, brows, and surrounding makeup. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_gaze_expression_identity_preservation:
+        title: Gaze, expression, and identity preservation
+        definition: Preservation of eye direction, expression, facial identity, age impression, and characteristic appearance.
+        anchors:
+          0: Different person, changed expression, or severe gaze drift.
+          3: Strong identity, gaze, or expression alteration.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity, gaze, and expression remain fully unchanged.
+        rubric: Preservation of eye direction, expression, facial identity, age impression, and characteristic appearance.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_skin_tone_non_target_face_preservation:
+        title: Skin tone and non-target face preservation
+        definition: Preservation of skin color, color temperature, saturation, face shape, nose, lips, cheeks, ears, and all
+          non-target facial regions.
+        anchors:
+          0: Major facial recoloring or structural redesign.
+          3: Strong skin-tone, warmth, saturation, or non-target facial alteration.
+          5: Mostly preserved with one clear skin-color, warmth, contrast, or non-target facial change.
+          7: Preserved with only a minor local difference and no visible global face-color drift.
+          9: Skin tone and all non-target facial regions remain unchanged.
+        rubric: Preservation of skin color, color temperature, saturation, face shape, nose, lips, cheeks, ears, and all non-target
+          facial regions. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Any visible non-target skin warmth, yellowing, whitening, darkening, saturation,
+          or contrast drift should cap this facet at 5; 8-9 require near-identical source skin tone. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_makeup_hair_clothing_scene_preservation:
+        title: Makeup, hair, clothing, and scene preservation
+        definition: Preservation of existing makeup, hairstyle, accessories, clothing, body, background color, and objects.
+        anchors:
+          0: Major replacement or alteration of multiple non-target regions.
+          3: Strong makeup, hair, clothing, body, background color, or scene drift.
+          5: Mostly preserved with one obvious alteration or color-temperature shift.
+          7: Preserved with one minor difference and stable background color.
+          9: All listed non-target content remains unchanged.
+        rubric: Preservation of existing makeup, hairstyle, accessories, clothing, body, background color, and objects. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Visible background, hair, clothing, or object color drift should cap this facet at 5; 8-9 require near-identical
+          non-target scene color. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_camera_global_lighting_framing_preservation:
+        title: Camera, global lighting, and framing preservation
+        definition: Preservation of camera angle, crop, scale, composition, global exposure, white balance, light direction,
+          shadows, aspect ratio, and resolution.
+        anchors:
+          0: Global relighting, reframing, scaling, or camera change creates the result.
+          3: Strong exposure, white-balance, crop, scale, background color, or lighting drift.
+          5: Mostly stable with one clear exposure/color-temperature/lighting change.
+          7: Preserved with one minor difference and no visible global white-balance drift.
+          9: Camera, framing, and global illumination remain unchanged.
+        rubric: Preservation of camera angle, crop, scale, composition, global exposure, white balance, light direction, shadows,
+          aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Any visible global white-balance, exposure, warmth, or background-lighting
+          drift should cap this facet at 5; 8-9 require near-identical source camera and global lighting state. Do not let
+          unrelated preservation, attractiveness, or realism compensate for this facet.
+  Task Realism and Image Quality:
+    Optical Realism and Artifact Control:
+      eye_brightening_ocular_texture_detail_realism:
+        title: Ocular texture and detail realism
+        definition: Natural iris fibers, pupil edge, scleral texture, moisture, and local sharpness without smearing or plasticity.
+        anchors:
+          0: Severely synthetic, smeared, painted, or destroyed detail.
+          3: Strong texture artifacts or artificial sharpening.
+          5: Usable but visibly processed or inconsistent.
+          7: Realistic with one minor detail issue.
+          9: Fully photorealistic and source-consistent ocular detail.
+        rubric: Natural iris fibers, pupil edge, scleral texture, moisture, and local sharpness without smearing or plasticity.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_optical_highlight_reflection_realism:
+        title: Optical highlight and reflection realism
+        definition: Whether catchlights and reflections follow corneal curvature, light direction, scale, softness, and occlusion.
+        anchors:
+          0: Impossible, pasted, duplicated, or contradictory reflections.
+          3: Major shape, position, scale, or lighting mismatch.
+          5: Generally plausible with an obvious optical error.
+          7: Realistic with one minor inconsistency.
+          9: Reflections are fully convincing and physically coherent.
+        rubric: Whether catchlights and reflections follow corneal curvature, light direction, scale, softness, and occlusion.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_local_color_lighting_consistency:
+        title: Local color and lighting consistency
+        definition: Whether brightened eyes retain source-consistent white balance, contrast, shadow depth, skin tone, and
+          integration with facial lighting.
+        anchors:
+          0: Strong color cast, glowing eyes, or contradictory illumination.
+          3: Major hue, exposure, contrast, white-balance, skin-tone, or shadow mismatch.
+          5: Generally plausible with obvious local or global color/lighting inconsistency.
+          7: Consistent with one minor issue and stable surrounding face/background color.
+          9: Color, contrast, and lighting integrate perfectly.
+        rubric: Whether brightened eyes retain source-consistent white balance, contrast, shadow depth, skin tone, and integration
+          with facial lighting. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. If surrounding face skin and background share a visible color-temperature, exposure,
+          or contrast shift, cap this facet at 5; 8-9 require near-perfect local and global color consistency. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      eye_brightening_artifact_sharpness_background_stability:
+        title: Artifact, sharpness, and background stability
+        definition: Absence of halos, ringing, clipping, repeated highlights, malformed eyes, facial warping, and background
+          changes.
+        anchors:
+          0: Severe artifacts, malformed anatomy, or scene instability.
+          3: Multiple obvious distortions, sharpening artifacts, or background/color instability.
+          5: One clear artifact, visible background drift, or moderate local instability.
+          7: Stable with one minor artifact and no meaningful scene/color drift.
+          9: No visible artifacts; eye detail and surrounding image remain stable.
+        rubric: Absence of halos, ringing, clipping, repeated highlights, malformed eyes, facial warping, and background changes.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Background color or scene-state drift counts as image instability for this task and should cap this facet
+          at 5 when clearly visible. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+prompt_applicability:
+  purpose: The dataset contains one identical prompt template, so all Prompt Compliance facets are fixed as applicable.
+  always_applicable:
+  - eye_brightening_primary_outcome_match
+  - eye_brightening_magnitude_match
+  - eye_brightening_lively_expressive_effect_match
+  - eye_brightening_iris_luminance_detail_match
+  - eye_brightening_sclera_natural_brightness_match
+  - eye_brightening_catchlight_reflection_enhancement_match
+  - eye_brightening_bilateral_balance_completeness_match
+  - eye_brightening_original_eye_color_tonality_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.

@@ -1,0 +1,894 @@
+task_key: neck_length_adjustment
+task_title: Neck Length Adjustment
+task_title_zh: 脖子长短
+version: v48_fixed_integer_22_l3_neck_length_adjustment_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator specializing in prompt-conditioned neck-length retouching, head-neck-shoulder
+  anatomy, pose/camera preservation, clothing/hair boundary integration, and background stability. Judge actual visible neck-length
+  change, not head movement or shoulder/camera substitution.
+judge_instructions: 'Strictly compare SOURCE, EDIT PROMPT, and EDITED IMAGE.
+
+
+  Task target: Change visible neck length in the prompt-specified direction through localized neck editing only. Lengthening
+  requires a natural longer jaw-to-shoulder span; shortening requires a natural shorter span. Head, shoulders, body pose,
+  camera, clothing, hair, identity, and scene must stay stable.
+
+
+  Before returning JSON, privately run this judging protocol. Do not output private notes; use them only to produce the final
+  score_vector.
+
+
+  1) Task-state card.
+
+  Classify the candidate as clean_success, minor_flaws_success, partial_success, no_visible_edit, under_edited, wrong_direction,
+  wrong_region, wrong_operation, substitute_edit, correct_but_non_target_changed, correct_but_artifact, artifact_driven, or
+  unusable. Identify the actual visible edit, target region, and any changed non-target regions.
+
+
+  2) Defect-first scoring.
+
+  For every active L3 facet, first decide the visible defect level: none, tiny, minor, clear, major, severe, absent_or_reversed,
+  or unusable. Then choose the integer score. 7 is not a default score; it means strong evidence with only a minor flaw.
+
+
+  Score calibration:
+
+  - 9 = essentially exact, rare, clean positive evidence.
+
+  - 8 = near-exact with only a tiny local issue.
+
+  - 7 = strong but visibly imperfect.
+
+  - 6 = mostly correct with one clear issue.
+
+  - 4-5 = partial, mediocre, or mixed evidence.
+
+  - 2-3 = weak attempt with major visible failure.
+
+  - 0-1 = absent, reversed, wrong-region, unrelated, or unusable.
+
+
+  Task-specific defects to check:
+
+  - neck length absent, barely changed, or changed opposite to the prompt;
+
+  - apparent change produced by head movement, shoulder movement, torso scaling, posture, crop/framing, camera distance, or
+  global body resizing;
+
+  - neck width/taper changes unnecessarily, becomes pinched, tube-like, kinked, detached, too long/short, or anatomically
+  impossible;
+
+  - jaw-neck, throat, clavicle, collar, hair/neck, shoulder-neck, or neckline transition breaks;
+
+  - face, identity, expression, gaze, head pose, shoulders, torso, clothing, background, lighting, resolution, or framing
+  changes;
+
+  - blur, liquify edges, mask seams, bent background, duplicated contours, painted shadows, or geometric artifacts.
+
+
+  3) Failure propagation.
+
+  Apply global_scoring_policy.failure_propagation after raw facet scoring. If a failure is detected, cap every affected L3
+  by the corresponding severity cap. Do not allow good preservation, clean background, or photorealism to compensate for missing
+  or wrong target editing.
+
+
+  4) Positive-case check.
+
+  High scores are allowed when the requested edit is clearly correct. Before giving 8 or 9, verify that the relevant positive-case
+  conditions in global_scoring_policy are visibly satisfied.
+
+
+  5) Flat-vector review.
+
+  Privately rescore if all scores are 7, 14+ scores are 7, 18+ scores are identical, all scores are 7-9, or visible defects
+  exist but no affected score is below 7.
+
+
+  Task-specific focus: prompt-conditioned visible neck length. Success requires a true local change in jaw-to-shoulder neck
+  span in the requested direction. Do not reward head resizing/movement, shoulder height change, posture change, clavicle
+  shift, body scaling, camera/crop change, face slimming, neck-width change, or unrelated beauty/body editing as neck-length
+  success.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, wrong-region, or mainly a substitute operation,
+  apply failure_propagation before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, wrong-region, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve
+  0-1 and 8-9 for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 320
+  unique_templates: 2
+  direction_distribution:
+    lengthen_visible_neck: 160
+    shorten_visible_neck: 160
+  common_requirements:
+  - edit only the visible neck between the jawline and shoulders
+  - preserve head size, head shape, head angle, face, expression, and gaze
+  - preserve shoulders, torso, pose, clothing, background, lighting, and framing
+  - produce a natural, photorealistic, cleanly blended result
+target_region: 'The visible neck between the lower jawline and the shoulder or collar boundary, including only the minimum
+  necessary skin, hair, and clothing contact edges.
+
+  '
+target_action_summary: Adjust the visible neck length in the exact direction requested by the prompt, usually lengthening
+  or shortening the jaw-to-shoulder span, through a localized neck edit. Preserve head size/position, shoulder placement,
+  posture, identity, clothing, background, lighting, framing, and camera geometry. Do not simulate neck length by moving the
+  head, lowering/raising shoulders, resizing the body, or changing camera/crop.
+design_principle:
+  summary: 'Use exactly 22 fixed L3 scores. Separate requested length change from anatomical integration, non-target preservation,
+    and rendering quality. A changed jaw-to-shoulder distance must not receive high reward when it is produced by moving the
+    head, shoulders, torso, camera, or whole image.
+
+    '
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not infer hidden anatomy.
+  - Do not reward global scaling, cropping, reframing, head movement, shoulder movement, or torso stretching.
+  - Do not reward generic attractiveness when the requested direction or magnitude is wrong.
+  - One severe anatomical, pose, identity, or scene error must not be averaged away.
+  - No hard caps, rank bonuses, external image metrics, or manual failure deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: 'The prompt must request increasing, lengthening, reducing, or shortening the visible neck length.
+
+    '
+  wrong_task_examples:
+  - changing neck width or thickness without a length target
+  - slimming the shoulders, face, jawline, or torso instead of changing neck length
+  - changing head pose, body posture, or camera framing to simulate a length change
+  conflict_examples:
+  - make the same neck both longer and shorter
+  - change neck length while preserving the exact original jaw-to-shoulder distance
+  - lengthen the neck by lowering the shoulders while also requiring unchanged shoulders
+  visibility_failures:
+  - the visible neck is fully hidden by clothing, hair, hands, or framing
+  - the jawline or shoulder boundary cannot be identified
+  - blur or resolution prevents reliable comparison
+  partial_visibility_rule: 'Score only assessable visible evidence. Do not penalize an occluded side that cannot be judged.
+
+    '
+direction_protocol:
+  lengthen: 'Increase visible jaw-to-shoulder neck span through a localized neck edit; do not move the head upward or shoulders
+    downward.
+
+    '
+  shorten: 'Reduce visible jaw-to-shoulder neck span through a localized neck edit; do not move the head downward or shoulders
+    upward.
+
+    '
+  width_rule: 'Preserve the original neck width, taper, and apparent thickness unless a minimal perspective-consistent adjustment
+    is required by the length change.
+
+    '
+anatomy_preservation_protocol:
+  strict_rules:
+  - Preserve head center, head angle, jaw position, shoulder height, clavicle position, and torso axis.
+  - Preserve the original cervical axis and connection between head, neck, shoulders, and torso.
+  - Preserve neck width and taper unless the prompt explicitly requests otherwise.
+  - Do not create a tube-like, pinched, bent, detached, or anatomically impossible neck.
+  - Hair and clothing may adapt only at the minimum necessary contact boundary.
+  - Do not bend nearby background lines, furniture, shadows, or image borders.
+identity_preservation_protocol:
+  target_exemptions:
+  - Only the requested visible neck length may change.
+  - Minimal contact-edge adaptation of hair or clothing is allowed.
+  strict_rules:
+  - Preserve the same person, face, skin tone, age impression, and characteristic appearance.
+  - Preserve facial geometry, expression, gaze, ears, hair design, and jawline shape.
+  - Preserve all non-target body proportions and pose.
+  - The intended neck-length change must not itself be treated as identity drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Return one independent integer score for every active_l3 item in order. Score each facet from visible evidence
+    in SOURCE, EDIT PROMPT, and EDITED IMAGE.
+  output_order_rule: The score_vector must contain exactly 22 integers in active_l3 order; never reorder, omit, rename, or
+    explain facets.
+  anchor_interpolation: Use 1, 2, 4, 6, and 8 as intermediate severities. Do not round uncertainty upward.
+  anti_saturation: 0-3 = failed or damaging; 4-5 = partial/mediocre; 6 = mostly correct with one clear issue; 7 = strong but
+    visibly imperfect; 8 = near-exact; 9 = rare, essentially complete and clean.
+  no_cross_compensation: Correct length direction cannot compensate for moved head, moved shoulders, changed camera/crop,
+    damaged cervical anatomy, identity drift, clothing damage, or background warping.
+  primary_edit_success_rule: If the visible neck length does not clearly change in the prompt-requested direction, the candidate
+    is a weak/negative edit even when everything else is clean.
+  preservation_only_no_success_rule: A clean unchanged source-like image is not a successful edit. If the requested target
+    change is absent, preservation and photorealism may score high only on truly pure preservation facets, but they must not
+    lift task, localization, integration, or local realism facets into the successful range.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, choose its severity from the scale below. The final score for every affected L3 must be
+      min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score. Do not reveal propagation reasoning;
+      return only the final adjusted vector.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, wrong-region, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: The visible neck length is unchanged, nearly unchanged, or too weak to be useful for the requested direction.
+        severity_guidance: Tiny but correct neck-length evidence may be severity 1. Barely visible or under-edited change
+          should be severity 2. Mostly unchanged visible neck span must be severity 3. Completely absent, unassessable, or
+          reversed target edit must be severity 4-5.
+        affected_l3:
+        - neck_primary_requested_outcome_match
+        - neck_requested_direction_match
+        - neck_requested_length_change_magnitude_match
+        - neck_final_head_neck_shoulder_proportion_match
+        - neck_visible_region_completeness_consistency
+        - neck_edit_localized_to_visible_neck
+        - neck_jawline_upper_transition_quality
+        - neck_shoulder_clavicle_lower_transition_quality
+        - neck_cervical_axis_head_alignment
+        - neck_cervical_anatomy_soft_tissue_continuity
+        - neck_hair_clothing_occlusion_integration
+        - neck_skin_clothing_surface_realism
+        - neck_local_lighting_shadow_consistency
+        - neck_contour_edge_blending_quality
+        - neck_width_taper_preservation
+        - neck_subject_identity_face_preservation
+        - neck_expression_gaze_hair_ear_preservation
+        - neck_torso_pose_non_target_body_preservation
+        - neck_scene_camera_framing_preservation
+        - neck_artifact_background_stability
+      wrong_direction_or_wrong_operation:
+        detect_when: The candidate shortens when the prompt asks to lengthen, lengthens when the prompt asks to shorten, changes
+          neck width/thickness instead of length, slims the face/jaw, or performs an unrelated beauty/body edit.
+        severity_guidance: Minor ambiguity with some correct neck-length change may be severity 2. Clear wrong operation such
+          as neck-width change, face/jaw slimming, or unrelated beautification should be severity 3. Opposite length direction
+          or unrelated operation replacing the target must be severity 4-5.
+        affected_l3:
+        - neck_primary_requested_outcome_match
+        - neck_requested_direction_match
+        - neck_requested_length_change_magnitude_match
+        - neck_final_head_neck_shoulder_proportion_match
+        - neck_width_taper_preservation
+        - neck_visible_region_completeness_consistency
+        - neck_edit_localized_to_visible_neck
+        - neck_cervical_axis_head_alignment
+        - neck_cervical_anatomy_soft_tissue_continuity
+        - neck_jawline_upper_transition_quality
+        - neck_subject_identity_face_preservation
+        - neck_expression_gaze_hair_ear_preservation
+        - neck_torso_pose_non_target_body_preservation
+        - neck_scene_camera_framing_preservation
+        - neck_artifact_background_stability
+      pose_camera_shoulder_substitution:
+        detect_when: The apparent neck-length change is mainly caused by moving/resizing the head, raising/lowering shoulders,
+          shifting clavicles, changing posture, scaling the body, cropping/zooming, or changing camera geometry.
+        severity_guidance: Small pose/framing cue with real local neck edit may be severity 1-2. If head movement, shoulder/clavicle
+          shift, body scale, crop, or camera geometry substantially creates the length impression, severity 3. If substitution
+          is the main visible reason or changes source state, severity 4-5.
+        affected_l3:
+        - neck_primary_requested_outcome_match
+        - neck_requested_direction_match
+        - neck_requested_length_change_magnitude_match
+        - neck_final_head_neck_shoulder_proportion_match
+        - neck_edit_localized_to_visible_neck
+        - neck_cervical_axis_head_alignment
+        - neck_head_position_angle_preservation
+        - neck_shoulder_clavicle_position_preservation
+        - neck_torso_pose_non_target_body_preservation
+        - neck_scene_camera_framing_preservation
+        - neck_artifact_background_stability
+        - neck_width_taper_preservation
+        - neck_visible_region_completeness_consistency
+        - neck_jawline_upper_transition_quality
+        - neck_subject_identity_face_preservation
+        - neck_expression_gaze_hair_ear_preservation
+      cervical_anatomy_or_width_failure:
+        detect_when: The neck becomes pinched, tube-like, kinked, detached, asymmetrical, too thin/wide, over-elongated, over-shortened,
+          collapsed, or implausibly connected to the head/torso.
+        affected_l3:
+        - neck_final_head_neck_shoulder_proportion_match
+        - neck_width_taper_preservation
+        - neck_jawline_upper_transition_quality
+        - neck_shoulder_clavicle_lower_transition_quality
+        - neck_cervical_axis_head_alignment
+        - neck_cervical_anatomy_soft_tissue_continuity
+        - neck_hair_clothing_occlusion_integration
+        - neck_skin_clothing_surface_realism
+        - neck_local_lighting_shadow_consistency
+        - neck_contour_edge_blending_quality
+        - neck_primary_requested_outcome_match
+        - neck_requested_direction_match
+        - neck_requested_length_change_magnitude_match
+        - neck_visible_region_completeness_consistency
+        - neck_edit_localized_to_visible_neck
+        - neck_head_position_angle_preservation
+        - neck_shoulder_clavicle_position_preservation
+        - neck_subject_identity_face_preservation
+        - neck_artifact_background_stability
+        severity_guidance: Minor taper/axis imperfection may be severity 1. Clear width, taper, cervical axis, jaw-throat-clavicle
+          transition, or asymmetry defect should be severity 2-3. Detached, tube-like, pinched, collapsed, over-elongated,
+          over-shortened, or impossible neck anatomy must be severity 4-5.
+      boundary_or_occlusion_damage:
+        detect_when: Jawline, throat shadow, collar, neckline, hair strands, necklace, shoulders, or clothing contact edges
+          are broken, melted, duplicated, floating, or incorrectly layered around the edited neck.
+        affected_l3:
+        - neck_edit_localized_to_visible_neck
+        - neck_jawline_upper_transition_quality
+        - neck_shoulder_clavicle_lower_transition_quality
+        - neck_hair_clothing_occlusion_integration
+        - neck_skin_clothing_surface_realism
+        - neck_local_lighting_shadow_consistency
+        - neck_contour_edge_blending_quality
+        - neck_primary_requested_outcome_match
+        - neck_cervical_axis_head_alignment
+        - neck_head_position_angle_preservation
+        - neck_shoulder_clavicle_position_preservation
+        - neck_cervical_anatomy_soft_tissue_continuity
+        - neck_artifact_background_stability
+        severity_guidance: Tiny edge/blend issue may be severity 1. Clear jawline, throat shadow, collar, hair, necklace,
+          shoulder, or clothing-contact defect should be severity 2-3. Broken/melted/floating occlusion or severe layering
+          error must be severity 4-5.
+      identity_pose_scene_drift:
+        detect_when: Face identity, expression, gaze, hair/ear appearance, shoulders, torso, body pose, clothing, background,
+          lighting, camera angle, crop, aspect ratio, or resolution changes beyond the neck edit.
+        affected_l3:
+        - neck_head_position_angle_preservation
+        - neck_shoulder_clavicle_position_preservation
+        - neck_subject_identity_face_preservation
+        - neck_expression_gaze_hair_ear_preservation
+        - neck_torso_pose_non_target_body_preservation
+        - neck_scene_camera_framing_preservation
+        - neck_artifact_background_stability
+        - neck_primary_requested_outcome_match
+        - neck_width_taper_preservation
+        - neck_edit_localized_to_visible_neck
+        - neck_skin_clothing_surface_realism
+        - neck_local_lighting_shadow_consistency
+        - neck_contour_edge_blending_quality
+        severity_guidance: Minor local lighting/texture drift may be severity 1. Clear hair, shoulder, torso, clothing, background,
+          lighting, crop, aspect, or camera drift should be severity 2-3. Identity, expression, pose, body geometry, or broad
+          scene-state change must be severity 4-5.
+      artifact_driven_or_background_warp:
+        detect_when: The result relies on liquify distortion, blur, mask seams, duplicated contours, painted shadows, bent
+          background/clothing lines, melted hair/accessories, or other visible artifacts.
+        affected_l3:
+        - neck_edit_localized_to_visible_neck
+        - neck_cervical_anatomy_soft_tissue_continuity
+        - neck_hair_clothing_occlusion_integration
+        - neck_scene_camera_framing_preservation
+        - neck_skin_clothing_surface_realism
+        - neck_local_lighting_shadow_consistency
+        - neck_contour_edge_blending_quality
+        - neck_artifact_background_stability
+        - neck_primary_requested_outcome_match
+        - neck_jawline_upper_transition_quality
+        - neck_shoulder_clavicle_lower_transition_quality
+        - neck_cervical_axis_head_alignment
+        - neck_head_position_angle_preservation
+        - neck_shoulder_clavicle_position_preservation
+        severity_guidance: Small local artifact may be severity 1. Clear liquify seam, blur, duplicated contour, painted shadow,
+          bent clothing/background line, or melted accessory should be severity 2-3. Artifact-driven target appearance, severe
+          warp, holes, or unusable reconstruction must be severity 4-5.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive neck-length sample shows the requested length change on the visible neck itself, with
+    stable head/shoulder landmarks, plausible cervical anatomy, clean jaw/clavicle transitions, and unchanged identity, pose,
+    clothing, camera, and background.
+  success_gate_conditions:
+  - Visible jaw-to-shoulder neck span changes in the exact requested direction and by a natural, readable amount.
+  - Head size, head center, head angle, shoulder height, clavicles, torso axis, camera, crop, and framing remain source-consistent.
+  - Neck width, taper, cervical axis, jaw/throat/clavicle transitions, hair/collar occlusion, and skin shadows remain anatomically
+    plausible.
+  - Face identity, expression, gaze, hair design, clothing details, background, global lighting, aspect ratio, and resolution
+    are preserved.
+  - Local texture, contour, edge blending, lighting, and background stability are clean enough that the edit looks photographic
+    rather than warped or pasted.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  no_compensation_rule: Correct length direction cannot compensate for moved head, moved shoulders, changed camera/crop, damaged
+    cervical anatomy, identity drift, clothing damage, or background warping.
+  task_disambiguation_rule: Adjust the visible neck length in the exact direction requested by the prompt, usually lengthening
+    or shortening the jaw-to-shoulder span, through a localized neck edit. Preserve head size/position, shoulder placement,
+    posture, identity, clothing, background, lighting, framing, and camera geometry. Do not simulate neck length by moving
+    the head, lowering/raising shoulders, resizing the body, or changing camera/crop.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- neck_primary_requested_outcome_match
+- neck_requested_direction_match
+- neck_requested_length_change_magnitude_match
+- neck_final_head_neck_shoulder_proportion_match
+- neck_width_taper_preservation
+- neck_visible_region_completeness_consistency
+- neck_edit_localized_to_visible_neck
+- neck_jawline_upper_transition_quality
+- neck_shoulder_clavicle_lower_transition_quality
+- neck_cervical_axis_head_alignment
+- neck_head_position_angle_preservation
+- neck_shoulder_clavicle_position_preservation
+- neck_cervical_anatomy_soft_tissue_continuity
+- neck_hair_clothing_occlusion_integration
+- neck_subject_identity_face_preservation
+- neck_expression_gaze_hair_ear_preservation
+- neck_torso_pose_non_target_body_preservation
+- neck_scene_camera_framing_preservation
+- neck_skin_clothing_surface_realism
+- neck_local_lighting_shadow_consistency
+- neck_contour_edge_blending_quality
+- neck_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  high_score_note: Do not copy a fixed example vector. Give 8-9 only when the matching facet has visible positive evidence
+    and no propagated failure cap.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    neck_primary_requested_outcome_match: 0.2
+    neck_requested_direction_match: 0.2
+    neck_requested_length_change_magnitude_match: 0.18
+    neck_final_head_neck_shoulder_proportion_match: 0.17
+    neck_width_taper_preservation: 0.13
+    neck_visible_region_completeness_consistency: 0.12
+  Localization and Anatomical Integration:
+    neck_edit_localized_to_visible_neck: 0.14
+    neck_jawline_upper_transition_quality: 0.13
+    neck_shoulder_clavicle_lower_transition_quality: 0.13
+    neck_cervical_axis_head_alignment: 0.16
+    neck_head_position_angle_preservation: 0.12
+    neck_shoulder_clavicle_position_preservation: 0.12
+    neck_cervical_anatomy_soft_tissue_continuity: 0.12
+    neck_hair_clothing_occlusion_integration: 0.08
+  Subject Preservation:
+    neck_subject_identity_face_preservation: 0.3
+    neck_expression_gaze_hair_ear_preservation: 0.22
+    neck_torso_pose_non_target_body_preservation: 0.28
+    neck_scene_camera_framing_preservation: 0.2
+  Task Realism and Image Quality:
+    neck_skin_clothing_surface_realism: 0.27
+    neck_local_lighting_shadow_consistency: 0.25
+    neck_contour_edge_blending_quality: 0.28
+    neck_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: 'Weighted arithmetic mean over the 6 Prompt Compliance facets.
+
+    '
+  other_l1_blocks: 'Use the listed within-L1 weights for the remaining three blocks.
+
+    '
+  base_formula: base_reward = 0.58 * P + 0.20 * L + 0.15 * S + 0.07 * Q
+  anatomy_score: A = score(neck_cervical_anatomy_soft_tissue_continuity) / 9.0
+  identity_score: I = score(neck_subject_identity_face_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (I ** 0.15)
+taxonomy:
+  Prompt Compliance:
+    Requested Neck-Length Edit:
+      neck_primary_requested_outcome_match:
+        title: Primary requested outcome
+        definition: 'Judge whether the visible neck itself becomes naturally longer through localized editing, without using
+          head movement, head resizing, shoulder lowering, torso stretching, pose change, crop/zoom, or camera movement.
+
+          '
+        anchors:
+          0: No visible neck lengthening, opposite shortening, wrong edit, or only camera/body/head/shoulder movement.
+          3: Very weak or doubtful lengthening; source neck span mostly remains.
+          5: Visible partial lengthening but incomplete, unnatural, or mixed with non-target movement.
+          7: Clear natural neck lengthening with one visible issue.
+          9: The visible neck is cleanly and naturally lengthened while head, shoulders, pose, and scene remain source-like.
+        rubric: Judge whether the visible neck itself becomes naturally longer through localized editing, without using head
+          movement, head resizing, shoulder lowering, torso stretching, pose change, crop/zoom, or camera movement. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_requested_direction_match:
+        title: Length-change direction
+        definition: 'Judge whether the visible neck is lengthened in the exact requested direction. Shortening, unchanged
+          length, or apparent lengthening caused by moving head/shoulders/camera is not the requested direction.
+
+          '
+        anchors:
+          0: Opposite shortening, no change, or lengthening illusion from head/shoulder/camera movement.
+          3: Lengthening direction is barely perceptible, ambiguous, or inconsistent.
+          5: Correct direction is partly established but weak or mixed with non-target movement.
+          7: Correct and clear lengthening direction with a minor inconsistency.
+          9: Lengthening direction is exact, unambiguous, and localized to the neck.
+        rubric: Judge whether the visible neck is lengthened in the exact requested direction. Shortening, unchanged length,
+          or apparent lengthening caused by moving head/shoulders/camera is not the requested direction. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_requested_length_change_magnitude_match:
+        title: Length-change magnitude
+        definition: 'Judge whether the amount of visible neck lengthening is noticeable, natural, and appropriate to the request,
+          without becoming stretched, tube-like, giraffe-like, or imperceptible.
+
+          '
+        anchors:
+          0: No useful change, opposite change, or extreme destructive lengthening.
+          3: Severely insufficient, excessive, uneven, or mostly caused by global distortion.
+          5: Noticeable but clearly inaccurate, overdone, or underdone.
+          7: Appropriate natural lengthening with a minor magnitude issue.
+          9: Magnitude is clear, balanced, natural, and exactly prompt-matched.
+        rubric: Judge whether the amount of visible neck lengthening is noticeable, natural, and appropriate to the request,
+          without becoming stretched, tube-like, giraffe-like, or imperceptible. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      neck_final_head_neck_shoulder_proportion_match:
+        title: Final head-neck-shoulder proportion
+        definition: 'Judge whether the edited neck length forms a plausible proportion relative to the unchanged head and
+          shoulders.
+
+          '
+        anchors:
+          0: Grossly implausible or disconnected proportion.
+          3: Strongly elongated, compressed, or unbalanced appearance.
+          5: Generally plausible but visibly awkward.
+          7: Natural proportion with one minor issue.
+          9: Fully natural and well-balanced proportion.
+        rubric: Judge whether the edited neck length forms a plausible proportion relative to the unchanged head and shoulders.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_width_taper_preservation:
+        title: Neck width and taper preservation
+        definition: 'Judge whether original neck width, side contour, and taper are preserved while only length changes.
+
+          '
+        anchors:
+          0: Neck is severely widened, narrowed, pinched, or tube-like.
+          3: Major width or taper drift.
+          5: Mostly preserved with an obvious contour change.
+          7: Preserved with a minor difference.
+          9: Width and taper remain fully consistent with the source.
+        rubric: Judge whether original neck width, side contour, and taper are preserved while only length changes. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_visible_region_completeness_consistency:
+        title: Visible-region completeness
+        definition: 'Judge whether the length edit is consistently applied across all visible neck portions without missed
+          strips or locally conflicting changes.
+
+          '
+        anchors:
+          0: Wrong area or largely incomplete edit.
+          3: Multiple missed or contradictory regions.
+          5: Mostly edited but visibly inconsistent.
+          7: Complete with one minor local inconsistency.
+          9: All assessable visible neck regions are consistently edited.
+        rubric: Judge whether the length edit is consistently applied across all visible neck portions without missed strips
+          or locally conflicting changes. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+  Localization and Anatomical Integration:
+    Neck Boundaries and Cervical Structure:
+      neck_edit_localized_to_visible_neck:
+        title: Edit localization
+        definition: 'Judge whether changes remain within the visible neck and minimum contact boundaries.
+
+          '
+        anchors:
+          0: Broad non-target body or scene editing.
+          3: Significant spill into face, shoulders, torso, or background.
+          5: Mostly localized with one clear non-target change.
+          7: Localized with a minor spill.
+          9: Precisely confined to the permitted region.
+        rubric: Judge whether changes remain within the visible neck and minimum contact boundaries. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      neck_jawline_upper_transition_quality:
+        title: Jawline-to-neck transition
+        definition: 'Judge continuity beneath the jaw and around the ears without gaps, pinching, duplicated edges, or changed
+          jaw shape.
+
+          '
+        anchors:
+          0: Broken or impossible upper connection.
+          3: Major gaps, pinching, or jaw distortion.
+          5: Connected but visibly unnatural.
+          7: Natural with one minor boundary issue.
+          9: Seamless and anatomically correct transition.
+        rubric: Judge continuity beneath the jaw and around the ears without gaps, pinching, duplicated edges, or changed
+          jaw shape. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_shoulder_clavicle_lower_transition_quality:
+        title: Neck-to-shoulder transition
+        definition: 'Judge continuity into the shoulders and clavicles without shelves, dents, detached tissue, or reshaped
+          shoulders.
+
+          '
+        anchors:
+          0: Broken or impossible lower connection.
+          3: Major dents, shelves, or shoulder distortion.
+          5: Plausible but visibly irregular transition.
+          7: Natural with one minor issue.
+          9: Smooth and anatomically coherent transition.
+        rubric: Judge continuity into the shoulders and clavicles without shelves, dents, detached tissue, or reshaped shoulders.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_cervical_axis_head_alignment:
+        title: Cervical axis and head alignment
+        definition: 'Judge whether the neck axis continues naturally into the head and torso under the original pose and perspective.
+
+          '
+        anchors:
+          0: Neck is bent, detached, or misaligned.
+          3: Major axis or perspective distortion.
+          5: Generally aligned with a clear inconsistency.
+          7: Coherent with one minor deviation.
+          9: Cervical axis and head alignment are fully coherent.
+        rubric: Judge whether the neck axis continues naturally into the head and torso under the original pose and perspective.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_head_position_angle_preservation:
+        title: Head position and angle preservation
+        definition: 'Judge whether head center, tilt, rotation, scale, and orientation remain unchanged.
+
+          '
+        anchors:
+          0: Head position, angle, or scale is materially changed.
+          3: Strong head drift.
+          5: Mostly preserved with a clear difference.
+          7: Preserved with one minor shift.
+          9: Head position, angle, and scale are unchanged.
+        rubric: Judge whether head center, tilt, rotation, scale, and orientation remain unchanged. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      neck_shoulder_clavicle_position_preservation:
+        title: Shoulder and clavicle preservation
+        definition: 'Judge whether shoulder height, width, slope, clavicle placement, and left-right relation remain unchanged.
+
+          '
+        anchors:
+          0: Shoulders or clavicles are materially moved or reshaped.
+          3: Strong shoulder-height or width drift.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with a minor difference.
+          9: Shoulder and clavicle geometry is unchanged.
+        rubric: Judge whether shoulder height, width, slope, clavicle placement, and left-right relation remain unchanged.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_cervical_anatomy_soft_tissue_continuity:
+        title: Cervical anatomy and soft-tissue continuity
+        definition: 'Judge plausible neck musculature, skin continuity, side contours, and head-to-torso attachment after
+          the length change.
+
+          '
+        anchors:
+          0: Anatomically impossible, collapsed, duplicated, or detached neck.
+          3: Major soft-tissue deformation.
+          5: Broadly plausible with obvious anatomical artifacts.
+          7: Coherent with one minor issue.
+          9: Fully natural cervical anatomy and continuity.
+        rubric: Judge plausible neck musculature, skin continuity, side contours, and head-to-torso attachment after the length
+          change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_hair_clothing_occlusion_integration:
+        title: Hair, clothing, and occlusion integration
+        definition: 'Judge whether hair, collars, necklaces, and clothing overlap the edited neck correctly while preserving
+          their design and detail.
+
+          '
+        anchors:
+          0: Severe penetration, detachment, or wrong layering.
+          3: Major occlusion or garment damage.
+          5: Integrated but with obvious inconsistencies.
+          7: Correct with one minor issue.
+          9: All contact and occlusion relationships are seamless.
+        rubric: Judge whether hair, collars, necklaces, and clothing overlap the edited neck correctly while preserving their
+          design and detail. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity, Pose, and Scene:
+      neck_subject_identity_face_preservation:
+        title: Subject identity and face preservation
+        definition: 'Judge preservation of the same person, facial geometry, skin tone, age impression, ears, and jawline
+          identity.
+
+          '
+        anchors:
+          0: Different person or severe facial drift.
+          3: Strong identity or face alteration.
+          5: Same person remains recognizable with a clear change.
+          7: Identity preserved with one minor difference.
+          9: Identity and facial structure are fully preserved.
+        rubric: Judge preservation of the same person, facial geometry, skin tone, age impression, ears, and jawline identity.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_expression_gaze_hair_ear_preservation:
+        title: Expression, gaze, hair, and ear preservation
+        definition: 'Judge preservation of expression, eye direction, hairstyle, hairline, ears, and visible accessories.
+
+          '
+        anchors:
+          0: Multiple major non-target changes.
+          3: Strong expression, gaze, hair, or ear drift.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All listed features remain unchanged.
+        rubric: Judge preservation of expression, eye direction, hairstyle, hairline, ears, and visible accessories. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_torso_pose_non_target_body_preservation:
+        title: Torso, posture, and non-target body preservation
+        definition: 'Judge preservation of body posture, torso position, shoulders, arms, hands, and all non-target body proportions.
+
+          '
+        anchors:
+          0: Major posture or body redesign.
+          3: Significant torso or non-target body drift.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with a minor difference.
+          9: All non-target body geometry remains unchanged.
+        rubric: Judge preservation of body posture, torso position, shoulders, arms, hands, and all non-target body proportions.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_scene_camera_framing_preservation:
+        title: Scene, camera, and framing preservation
+        definition: 'Judge preservation of clothing design, background, global lighting, shadows, camera angle, crop, composition,
+          aspect ratio, and resolution.
+
+          '
+        anchors:
+          0: Major scene, camera, or framing replacement.
+          3: Strong background, crop, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with a minor difference.
+          9: Scene and image geometry remain unchanged.
+        rubric: Judge preservation of clothing design, background, global lighting, shadows, camera angle, crop, composition,
+          aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      neck_skin_clothing_surface_realism:
+        title: Skin and clothing surface realism
+        definition: 'Judge natural skin and nearby fabric texture without waxiness, smearing, repeated texture, or lost detail.
+
+          '
+        anchors:
+          0: Severely synthetic or destroyed surface.
+          3: Strong texture artifacts.
+          5: Usable but visibly processed.
+          7: Realistic with one minor issue.
+          9: Fully photorealistic and source-consistent.
+        rubric: Judge natural skin and nearby fabric texture without waxiness, smearing, repeated texture, or lost detail.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_local_lighting_shadow_consistency:
+        title: Local lighting and shadow consistency
+        definition: 'Judge whether neck shading, jaw shadow, collar shadow, highlights, and cast shadows remain consistent
+          with the source lighting.
+
+          '
+        anchors:
+          0: Lighting or shadows strongly contradict the image.
+          3: Major missing, duplicated, or incorrect shadows.
+          5: Generally plausible with obvious local errors.
+          7: Consistent with one minor issue.
+          9: Lighting and shadows integrate perfectly.
+        rubric: Judge whether neck shading, jaw shadow, collar shadow, highlights, and cast shadows remain consistent with
+          the source lighting. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: 'Judge clean boundaries without halos, jagged edges, seams, dents, over-sharpening, or local blur.
+
+          '
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, dents, or blur.
+          5: Mostly blended with visible artifacts.
+          7: Clean with one minor edge issue.
+          9: Seamless and naturally sharp integration.
+        rubric: Judge clean boundaries without halos, jagged edges, seams, dents, over-sharpening, or local blur. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      neck_artifact_background_stability:
+        title: Artifact and background stability
+        definition: 'Judge absence of warped clothing, duplicated anatomy, melted hair, broken accessories, bent background
+          lines, or geometric artifacts.
+
+          '
+        anchors:
+          0: Severe structural artifacts or background warping.
+          3: Multiple obvious distortions.
+          5: One clear artifact or moderate instability.
+          7: Stable with one minor artifact.
+          9: No visible artifact; all surrounding structures remain stable.
+        rubric: Judge absence of warped clothing, duplicated anatomy, melted hair, broken accessories, bent background lines,
+          or geometric artifacts. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+prompt_applicability:
+  purpose: 'Keep the fixed 22-score output while ensuring the direction-specific target is interpreted correctly.
+
+    '
+  valid_prompt_rule: 'For the current training set, all 6 Prompt Compliance facets are applicable to every valid sample.
+
+    '
+  direction_activation:
+    lengthen_terms:
+    - increase visible neck length
+    - lengthen the neck
+    - make the neck longer
+    shorten_terms:
+    - reduce visible neck length
+    - shorten the neck
+    - make the neck shorter
+  aggregation_rule: 'P = sum_i(weight_i * normalized_score_i) over all 6 Prompt Compliance facets.
+
+    '

@@ -1,0 +1,848 @@
+task_key: female_arm_slimming
+task_title: Female Arm Slimming
+task_title_zh: 女性瘦手臂
+version: v48_fixed_integer_22_l3_female_arm_slimming_successgate_hybrid_compact_deep_review_compact_secondpass_l3_identity_priority
+language: English
+judge_role: You are a strict expert evaluator for female upper-arm slimming, limb anatomy, hand/shoulder preservation, clothing
+  reconstruction, and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare upper-arm width/fullness, requested arm segment, shoulder-to-arm transition, elbow/forearm/wrist/hands,
+  arm length, limb axis, torso, clothing/sleeves, pose, identity, hair, scene, camera framing, lighting, and background.
+
+
+  2) Task target. A successful edit reduces visible width/circumference/fullness in the requested upper-arm area only, producing
+  a controlled slimmer contour while preserving arm length, shoulders, elbows, forearms, wrists, hands, torso, legs, pose,
+  identity, clothing details, and scene.
+
+
+  3) Task-specific failures. Treat absent/weak arm slimming, wrong segment/global slimming substitute, stretched or broken
+  limb anatomy, hand/shoulder/torso drift, clothing/background artifacts, and source-state drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear requested-segment slimming evidence. If the result is generic body thinning,
+  arm stretching, pose change, or broken anatomy, preservation/quality must not lift affected facets.
+
+
+  Task-specific focus: female upper-arm slimming. Success requires localized reduction of the requested arm segment while
+  preserving arm length, shoulder/elbow/forearm/wrist/hand anatomy, torso, pose, clothing, and scene. Do not reward global
+  body scaling, pose shift, shoulder movement, torso slimming, clothing-only illusion, or generic thinness as arm slimming.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 200
+  prompt_groups:
+  - full-arm slimming
+  - upper-arm-only slimming
+  - upper-arm underside and triceps tightening
+  - straighter arm contour
+  - model-like or editorial slender contour
+  - athletic or toned contour
+  - refined natural slender contour
+  - even shoulder-to-wrist slimming
+  - outer-contour-only narrowing
+  - combined upper-arm and forearm slimming
+  - compact or tightened arm shape
+  - circumference reduction
+  - visually elongated arm line without actual stretching
+  - event-photo and logo preservation
+  - strict arm-only localization
+  - inner and outer boundary refinement
+  - reduction of bulky or heavy-looking fullness
+  - healthy slender-arm appearance
+  - continuous shoulder-to-wrist narrowing
+  - strong but natural visible slimming
+  common_requirements:
+  - preserve hands, fingers, shoulders, torso, pose, clothing, and background
+  - preserve arm length, joint placement, and hand position
+  - keep the result visible, natural, balanced, and anatomically realistic
+  - avoid deformation of clothing, logos, text, and nearby background
+target_region: 'Both visible upper arms only, from shoulder attachment to elbow boundary. Forearms, elbows, wrists, hands,
+  fingers, shoulders, torso, legs, outfit, and background are non-target regions.
+
+  '
+target_action_summary: 'Reduce visible width, circumference, or soft-looking fullness in both upper arms only, producing a
+  controlled slimmer contour while preserving actual arm length, shoulders, elbows, forearms, wrists, hands, torso, legs,
+  pose, identity, clothing details, and the surrounding scene.
+
+  '
+task_boundary:
+  allowed:
+  - localized inward adjustment of visible arm contours
+  - reduction of upper-arm or forearm width and fullness
+  - localized tightening of the upper-arm underside
+  - natural contour refinement around arm skin or sleeves
+  - minimal fabric and shadow adaptation required by the new contour
+  not_equivalent_tasks:
+  - shortening or lengthening the actual arms
+  - changing shoulder width or shoulder shape
+  - changing hand or finger size
+  - changing muscle mass into exaggerated bodybuilding anatomy
+  - slimming the torso, waist, hips, or legs
+  - changing pose or camera framing to simulate thinner arms
+design_principle:
+  summary: 'Use exactly 22 fixed L3 scores. Evaluate the exact requested arm segment, slimming magnitude, contour style, anatomy,
+    preservation, and realism separately. A globally thinner-looking person is not a successful result unless only the requested
+    arm regions are correctly edited.
+
+    '
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not invent hidden arm anatomy.
+  - Do not reward changes produced by global scaling, pose shifts, arm stretching, or shoulder movement.
+  - Do not reward generic thinness when the requested arm segment is missed.
+  - Perspective-aware balance is required; do not force mirrored geometry.
+  - One severe anatomy, hand, pose, clothing, or background error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: 'The prompt must request slimmer, narrower, firmer, tighter, less bulky, or more refined arms, upper
+    arms, forearms, arm underside, or arm contours.
+
+    '
+  wrong_task_examples:
+  - changing only shoulders, hands, torso, waist, or legs
+  - increasing arm bulk or creating exaggerated muscle mass
+  - changing arm pose or length without a slimming target
+  - applying only global body slimming
+  conflict_examples:
+  - make the same arm segment both clearly slimmer and clearly thicker
+  - preserve the exact original arm width while requiring visible circumference reduction
+  - shorten the actual arms while requiring unchanged arm length
+  visibility_failures:
+  - both target arms or requested arm segments are outside the frame
+  - clothing or occlusion completely prevents comparison of the requested contour
+  - image quality is too poor to identify shoulder, elbow, wrist, or arm boundaries
+  partial_visibility_rule: 'Score only assessable visible regions. Do not penalize a fully occluded side, but penalize missed
+    or inconsistent visible target regions.
+
+    '
+scope_interpretation:
+  full_arm: 'Edit upper arms and forearms from shoulder joints to wrists; preserve hands.
+
+    '
+  upper_arm_only: 'Edit only the region between shoulder and elbow; preserve elbows, forearms, wrists, and hands.
+
+    '
+  underside_or_triceps: 'Reduce soft-looking fullness mainly along the lower or posterior upper-arm contour without changing
+    the whole arm unnecessarily.
+
+    '
+  contour_only: 'Move only specified inner or outer boundaries inward while preserving limb centerline, pose, and attachment
+    points.
+
+    '
+  visual_elongation: 'Create a longer visual line only through reduced width and cleaner contour; actual arm length and joint
+    positions must remain unchanged.
+
+    '
+anatomy_preservation_protocol:
+  strict_rules:
+  - Preserve shoulder-joint centers, elbow centers, wrist centers, and arm length.
+  - Preserve the original arm axis, bend, foreshortening, and perspective.
+  - Preserve realistic upper-arm, elbow, forearm, and wrist proportions.
+  - Do not create pinched joints, tube-like arms, disconnected limbs, or unnaturally thin wrists.
+  - Preserve hand size, finger anatomy, and hand position.
+  - Clothing may follow the new contour only as necessary; preserve seams, folds, patterns, logos, and text.
+  - Do not warp torso edges, hair, furniture, logos, carpet, walls, or image borders.
+identity_preservation_protocol:
+  target_exemptions:
+  - Only the requested arm contour and minimum local fabric or shadow transition may change.
+  strict_rules:
+  - Preserve the same person, face, hair, skin tone, age impression, and body identity.
+  - Preserve shoulders, torso, waist, hips, legs, and all non-target proportions.
+  - Preserve pose, hand placement, clothing design, and photographic style.
+  - The intended arm slimming must not itself be treated as identity drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: '0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+
+    '
+  no_cross_compensation: 'Correct arm width cannot compensate for wrong target scope, changed hands, moved joints, damaged
+    clothing, identity drift, or background warping.
+
+    '
+  arm_slimming_disambiguation_rule: Correct arm slimming reduces requested arm width/fullness only. Global scaling, pose shifts,
+    arm length stretching, shoulder movement, torso slimming, forearm/hand distortion, clothing-only illusion, and generic
+    thinness are substitute operations.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_segment_or_too_weak:
+        detect_when: Requested upper-arm width/fullness remains mostly unchanged, wrong arm segment is edited, direction is
+          wrong, or slimming is too weak.
+        severity_guidance: Faint correct segment slimming may be severity 1-2. Mostly unchanged or wrong segment must be at
+          least severity 3. Absent/reversed edit is severity 4-5.
+        affected_l3:
+        - arm_primary_slimming_outcome_match
+        - arm_requested_segment_scope_match
+        - arm_width_circumference_reduction_match
+        - arm_upper_forearm_distribution_match
+        - arm_requested_contour_style_match
+        - arm_firmness_fullness_tone_match
+        - arm_bilateral_completeness_balance_match
+        - arm_edit_localized_to_target_region
+        - arm_visual_elongation_without_stretch_match
+        - arm_shoulder_upper_arm_transition_quality
+        - arm_hands_fingers_preservation
+        - arm_shoulder_torso_non_target_body_preservation
+        - arm_pose_joint_position_length_preservation
+        - arm_subject_identity_face_hair_clothing_preservation
+        - arm_scene_camera_framing_preservation
+        - arm_artifact_background_stability
+      substitute_global_scaling_pose_shift_or_body_slimming:
+        detect_when: The slimmer-arm appearance comes from global image/body scaling, pose/arm-position change, shoulder movement,
+          torso slimming, clothing-only contour shift, camera/crop change, or generic body thinning rather than local upper-arm
+          slimming.
+        severity_guidance: Clear substitute operation must be at least severity 2. Pose/body/camera/torso substitution must
+          be severity 3-5.
+        affected_l3:
+        - arm_primary_slimming_outcome_match
+        - arm_requested_segment_scope_match
+        - arm_width_circumference_reduction_match
+        - arm_edit_localized_to_target_region
+        - arm_shoulder_torso_non_target_body_preservation
+        - arm_pose_joint_position_length_preservation
+        - arm_subject_identity_face_hair_clothing_preservation
+        - arm_scene_camera_framing_preservation
+        - arm_upper_forearm_distribution_match
+        - arm_requested_contour_style_match
+        - arm_firmness_fullness_tone_match
+        - arm_visual_elongation_without_stretch_match
+        - arm_bilateral_completeness_balance_match
+        - arm_shoulder_upper_arm_transition_quality
+        - arm_hands_fingers_preservation
+        - arm_artifact_background_stability
+      over_slimmed_stretched_or_limb_anatomy_broken:
+        detect_when: Arm becomes too thin, stretched, elongated, pinched, asymmetric, dislocated, bent, broken at shoulder/elbow/wrist,
+          or anatomically implausible.
+        severity_guidance: Clear over-slimming/anatomy issue must be at least severity 2. Broken joint/limb axis, stretched
+          arm, or impossible contour must be severity 3-5.
+        affected_l3:
+        - arm_width_circumference_reduction_match
+        - arm_upper_forearm_distribution_match
+        - arm_requested_contour_style_match
+        - arm_visual_elongation_without_stretch_match
+        - arm_shoulder_upper_arm_transition_quality
+        - arm_elbow_forearm_wrist_transition_quality
+        - arm_anatomy_axis_joint_consistency
+        - arm_pose_joint_position_length_preservation
+        - arm_artifact_background_stability
+        - arm_primary_slimming_outcome_match
+        - arm_requested_segment_scope_match
+        - arm_firmness_fullness_tone_match
+        - arm_bilateral_completeness_balance_match
+        - arm_edit_localized_to_target_region
+        - arm_skin_clothing_occlusion_integration
+        - arm_hands_fingers_preservation
+        - arm_skin_fabric_surface_realism
+        - arm_local_lighting_shadow_consistency
+        - arm_contour_edge_blending_quality
+      hands_shoulder_torso_clothing_or_occlusion_broken:
+        detect_when: Hands/fingers, shoulder-to-arm, elbow/forearm/wrist transitions, sleeves/clothing, skin/fabric occlusion,
+          shadows, edges, or background near arms become warped, cut, smeared, repeated, haloed, or inconsistent.
+        severity_guidance: Clear local transition/occlusion defect must be at least severity 2. Broken hands, shoulder/elbow/wrist,
+          sleeve warp, or severe background artifact must be severity 3-5.
+        affected_l3:
+        - arm_shoulder_upper_arm_transition_quality
+        - arm_elbow_forearm_wrist_transition_quality
+        - arm_skin_clothing_occlusion_integration
+        - arm_hands_fingers_preservation
+        - arm_skin_fabric_surface_realism
+        - arm_local_lighting_shadow_consistency
+        - arm_contour_edge_blending_quality
+        - arm_artifact_background_stability
+        - arm_primary_slimming_outcome_match
+        - arm_requested_segment_scope_match
+        - arm_width_circumference_reduction_match
+        - arm_upper_forearm_distribution_match
+        - arm_requested_contour_style_match
+        - arm_firmness_fullness_tone_match
+        - arm_visual_elongation_without_stretch_match
+        - arm_bilateral_completeness_balance_match
+        - arm_edit_localized_to_target_region
+        - arm_anatomy_axis_joint_consistency
+      identity_pose_scene_or_non_target_body_drift:
+        detect_when: Identity, face, hair, clothing, torso, shoulders, legs, pose, arm length, camera framing, lighting, background,
+          or scene changes beyond requested arm slimming.
+        severity_guidance: Minor local blend drift may be severity 1. Clear clothing/background/camera drift must be at least
+          severity 2. Identity, pose, torso/shoulder, hand, or arm-length drift must be severity 3-5.
+        affected_l3:
+        - arm_shoulder_torso_non_target_body_preservation
+        - arm_pose_joint_position_length_preservation
+        - arm_subject_identity_face_hair_clothing_preservation
+        - arm_scene_camera_framing_preservation
+        - arm_artifact_background_stability
+        - arm_primary_slimming_outcome_match
+        - arm_edit_localized_to_target_region
+        - arm_hands_fingers_preservation
+        - arm_skin_fabric_surface_realism
+        - arm_local_lighting_shadow_consistency
+        - arm_contour_edge_blending_quality
+        - arm_requested_segment_scope_match
+        - arm_width_circumference_reduction_match
+        - arm_upper_forearm_distribution_match
+        - arm_requested_contour_style_match
+        - arm_firmness_fullness_tone_match
+        - arm_visual_elongation_without_stretch_match
+        - arm_bilateral_completeness_balance_match
+        - arm_shoulder_upper_arm_transition_quality
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive sample reduces visible width/fullness in the requested female upper-arm area while preserving
+    arm length, shoulders, elbows, forearms, wrists, hands, torso, pose, identity, clothing, and scene.
+  success_gate_conditions:
+  - Requested upper-arm segment is visibly slimmer with controlled contour and fullness reduction.
+  - Shoulder-to-upper-arm, elbow/forearm/wrist transitions, limb axis, joint positions, and arm length remain anatomically
+    plausible.
+  - Hands/fingers, shoulders, torso, non-target body, clothing/sleeves, skin/fabric occlusion, shadows, and background remain
+    source-consistent.
+  - The result is not global body scaling, pose shift, shoulder movement, arm stretching, torso slimming, clothing-only illusion,
+    or generic thinness.
+  - No over-slimmed, pinched, elongated, broken-joint, warped-clothing, or background-distorted appearance is visible.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_compensation_rule: 'Correct arm width cannot compensate for wrong target scope, changed hands, moved joints, damaged
+    clothing, identity drift, or background warping.
+
+    '
+  task_disambiguation_rule: Reduce visible width, circumference, or soft-looking fullness in both upper arms only, producing
+    a controlled slimmer contour while preserving actual arm length, shoulders, elbows, forearms, wrists, hands, torso, legs,
+    pose, identity, clothing details, and the surrounding scene.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- arm_primary_slimming_outcome_match
+- arm_requested_segment_scope_match
+- arm_width_circumference_reduction_match
+- arm_upper_forearm_distribution_match
+- arm_requested_contour_style_match
+- arm_firmness_fullness_tone_match
+- arm_visual_elongation_without_stretch_match
+- arm_bilateral_completeness_balance_match
+- arm_edit_localized_to_target_region
+- arm_shoulder_upper_arm_transition_quality
+- arm_elbow_forearm_wrist_transition_quality
+- arm_anatomy_axis_joint_consistency
+- arm_skin_clothing_occlusion_integration
+- arm_hands_fingers_preservation
+- arm_shoulder_torso_non_target_body_preservation
+- arm_pose_joint_position_length_preservation
+- arm_subject_identity_face_hair_clothing_preservation
+- arm_scene_camera_framing_preservation
+- arm_skin_fabric_surface_realism
+- arm_local_lighting_shadow_consistency
+- arm_contour_edge_blending_quality
+- arm_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    arm_primary_slimming_outcome_match: 0.18
+    arm_requested_segment_scope_match: 0.16
+    arm_width_circumference_reduction_match: 0.16
+    arm_upper_forearm_distribution_match: 0.12
+    arm_requested_contour_style_match: 0.12
+    arm_firmness_fullness_tone_match: 0.11
+    arm_visual_elongation_without_stretch_match: 0.07
+    arm_bilateral_completeness_balance_match: 0.08
+  Localization and Anatomical Integration:
+    arm_edit_localized_to_target_region: 0.22
+    arm_shoulder_upper_arm_transition_quality: 0.18
+    arm_elbow_forearm_wrist_transition_quality: 0.2
+    arm_anatomy_axis_joint_consistency: 0.25
+    arm_skin_clothing_occlusion_integration: 0.15
+  Subject Preservation:
+    arm_hands_fingers_preservation: 0.23
+    arm_shoulder_torso_non_target_body_preservation: 0.22
+    arm_pose_joint_position_length_preservation: 0.23
+    arm_subject_identity_face_hair_clothing_preservation: 0.17
+    arm_scene_camera_framing_preservation: 0.15
+  Task Realism and Image Quality:
+    arm_skin_fabric_surface_realism: 0.28
+    arm_local_lighting_shadow_consistency: 0.24
+    arm_contour_edge_blending_quality: 0.28
+    arm_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: 'Masked weighted arithmetic mean over the 8 Prompt Compliance facets. Only facets with applicability
+    mask=1 enter the numerator and denominator.
+
+    '
+  other_l1_blocks: 'Use the listed within-L1 weights for the remaining three blocks.
+
+    '
+  base_formula: base_reward = 0.58 * P_masked + 0.20 * L + 0.15 * S + 0.07 * Q
+  anatomy_score: A = score(arm_anatomy_axis_joint_consistency) / 9.0
+  hand_score: H = score(arm_hands_fingers_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (H ** 0.15)
+taxonomy:
+  Prompt Compliance:
+    Requested Arm Slimming:
+      arm_primary_slimming_outcome_match:
+        title: Primary slimming outcome
+        definition: 'Judge whether both upper arms specifically become visibly slimmer and cleaner without using global body
+          scaling, pose change, shoulder movement, forearm/hand changes, or arm stretching.
+
+          '
+        anchors:
+          0: No visible upper-arm slimming, opposite change, wrong segment, or a different task.
+          3: Very weak, one-sided, or doubtful upper-arm slimming; source contour largely remains.
+          5: Visible partial upper-arm slimming with major incompleteness, wrong-segment leakage, or asymmetry.
+          7: Clear controlled upper-arm slimming with one visible issue.
+          9: Both upper arms are cleanly, naturally, and visibly slimmed while all non-target regions remain source-like.
+        rubric: Judge whether both upper arms specifically become visibly slimmer and cleaner without using global body scaling,
+          pose change, shoulder movement, forearm/hand changes, or arm stretching. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      arm_requested_segment_scope_match:
+        title: Requested arm-segment scope
+        definition: 'Judge whether the edit affects exactly both upper arms between shoulder and elbow. Forearms, elbows,
+          wrists, hands, fingers, shoulders, torso, legs, outfit, pose, and background should not be altered.
+
+          '
+        anchors:
+          0: Wrong segment edited, forearms/hands/shoulders/body changed, or one requested upper arm missed.
+          3: Upper-arm scope is weak, partial, one-sided, or heavily leaks into non-target regions.
+          5: Main upper-arm scope is recognizable but includes a clear missed or extra region.
+          7: Correct upper-arm scope with one minor boundary issue.
+          9: Exact bilateral upper-arm coverage with no unnecessary extension.
+        rubric: Judge whether the edit affects exactly both upper arms between shoulder and elbow. Forearms, elbows, wrists,
+          hands, fingers, shoulders, torso, legs, outfit, pose, and background should not be altered. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      arm_width_circumference_reduction_match:
+        title: Width and circumference reduction
+        definition: 'Judge whether visible upper-arm width or girth reduction is clear, controlled, and appropriate to the
+          prompt, without creating stick-like, pinched, stretched, or anatomically broken arms.
+
+          '
+        anchors:
+          0: No reduction, increased width, wrong segment reduction, or destructive thinning.
+          3: Barely visible, uneven, one-sided, or severely excessive upper-arm reduction.
+          5: Noticeable but clearly inaccurate magnitude or partially non-local reduction.
+          7: Appropriate upper-arm reduction with one minor issue.
+          9: Upper-arm width and circumference reduction are exact, balanced, and natural.
+        rubric: Judge whether visible upper-arm width or girth reduction is clear, controlled, and appropriate to the prompt,
+          without creating stick-like, pinched, stretched, or anatomically broken arms. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      arm_upper_forearm_distribution_match:
+        title: Upper-arm and forearm distribution
+        definition: 'Judge whether slimming is distributed across upper arms, elbows, and forearms as requested, without narrowing
+          preserved segments.
+
+          '
+        anchors:
+          0: Distribution contradicts the prompt.
+          3: Major section is missed or wrongly altered.
+          5: General distribution is present but visibly uneven.
+          7: Correct distribution with one minor inconsistency.
+          9: All requested segments receive precise and coherent slimming.
+        rubric: Judge whether slimming is distributed across upper arms, elbows, and forearms as requested, without narrowing
+          preserved segments. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_requested_contour_style_match:
+        title: Requested contour style
+        definition: 'Judge requested straight, slender, elegant, model-like, compact, athletic, refined, or clean contour
+          character.
+
+          '
+        anchors:
+          0: Contour style is opposite or unrelated.
+          3: Weak resemblance with unstable or lumpy shape.
+          5: Recognizable style with clear geometric issues.
+          7: Correct style with one minor contour issue.
+          9: Contour precisely matches the requested style and remains natural.
+        rubric: Judge requested straight, slender, elegant, model-like, compact, athletic, refined, or clean contour character.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_firmness_fullness_tone_match:
+        title: Firmness, fullness, and tone
+        definition: 'Judge requested reduction of soft or bulky fullness and any requested firm or toned appearance without
+          exaggerated muscle definition.
+
+          '
+        anchors:
+          0: Opposite effect, unchanged fullness, or exaggerated bodybuilding.
+          3: Weak, lumpy, or anatomically implausible tightening.
+          5: Partial firmness or fullness reduction with clear issues.
+          7: Correct effect with one minor inconsistency.
+          9: Fullness and tone precisely match the prompt and remain realistic.
+        rubric: Judge requested reduction of soft or bulky fullness and any requested firm or toned appearance without exaggerated
+          muscle definition. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_visual_elongation_without_stretch_match:
+        title: Visual elongation without anatomical stretching
+        definition: 'Judge long-looking or elongated requests created through a narrow, continuous visual line while actual
+          arm length and joints remain unchanged.
+
+          '
+        anchors:
+          0: Arms are physically stretched, shortened, or not visually refined.
+          3: Weak elongation or visible length distortion.
+          5: Some visual elongation with an uneven contour or slight stretching.
+          7: Convincing visual elongation with one minor issue.
+          9: Arms look elegantly elongated solely through accurate contour slimming.
+        rubric: Judge long-looking or elongated requests created through a narrow, continuous visual line while actual arm
+          length and joints remain unchanged. Apply this facet's 0-9 anchors directly. If a task-specific failure affects
+          this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      arm_bilateral_completeness_balance_match:
+        title: Bilateral completeness and balance
+        definition: 'Judge whether all visible requested arm regions are completed with pose- and perspective-aware balance.
+
+          '
+        anchors:
+          0: Wrong arm, one visible arm missed, or severe imbalance.
+          3: Major left-right inconsistency or incomplete edit.
+          5: Both arms attempted but visibly mismatched.
+          7: Complete and balanced with one minor difference.
+          9: All visible target regions are complete and naturally balanced.
+        rubric: Judge whether all visible requested arm regions are completed with pose- and perspective-aware balance. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Arm Boundaries and Limb Structure:
+      arm_edit_localized_to_target_region:
+        title: Edit localization
+        definition: 'Judge whether changes remain within the requested arm segments and minimum necessary contact boundaries.
+
+          '
+        anchors:
+          0: Broad body or scene modification.
+          3: Significant spill into hands, shoulders, torso, or background.
+          5: Mostly localized with one clear non-target change.
+          7: Localized with a minor spill.
+          9: Precisely confined to the requested arm region.
+        rubric: Judge whether changes remain within the requested arm segments and minimum necessary contact boundaries. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_shoulder_upper_arm_transition_quality:
+        title: Shoulder-to-upper-arm transition
+        definition: 'Judge whether the arm remains naturally attached at the unchanged shoulder without dents, pinching, gaps,
+          or shoulder reshaping.
+
+          '
+        anchors:
+          0: Detached arm or severe shoulder deformation.
+          3: Major notch, pinch, or attachment error.
+          5: Connected but visibly unnatural.
+          7: Natural with one minor issue.
+          9: Seamless and anatomically correct shoulder transition.
+        rubric: Judge whether the arm remains naturally attached at the unchanged shoulder without dents, pinching, gaps,
+          or shoulder reshaping. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_elbow_forearm_wrist_transition_quality:
+        title: Elbow, forearm, and wrist transitions
+        definition: 'Judge smooth anatomical transitions through the elbow and into the wrist without pinched joints, tube-like
+          limbs, or hand distortion.
+
+          '
+        anchors:
+          0: Broken joint or severe forearm/wrist deformation.
+          3: Major pinching, discontinuity, or proportion error.
+          5: Broadly plausible with an obvious transition problem.
+          7: Natural with one minor issue.
+          9: Elbow, forearm, and wrist transitions are fully coherent.
+        rubric: Judge smooth anatomical transitions through the elbow and into the wrist without pinched joints, tube-like
+          limbs, or hand distortion. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      arm_anatomy_axis_joint_consistency:
+        title: Limb anatomy, axis, and joint consistency
+        definition: 'Judge realistic adult arm anatomy, centerline, bend, foreshortening, joint placement, and perspective
+          after slimming.
+
+          '
+        anchors:
+          0: Impossible, detached, duplicated, or severely distorted arm anatomy.
+          3: Major axis, joint, or perspective error.
+          5: Generally plausible with one clear anatomical inconsistency.
+          7: Coherent with one minor issue.
+          9: Arm anatomy, axis, and perspective remain fully natural.
+        rubric: Judge realistic adult arm anatomy, centerline, bend, foreshortening, joint placement, and perspective after
+          slimming. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_skin_clothing_occlusion_integration:
+        title: Skin, sleeve, and occlusion integration
+        definition: 'Judge whether skin, sleeves, seams, folds, logos, hair, torso overlap, and front-back ordering adapt
+          naturally to the new contour.
+
+          '
+        anchors:
+          0: Severe penetration, detachment, melted fabric, or wrong layering.
+          3: Major sleeve, logo, texture, or occlusion damage.
+          5: Integrated but with obvious local inconsistencies.
+          7: Natural with one minor issue.
+          9: All contact and occlusion relationships are seamless.
+        rubric: Judge whether skin, sleeves, seams, folds, logos, hair, torso overlap, and front-back ordering adapt naturally
+          to the new contour. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Hands, Body, Identity, and Scene:
+      arm_hands_fingers_preservation:
+        title: Hands and fingers preservation
+        definition: 'Judge preservation of hand size, shape, finger number, finger anatomy, wrist-hand connection, and hand
+          position.
+
+          '
+        anchors:
+          0: Missing, duplicated, malformed, or substantially changed hands.
+          3: Major finger, hand-shape, or hand-position drift.
+          5: Mostly preserved with one clear hand or finger issue.
+          7: Preserved with one minor difference.
+          9: Hands, fingers, and hand positions are unchanged.
+        rubric: Judge preservation of hand size, shape, finger number, finger anatomy, wrist-hand connection, and hand position.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_shoulder_torso_non_target_body_preservation:
+        title: Shoulder, torso, and non-target body preservation
+        definition: 'Judge preservation of shoulders, chest, waist, hips, legs, and all non-target body proportions.
+
+          '
+        anchors:
+          0: Major body redesign or multiple altered regions.
+          3: Significant shoulder, torso, or non-target proportion changes.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All non-target body regions remain unchanged.
+        rubric: Judge preservation of shoulders, chest, waist, hips, legs, and all non-target body proportions. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_pose_joint_position_length_preservation:
+        title: Pose, joint positions, and arm length preservation
+        definition: 'Judge preservation of arm pose, shoulder/elbow/wrist locations, hand placement, actual arm length, and
+          body posture.
+
+          '
+        anchors:
+          0: Major pose, joint, or arm-length change.
+          3: Strong limb-position or posture drift.
+          5: Mostly preserved with one clear shift.
+          7: Preserved with one minor alignment difference.
+          9: Pose, joints, hand placement, and arm length are unchanged.
+        rubric: Judge preservation of arm pose, shoulder/elbow/wrist locations, hand placement, actual arm length, and body
+          posture. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_subject_identity_face_hair_clothing_preservation:
+        title: Subject identity, face, hair, and clothing preservation
+        definition: 'Judge preservation of the same person, face, skin tone, age impression, hairstyle, outfit design, colors,
+          seams, patterns, logos, and text.
+
+          '
+        anchors:
+          0: Different person or major face, hair, or clothing replacement.
+          3: Strong identity or garment drift.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity, face, hair, and clothing details remain unchanged.
+        rubric: Judge preservation of the same person, face, skin tone, age impression, hairstyle, outfit design, colors,
+          seams, patterns, logos, and text. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      arm_scene_camera_framing_preservation:
+        title: Scene, camera, and framing preservation
+        definition: 'Judge preservation of background, event logos, carpet, objects, lighting, shadows, camera angle, crop,
+          scale, composition, and resolution.
+
+          '
+        anchors:
+          0: Major scene, camera, or framing replacement.
+          3: Strong background, logo, crop, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: Scene and image geometry remain unchanged.
+        rubric: Judge preservation of background, event logos, carpet, objects, lighting, shadows, camera angle, crop, scale,
+          composition, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      arm_skin_fabric_surface_realism:
+        title: Skin and fabric surface realism
+        definition: 'Judge natural pores, skin texture, sleeve texture, folds, patterns, logos, and local sharpness without
+          smearing or plastic surfaces.
+
+          '
+        anchors:
+          0: Severely synthetic, smeared, or destroyed surface.
+          3: Strong skin or fabric texture artifacts.
+          5: Usable but visibly processed.
+          7: Realistic with one minor surface issue.
+          9: Fully photorealistic and source-consistent texture.
+        rubric: Judge natural pores, skin texture, sleeve texture, folds, patterns, logos, and local sharpness without smearing
+          or plastic surfaces. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_local_lighting_shadow_consistency:
+        title: Local lighting and shadow consistency
+        definition: 'Judge whether arm shading, cast shadows, sleeve shadows, and contact shadows follow the slimmer contour
+          and source illumination.
+
+          '
+        anchors:
+          0: Lighting or shadows strongly contradict the image.
+          3: Major missing, duplicated, or incorrect shadows.
+          5: Generally plausible with obvious local errors.
+          7: Consistent with one minor issue.
+          9: Lighting and shadows integrate perfectly.
+        rubric: Judge whether arm shading, cast shadows, sleeve shadows, and contact shadows follow the slimmer contour and
+          source illumination. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: 'Judge clean arm boundaries without halos, jagged edges, dents, cut-and-paste seams, over-sharpening,
+          or local blur.
+
+          '
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, dents, or blur.
+          5: Mostly blended with visible boundary artifacts.
+          7: Clean with one minor edge issue.
+          9: Seamless, detailed, and naturally bounded.
+        rubric: Judge clean arm boundaries without halos, jagged edges, dents, cut-and-paste seams, over-sharpening, or local
+          blur. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      arm_artifact_background_stability:
+        title: Artifact and background stability
+        definition: 'Judge absence of duplicated limbs, malformed hands, melted sleeves, warped torso, bent logos, text distortion,
+          and background deformation.
+
+          '
+        anchors:
+          0: Severe structural artifacts or background warping.
+          3: Multiple obvious distortions.
+          5: One clear artifact or moderate instability.
+          7: Stable with one minor artifact.
+          9: No visible artifact; all surrounding structures remain stable.
+        rubric: Judge absence of duplicated limbs, malformed hands, melted sleeves, warped torso, bent logos, text distortion,
+          and background deformation. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+prompt_applicability:
+  purpose: 'Keep the fixed 22-score output while preventing unrequested arm properties from contributing easy high scores.
+
+    '
+  always_applicable:
+  - arm_primary_slimming_outcome_match
+  - arm_requested_segment_scope_match
+  - arm_width_circumference_reduction_match
+  - arm_bilateral_completeness_balance_match
+  activation_rules:
+    arm_upper_forearm_distribution_match:
+    - activate for full-arm, shoulder-to-wrist, upper-arm-plus-forearm, or even whole-arm slimming
+    - activate for upper-arm-only prompts to verify that forearms remain unchanged
+    arm_requested_contour_style_match:
+    - activate for straight, linear, clean, elegant, graceful, model-like, refined, compact, athletic, or slender contour
+      requests
+    arm_firmness_fullness_tone_match:
+    - activate for firm, tight, toned, athletic, compact, triceps, underside, bulky, heavy, or fullness-reduction requests
+    arm_visual_elongation_without_stretch_match:
+    - activate only for long-looking, elongated, graceful-line, or visually longer requests
+  mask_values:
+    applicable: 1
+    not_applicable: 0
+  aggregation_rule: "P = sum_i(weight_i * mask_i * normalized_score_i) /\n    sum_i(weight_i * mask_i)\n"

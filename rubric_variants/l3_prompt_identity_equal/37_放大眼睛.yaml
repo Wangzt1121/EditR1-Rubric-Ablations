@@ -1,0 +1,738 @@
+task_key: eye_size_adjustment
+task_title: Eye Size Adjustment
+task_title_zh: 放大眼睛
+version: v48_fixed_integer_22_l3_eye_size_adjustment_successgate_hybrid_compact_deep_review_compact_secondpass_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator for direction-aware eye-size adjustment, ocular anatomy, gaze preservation,
+  identity preservation, and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare both complete eye units, horizontal/vertical eye dimensions, eye centers, spacing, eyelids, canthi,
+  iris/pupil/sclera proportions, gaze, brows, nose, skin/makeup, expression, identity, head pose, lighting, background, and
+  camera state.
+
+
+  2) Task target. Follow the current prompt direction: for 放大眼睛, both visible eye units should become larger in a coherent
+  horizontal-and-vertical way while preserving centers, spacing, gaze, iris-pupil relation, expression, identity, and face
+  proportions. Do not reward iris-only enlargement, vertical-only opening, eye-spacing change, eye translation, face scaling,
+  or generic beautification.
+
+
+  3) Task-specific failures. Treat absent/wrong-direction size change, substitute eye edits, over-enlarged doll eyes, broken
+  ocular geometry/gaze, and non-target source drift as failures. Apply global_scoring_policy.failure_propagation before final
+  output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear prompt-direction eye-size evidence. If eye size is unchanged or changed by a
+  substitute operation, preservation/realism must not lift affected facets.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 252
+  unique_prompt_templates: 11
+  direction_distribution:
+    enlarge_both_eyes: 100
+    reduce_eye_size: 152
+  enlarge_templates:
+    unique_templates: 10
+    frequency_per_template: 10
+    fine_control: enlarge_eye_size
+  reduce_templates:
+    unique_templates: 1
+    frequency: 152
+    requested_finish: subtle and realistic
+  core_requirements:
+  - change the overall visible size of both eyes in the prompt-specified direction
+  - preserve gaze direction, identity, age impression, expression, and head pose
+  - keep unrelated facial features, hair, clothing, background, lighting, and camera conditions unchanged
+  - preserve pores, fine skin texture, natural shadows, facial asymmetry, and photographic style
+  - avoid strange eyelids, plastic skin, duplicated anatomy, warped edges, and background deformation
+  important_interpretation: The file contains both enlargement and reduction prompts. Scoring must follow the current prompt
+    direction; it must not reward larger eyes for a reduction prompt or smaller eyes for an enlargement prompt.
+target_region: Both visible eye units, including the palpebral apertures, eyelid contours, inner and outer corners, eyelashes,
+  iris, pupil, sclera, eyelid creases, and only the minimum adjacent orbital skin needed for coherent scaling. Eye centers,
+  eye spacing, brows, nose, cheeks, face shape, and all other regions remain non-target.
+target_action_summary: Scale the complete visible eye units larger or smaller according to the current prompt. Change horizontal
+  and vertical eye dimensions coherently while preserving eye centers, spacing, gaze, iris-pupil relationships, expression,
+  identity, facial proportions, skin texture, lighting, camera geometry, and all non-target content.
+task_boundary:
+  allowed:
+  - coherent enlargement or reduction of the complete visible eye units
+  - proportional adjustment of eyelid aperture, corners, lashes, iris, pupil, and sclera relationships
+  - minimal reconstruction of eyelid crease, orbital skin, pores, makeup, and local shadows
+  - perspective-aware left-right scaling differences required by head angle
+  not_equivalent_tasks:
+  - only increasing eye height without overall eye-size change
+  - only widening the eyes or moving eye corners independently
+  - changing eye spacing or translating the complete eyes
+  - independently enlarging the iris or pupil
+  - changing eye shape, gaze, eyelid type, eye color, or makeup style
+  - resizing the whole face, head, or image
+direction_resolution_protocol:
+  rules:
+  - Prompts containing make both eyes visibly larger or enlarge_eye_size require enlargement.
+  - Prompts containing reduce eye size require reduction.
+  - Enlargement must increase the overall visible eye dimensions without producing cartoon-like or identity-changing eyes.
+  - Reduction must decrease overall visible eye dimensions subtly without making the eyes pinched, closed, or expressionless.
+  - A result in the opposite direction is a major task failure even when rendering quality is high.
+  - Do not infer enlargement from the filename when the current prompt explicitly requests reduction.
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate direction-aware size compliance, ocular anatomy, non-target preservation,
+    and rendering quality. Do not reward generic beautification when the actual eye-size direction is wrong or when the result
+    is created by eye-height-only editing, eye-spacing changes, iris enlargement, or face scaling.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Resolve enlargement or reduction from the current prompt before scoring.
+  - Judge only visible evidence; do not infer hidden eye anatomy.
+  - Do not reward opposite-direction changes, eye translation, eye-spacing changes, or isolated iris resizing.
+  - Use perspective-aware balance rather than forced mirror symmetry.
+  - One severe direction, gaze, anatomy, identity, or non-target error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_direction: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request enlargement or reduction of the overall visible eye size.
+  wrong_task_examples:
+  - only increase eye height or open the eyelids
+  - change eye spacing, eye position, eye color, gaze, or eyelid type
+  - only enlarge the iris or pupil
+  - add eyeliner, eyeshadow, lashes, or contact lenses
+  conflict_examples:
+  - enlarge and reduce the same eyes simultaneously
+  - preserve exact eye size while requiring visible size adjustment
+  - change overall eye size while requiring every eye boundary to remain pixel-identical
+  visibility_failures:
+  - both eyes are outside the frame or fully occluded
+  - resolution is insufficient to compare eye width, height, centers, and gaze
+  - severe blur or obstruction prevents reliable identification of eye contours
+  partial_visibility_rule: Score only assessable visible eyes. Do not penalize a fully occluded eye, but penalize missed or
+    inconsistent visible target regions.
+anatomy_interpretation:
+  rules:
+  - Scale horizontal and vertical eye dimensions coherently rather than changing only one axis.
+  - Preserve eye centers and interocular spacing unless subpixel blending is unavoidable.
+  - Preserve the source eye-shape family and corner orientation while changing overall size.
+  - Keep iris, pupil, and sclera relationships natural; do not independently enlarge the iris or pupil.
+  - Preserve gaze direction, binocular alignment, eyelid state, and expression.
+  - Maintain eyelid crease, lash attachment, tearline, and local orbital depth.
+  - Preserve natural source asymmetry and perspective under head rotation.
+  - Reduction must not collapse the aperture or erase characteristic eye features.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: Good realism, preserved background, or attractive makeup cannot compensate for unchanged eye size,
+    substitute iris/makeup/spacing edits, doll-like enlargement, gaze errors, or identity/source-state drift.
+  eye_size_disambiguation_rule: For ????, reward complete eye-unit enlargement with stable centers, spacing, gaze, and anatomy.
+    Penalize iris-only, makeup-only, aperture-only, spacing/position, and global scaling substitutes.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: The complete visible eye units are unchanged, too weakly changed, or changed opposite to the prompt direction;
+          for 放大 prompts the eyes are not visibly larger.
+        severity_guidance: Tiny but correct complete eye-unit enlargement may be severity 1. Correct but weak/partial enlargement
+          should be severity 2. Mostly unchanged eyes at normal viewing size must be severity 3. Wrong direction, absent target,
+          or smaller-looking eyes must be severity 4-5.
+        affected_l3:
+        - eye_size_primary_requested_outcome_match
+        - eye_size_direction_match
+        - eye_size_magnitude_intensity_match
+        - eye_size_horizontal_vertical_scale_balance_match
+        - eye_size_face_relative_proportion_match
+        - eye_size_bilateral_completeness_balance_match
+        - eye_size_requested_finish_visibility_match
+        - eye_size_edit_localized_to_target_eye_region
+        - eye_size_iris_pupil_sclera_proportion_match
+        - eye_size_eye_center_spacing_position_preservation
+        - eye_size_subject_identity_facial_character_preservation
+        - eye_size_expression_gaze_head_pose_preservation
+        - eye_size_brows_nose_non_target_face_preservation
+        - eye_size_skin_tone_texture_makeup_preservation
+        - eye_size_hair_clothing_scene_camera_preservation
+        - eye_size_artifact_background_stability
+      substitute_aperture_spacing_iris_translation_or_face_scaling:
+        detect_when: The result appears eye-size-changed mainly through eyelid aperture change only, eye spacing/position
+          movement, iris/pupil enlargement, makeup/eyelash change, face/head scaling, crop change, or generic beautification
+          rather than complete eye-unit scaling.
+        severity_guidance: Minor substitute cue with real complete eye enlargement may be severity 1-2. If iris-only, makeup,
+          aperture-only, spacing/position, or scaling substitute is a major part of perceived improvement, severity 3. If
+          substitute is the main visible edit or changes gaze/identity/camera, severity 4-5.
+        affected_l3:
+        - eye_size_primary_requested_outcome_match
+        - eye_size_direction_match
+        - eye_size_horizontal_vertical_scale_balance_match
+        - eye_size_iris_pupil_sclera_proportion_match
+        - eye_size_edit_localized_to_target_eye_region
+        - eye_size_eye_center_spacing_position_preservation
+        - eye_size_iris_pupil_gaze_alignment_consistency
+        - eye_size_subject_identity_facial_character_preservation
+        - eye_size_expression_gaze_head_pose_preservation
+        - eye_size_magnitude_intensity_match
+        - eye_size_face_relative_proportion_match
+        - eye_size_bilateral_completeness_balance_match
+        - eye_size_requested_finish_visibility_match
+        - eye_size_brows_nose_non_target_face_preservation
+        - eye_size_skin_tone_texture_makeup_preservation
+        - eye_size_hair_clothing_scene_camera_preservation
+        - eye_size_artifact_background_stability
+      over_enlarged_doll_eye_or_face_proportion_broken:
+        detect_when: Eyes become cartoonish, doll-like, bug-eyed, too large/small, asymmetric, or incompatible with natural
+          face-relative proportion.
+        severity_guidance: Slight over-enlargement may be severity 1-2. Clear doll-like, bug-eyed, asymmetric, or proportion-breaking
+          enlargement should be severity 3. Identity-changing, anime-like, pasted, or severely disproportionate eyes must
+          be severity 4-5.
+        affected_l3:
+        - eye_size_magnitude_intensity_match
+        - eye_size_face_relative_proportion_match
+        - eye_size_bilateral_completeness_balance_match
+        - eye_size_subject_identity_facial_character_preservation
+        - eye_size_expression_gaze_head_pose_preservation
+        - eye_size_artifact_background_stability
+        - eye_size_primary_requested_outcome_match
+        - eye_size_direction_match
+        - eye_size_horizontal_vertical_scale_balance_match
+        - eye_size_iris_pupil_sclera_proportion_match
+        - eye_size_requested_finish_visibility_match
+        - eye_size_edit_localized_to_target_eye_region
+        - eye_size_eye_center_spacing_position_preservation
+        - eye_size_eyelid_canthus_contour_integrity
+        - eye_size_iris_pupil_gaze_alignment_consistency
+        - eye_size_orbital_perspective_surrounding_feature_integration
+        - eye_size_ocular_skin_texture_detail_realism
+        - eye_size_local_lighting_shadow_color_consistency
+        - eye_size_contour_edge_blending_quality
+      ocular_geometry_gaze_or_boundary_broken:
+        detect_when: Eyelids, canthi, iris/pupil/sclera relation, gaze alignment, orbital perspective, surrounding features,
+          contour edges, lighting, or local texture become warped, pasted, haloed, misaligned, or anatomically implausible.
+        severity_guidance: Tiny contour/blend defect may be severity 1. Clear eyelid/canthus/iris/sclera/gaze/orbital integration
+          issue should be severity 2-3. Misaligned gaze, broken anatomy, pasted eyes, or impossible ocular geometry must be
+          severity 4-5.
+        affected_l3:
+        - eye_size_iris_pupil_sclera_proportion_match
+        - eye_size_eyelid_canthus_contour_integrity
+        - eye_size_iris_pupil_gaze_alignment_consistency
+        - eye_size_orbital_perspective_surrounding_feature_integration
+        - eye_size_ocular_skin_texture_detail_realism
+        - eye_size_local_lighting_shadow_color_consistency
+        - eye_size_contour_edge_blending_quality
+        - eye_size_artifact_background_stability
+        - eye_size_primary_requested_outcome_match
+        - eye_size_direction_match
+        - eye_size_magnitude_intensity_match
+        - eye_size_horizontal_vertical_scale_balance_match
+        - eye_size_face_relative_proportion_match
+        - eye_size_bilateral_completeness_balance_match
+        - eye_size_requested_finish_visibility_match
+        - eye_size_edit_localized_to_target_eye_region
+        - eye_size_eye_center_spacing_position_preservation
+        - eye_size_subject_identity_facial_character_preservation
+      identity_expression_non_target_or_scene_drift:
+        detect_when: Identity, facial character, expression, gaze/head pose, brows, nose, skin tone/texture/makeup, hair,
+          clothing, lighting, background, crop, or camera state changes beyond the eye-size edit.
+        severity_guidance: Minor local blend/skin drift may be severity 1. Clear brow/nose/makeup/lighting/background/expression
+          drift should be severity 2-3. Identity, gaze, head pose, crop, camera, or broad non-target face change must be severity
+          4-5.
+        affected_l3:
+        - eye_size_subject_identity_facial_character_preservation
+        - eye_size_expression_gaze_head_pose_preservation
+        - eye_size_brows_nose_non_target_face_preservation
+        - eye_size_skin_tone_texture_makeup_preservation
+        - eye_size_hair_clothing_scene_camera_preservation
+        - eye_size_local_lighting_shadow_color_consistency
+        - eye_size_artifact_background_stability
+        - eye_size_primary_requested_outcome_match
+        - eye_size_edit_localized_to_target_eye_region
+        - eye_size_ocular_skin_texture_detail_realism
+        - eye_size_contour_edge_blending_quality
+        - eye_size_direction_match
+        - eye_size_magnitude_intensity_match
+        - eye_size_horizontal_vertical_scale_balance_match
+        - eye_size_face_relative_proportion_match
+        - eye_size_iris_pupil_sclera_proportion_match
+        - eye_size_bilateral_completeness_balance_match
+        - eye_size_requested_finish_visibility_match
+        - eye_size_eye_center_spacing_position_preservation
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Eye-size enlargement means coherent enlargement of the complete visible eye units, not iris-only
+    scaling, makeup change, eye translation, eye-spacing change, aperture-only opening, face/camera scaling, or generic beauty
+    retouching.
+  no_compensation_rule: If eye-size enlargement is absent or only a substitute edit, preservation/background/photorealism
+    must not raise edit-dependent facets. If eyes look prettier but centers, spacing, gaze, anatomy, identity, or scene drift,
+    high scores must be capped.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample follows the prompt direction by coherently scaling both complete visible eye
+    units while preserving eye centers, spacing, gaze, iris/pupil relation, expression, identity, and scene.
+  success_gate_conditions:
+  - For 放大眼睛, both visible eye units are clearly larger with coherent horizontal and vertical scaling.
+  - Eye centers, spacing, position, gaze, iris/pupil/sclera proportions, eyelids/canthi, and orbital perspective remain plausible.
+  - The result is not vertical aperture-only, iris-only enlargement, eye translation, eye-spacing change, face scaling, makeup
+    change, or generic beauty retouching.
+  - Eyes remain natural for the face, not doll-like, bug-eyed, cartoonish, asymmetric, or identity-changing.
+  - Brows, nose, skin/makeup, expression, hair, clothing, lighting, background, and camera state remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- eye_size_primary_requested_outcome_match
+- eye_size_direction_match
+- eye_size_magnitude_intensity_match
+- eye_size_horizontal_vertical_scale_balance_match
+- eye_size_face_relative_proportion_match
+- eye_size_iris_pupil_sclera_proportion_match
+- eye_size_bilateral_completeness_balance_match
+- eye_size_requested_finish_visibility_match
+- eye_size_edit_localized_to_target_eye_region
+- eye_size_eye_center_spacing_position_preservation
+- eye_size_eyelid_canthus_contour_integrity
+- eye_size_iris_pupil_gaze_alignment_consistency
+- eye_size_orbital_perspective_surrounding_feature_integration
+- eye_size_subject_identity_facial_character_preservation
+- eye_size_expression_gaze_head_pose_preservation
+- eye_size_brows_nose_non_target_face_preservation
+- eye_size_skin_tone_texture_makeup_preservation
+- eye_size_hair_clothing_scene_camera_preservation
+- eye_size_ocular_skin_texture_detail_realism
+- eye_size_local_lighting_shadow_color_consistency
+- eye_size_contour_edge_blending_quality
+- eye_size_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    eye_size_primary_requested_outcome_match: 0.17
+    eye_size_direction_match: 0.18
+    eye_size_magnitude_intensity_match: 0.14
+    eye_size_horizontal_vertical_scale_balance_match: 0.13
+    eye_size_face_relative_proportion_match: 0.12
+    eye_size_iris_pupil_sclera_proportion_match: 0.11
+    eye_size_bilateral_completeness_balance_match: 0.08
+    eye_size_requested_finish_visibility_match: 0.07
+  Localization and Anatomical Integration:
+    eye_size_edit_localized_to_target_eye_region: 0.19
+    eye_size_eye_center_spacing_position_preservation: 0.21
+    eye_size_eyelid_canthus_contour_integrity: 0.2
+    eye_size_iris_pupil_gaze_alignment_consistency: 0.2
+    eye_size_orbital_perspective_surrounding_feature_integration: 0.2
+  Subject Preservation:
+    eye_size_subject_identity_facial_character_preservation: 0.25
+    eye_size_expression_gaze_head_pose_preservation: 0.23
+    eye_size_brows_nose_non_target_face_preservation: 0.2
+    eye_size_skin_tone_texture_makeup_preservation: 0.17
+    eye_size_hair_clothing_scene_camera_preservation: 0.15
+  Task Realism and Image Quality:
+    eye_size_ocular_skin_texture_detail_realism: 0.28
+    eye_size_local_lighting_shadow_color_consistency: 0.27
+    eye_size_contour_edge_blending_quality: 0.25
+    eye_size_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.50 * P + 0.22 * L + 0.18 * S + 0.10 * Q
+  direction_score: D = score(eye_size_direction_match) / 9.0
+  anatomy_score: A = score(eye_size_orbital_perspective_surrounding_feature_integration) / 9.0
+  identity_score: I = score(eye_size_subject_identity_facial_character_preservation) / 9.0
+  final_formula: reward = base_reward * (D ** 0.30) * (A ** 0.20) * (I ** 0.15)
+taxonomy:
+  Prompt Compliance:
+    Requested Eye Size:
+      eye_size_primary_requested_outcome_match:
+        title: Primary eye-size outcome
+        definition: Whether both assessable eyes receive the requested overall size change.
+        anchors:
+          0: No target edit, opposite task, or unrelated eye edit.
+          3: Weak or inconsistent size adjustment.
+          5: Visible partial result with major incompleteness.
+          7: Clear successful adjustment with one material issue.
+          9: Overall eye size precisely matches the requested outcome.
+        rubric: Whether both assessable eyes receive the requested overall size change. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      eye_size_direction_match:
+        title: Requested size direction
+        definition: Whether eye size increases for enlargement prompts and decreases for reduction prompts.
+        anchors:
+          0: Size changes clearly in the opposite direction.
+          3: Direction is inconsistent, ambiguous, or mostly absent.
+          5: General direction is correct but weak or uneven.
+          7: Correct direction with one minor inconsistency.
+          9: Direction is unmistakably correct for both eyes.
+        rubric: Whether eye size increases for enlargement prompts and decreases for reduction prompts. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_magnitude_intensity_match:
+        title: Magnitude and intensity
+        definition: Whether the amount matches strong enlargement templates or subtle reduction templates without exaggeration.
+        anchors:
+          0: No change or destructive over-adjustment.
+          3: Severely too weak, too strong, or inconsistent.
+          5: Recognizable but clearly inaccurate magnitude.
+          7: Appropriate magnitude with one minor issue.
+          9: Magnitude exactly matches the prompt and remains believable.
+        rubric: Whether the amount matches strong enlargement templates or subtle reduction templates without exaggeration.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_horizontal_vertical_scale_balance_match:
+        title: Horizontal-vertical scaling balance
+        definition: Whether width and height change coherently rather than producing only widening, only opening, or squeezed
+          geometry.
+        anchors:
+          0: Only one axis changes or the eye is severely distorted.
+          3: Major aspect-ratio or directional scaling error.
+          5: Overall size changes with one clear axis imbalance.
+          7: Coherent scaling with one minor issue.
+          9: Width and height scale together in a fully natural balance.
+        rubric: Whether width and height change coherently rather than producing only widening, only opening, or squeezed
+          geometry. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_face_relative_proportion_match:
+        title: Eye-to-face proportion
+        definition: Whether final eye size remains harmonious with face width, brows, nose, and identity.
+        anchors:
+          0: Final eyes are implausibly large, tiny, or identity-breaking.
+          3: Strong mismatch with facial proportions.
+          5: General result is recognizable but noticeably unbalanced.
+          7: Balanced with one minor proportion issue.
+          9: Eye size is fully harmonious and identity-consistent.
+        rubric: Whether final eye size remains harmonious with face width, brows, nose, and identity. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_iris_pupil_sclera_proportion_match:
+        title: Iris, pupil, and sclera proportion
+        definition: Whether internal eye structures retain natural relative scale and exposure after the overall size change.
+        anchors:
+          0: Iris, pupil, or sclera becomes impossible or independently resized.
+          3: Major internal proportion or exposure error.
+          5: Generally plausible with one clear inconsistency.
+          7: Natural with one minor issue.
+          9: Internal ocular proportions remain fully coherent.
+        rubric: Whether internal eye structures retain natural relative scale and exposure after the overall size change.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_bilateral_completeness_balance_match:
+        title: Bilateral completeness and balance
+        definition: Whether all visible target eyes are adjusted completely with pose- and asymmetry-aware balance.
+        anchors:
+          0: One visible eye is missed or severe imbalance is created.
+          3: Major left-right inconsistency or incomplete editing.
+          5: Both eyes are attempted but visibly mismatched.
+          7: Complete and balanced with one minor difference.
+          9: Both eyes are fully adjusted and naturally balanced.
+        rubric: Whether all visible target eyes are adjusted completely with pose- and asymmetry-aware balance. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_requested_finish_visibility_match:
+        title: Requested finish and visibility
+        definition: Whether the result matches strong, editorial, studio, app-style, commercial, premium, or subtle realistic
+          presentation.
+        anchors:
+          0: Finish is absent, opposite, or destructive.
+          3: Strong visibility, style, or realism mismatch.
+          5: Requested finish is recognizable but inaccurate.
+          7: Appropriate finish with one minor mismatch.
+          9: Finish and normal-view visibility exactly match the prompt.
+        rubric: Whether the result matches strong, editorial, studio, app-style, commercial, premium, or subtle realistic
+          presentation. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Anatomical Integration:
+    Eye Geometry and Orbital Integration:
+      eye_size_edit_localized_to_target_eye_region:
+        title: Edit localization
+        definition: Whether changes remain within the eye units and minimum necessary orbital transition area.
+        anchors:
+          0: Broad face, brow, nose, cheek, hair, or scene editing.
+          3: Significant spill into non-target regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to the permitted eye region.
+        rubric: Whether changes remain within the eye units and minimum necessary orbital transition area. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_eye_center_spacing_position_preservation:
+        title: Eye-center, spacing, and position preservation
+        definition: Whether eye centers, interocular distance, vertical placement, and face-relative positions remain unchanged.
+        anchors:
+          0: Major eye translation, spacing change, or orbital displacement.
+          3: Strong position or distance drift.
+          5: Mostly preserved with one clear positional error.
+          7: Preserved with one minor shift.
+          9: Eye centers, spacing, and positions remain unchanged.
+        rubric: Whether eye centers, interocular distance, vertical placement, and face-relative positions remain unchanged.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_eyelid_canthus_contour_integrity:
+        title: Eyelid and canthus integrity
+        definition: Whether upper and lower eyelids, inner and outer corners, tearline, and creases remain anatomically coherent.
+        anchors:
+          0: Detached, duplicated, torn, or impossible eyelid anatomy.
+          3: Major corner, crease, tearline, or contour deformation.
+          5: Generally plausible with one clear structural issue.
+          7: Coherent with one minor issue.
+          9: Eyelid and canthus anatomy remain fully natural.
+        rubric: Whether upper and lower eyelids, inner and outer corners, tearline, and creases remain anatomically coherent.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_iris_pupil_gaze_alignment_consistency:
+        title: Iris, pupil, and gaze alignment
+        definition: Whether internal eye structures remain centered, aligned, circular, and consistent with the original gaze.
+        anchors:
+          0: Crossed gaze, displaced iris, malformed pupil, or severe alignment failure.
+          3: Major iris, pupil, or binocular-gaze error.
+          5: Generally plausible with one clear alignment issue.
+          7: Coherent with one minor issue.
+          9: Iris, pupil, and gaze remain perfectly aligned.
+        rubric: Whether internal eye structures remain centered, aligned, circular, and consistent with the original gaze.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_orbital_perspective_surrounding_feature_integration:
+        title: Orbital perspective and surrounding-feature integration
+        definition: Whether scaling follows head angle, orbital depth, brows, lashes, makeup, skin, and lens perspective.
+        anchors:
+          0: Eye geometry contradicts the face or surrounding features.
+          3: Major perspective, depth, brow, lash, or orbital integration error.
+          5: Generally plausible with one clear inconsistency.
+          7: Coherent with one minor issue.
+          9: Eye size is fully integrated with anatomy and perspective.
+        rubric: Whether scaling follows head angle, orbital depth, brows, lashes, makeup, skin, and lens perspective. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      eye_size_subject_identity_facial_character_preservation:
+        title: Identity and facial-character preservation
+        definition: Whether the same person, age impression, characteristic eye shape, and facial identity remain recognizable.
+        anchors:
+          0: Different person or major identity redesign.
+          3: Strong identity, age, or facial-character drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and characteristic facial appearance remain unchanged.
+        rubric: Whether the same person, age impression, characteristic eye shape, and facial identity remain recognizable.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_expression_gaze_head_pose_preservation:
+        title: Expression, gaze, and head-pose preservation
+        definition: Whether expression, alertness, gaze direction, head rotation, tilt, scale, and position remain stable.
+        anchors:
+          0: Major expression, gaze, or head-pose change.
+          3: Strong drift in one or more listed properties.
+          5: Mostly preserved with one clear difference.
+          7: Preserved with one minor shift.
+          9: Expression, gaze, and head pose remain unchanged.
+        rubric: Whether expression, alertness, gaze direction, head rotation, tilt, scale, and position remain stable. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_brows_nose_non_target_face_preservation:
+        title: Brows, nose, and non-target face preservation
+        definition: Whether brows, nose, lips, cheeks, ears, forehead, jaw, teeth, and face shape remain unchanged.
+        anchors:
+          0: Multiple major non-target facial changes.
+          3: Strong alteration of one or more unrelated facial features.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target facial features remain unchanged.
+        rubric: Whether brows, nose, lips, cheeks, ears, forehead, jaw, teeth, and face shape remain unchanged. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_skin_tone_texture_makeup_preservation:
+        title: Skin tone, texture, and makeup preservation
+        definition: Whether pores, fine texture, skin color, local marks, natural shadows, asymmetry, and makeup remain source-consistent.
+        anchors:
+          0: Major recoloring, plastic skin, erased texture, or makeup replacement.
+          3: Strong texture, color, shadow, or makeup drift.
+          5: Mostly preserved with one obvious alteration.
+          7: Preserved with one minor difference.
+          9: Skin tone, texture, shadows, and makeup remain unchanged.
+        rubric: Whether pores, fine texture, skin color, local marks, natural shadows, asymmetry, and makeup remain source-consistent.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_hair_clothing_scene_camera_preservation:
+        title: Hair, clothing, scene, and camera preservation
+        definition: Whether hairstyle, clothing, accessories, body, background, lighting, crop, camera angle, framing, scale,
+          and resolution remain stable.
+        anchors:
+          0: Major non-target replacement, global warping, or camera change.
+          3: Strong hair, clothing, scene, crop, scale, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target scene and camera conditions remain unchanged.
+        rubric: Whether hairstyle, clothing, accessories, body, background, lighting, crop, camera angle, framing, scale,
+          and resolution remain stable. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      eye_size_ocular_skin_texture_detail_realism:
+        title: Ocular and skin-detail realism
+        definition: Whether eyelids, lashes, tearline, iris, sclera, pores, and adjacent skin retain natural fine detail.
+        anchors:
+          0: Severely synthetic, painted, smeared, or destroyed detail.
+          3: Strong texture loss, repetition, or artificial sharpening.
+          5: Usable but visibly processed.
+          7: Realistic with one minor detail issue.
+          9: Fully photorealistic and source-consistent detail.
+        rubric: Whether eyelids, lashes, tearline, iris, sclera, pores, and adjacent skin retain natural fine detail. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_local_lighting_shadow_color_consistency:
+        title: Local lighting, shadow, and color consistency
+        definition: Whether eyelid folds, lashes, iris, sclera, orbital shadows, and skin color follow the source illumination.
+        anchors:
+          0: Lighting, shadows, or colors strongly contradict the image.
+          3: Major missing, duplicated, or incorrect illumination.
+          5: Generally plausible with one obvious inconsistency.
+          7: Consistent with one minor issue.
+          9: Color, lighting, and shadows integrate perfectly.
+        rubric: Whether eyelid folds, lashes, iris, sclera, orbital shadows, and skin color follow the source illumination.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: Whether eyelid, lash, eye-corner, and skin boundaries remain clean without halos, seams, jaggedness, or
+          blur.
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, jagged edges, dents, or blur.
+          5: Mostly blended with one clear boundary artifact.
+          7: Clean with one minor edge issue.
+          9: All edited boundaries are seamless and natural.
+        rubric: Whether eyelid, lash, eye-corner, and skin boundaries remain clean without halos, seams, jaggedness, or blur.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_size_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Whether strange eyelids, duplicated parts, warped hair, broken teeth, facial tearing, and background deformation
+          are absent.
+        anchors:
+          0: Severe structural artifacts or image instability.
+          3: Multiple obvious distortions or duplicated anatomy.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; face and surrounding image remain fully stable.
+        rubric: Whether strange eyelids, duplicated parts, warped hair, broken teeth, facial tearing, and background deformation
+          are absent. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+prompt_applicability:
+  purpose: All valid prompts specify direction, magnitude or finish, bilateral eye-size adjustment, and preservation requirements.
+    All eight Prompt Compliance facets are always applicable.
+  always_applicable:
+  - eye_size_primary_requested_outcome_match
+  - eye_size_direction_match
+  - eye_size_magnitude_intensity_match
+  - eye_size_horizontal_vertical_scale_balance_match
+  - eye_size_face_relative_proportion_match
+  - eye_size_iris_pupil_sclera_proportion_match
+  - eye_size_bilateral_completeness_balance_match
+  - eye_size_requested_finish_visibility_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.

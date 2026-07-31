@@ -1,0 +1,716 @@
+task_key: natural_skin_smoothing
+task_title: Natural Skin Texture Smoothing
+task_title_zh: 皮肤平滑
+version: v48_fixed_integer_22_l3_natural_skin_smoothing_successgate_hybrid_compact_deep_review_compact_l3_identity_priority
+language: English
+training_prompt_profile:
+  total_prompts_reviewed: 49
+  unique_prompt_templates: 1
+  shared_target: smooth only skin texture and remove minor imperfections
+  recurring_requirements:
+  - preserve realistic pores and natural texture
+  - preserve original skin tone
+  - preserve facial structure and identity
+  - preserve facial features, face shape, expression, hair, and clothing
+  - preserve lighting, camera angle, background, and photographic style
+  - produce a photorealistic high-definition finish
+  data_note: All 49 prompts are identical. Every Prompt Compliance facet is applicable to every valid sample.
+target_region: Visible facial skin surfaces containing mild uneven texture or minor transient imperfections. The permitted
+  edit excludes eyes, brows, eyelashes, nostrils, lips, teeth, hairline, facial hair, ears, and all non-skin regions.
+target_action_summary: Reduce mild skin roughness and minor imperfections while retaining pores, fine lines, natural tonal
+  variation, source sharpness, facial structure, identity, and photographic detail. The result must not resemble heavy beauty
+  filtering, global blur, whitening, plastic skin, or synthetic skin replacement.
+task_boundary:
+  allowed:
+  - controlled reduction of mild uneven texture and small transient imperfections
+  - local reconstruction of pores, fine texture, color, and shading
+  - consistent smoothing across assessable facial skin without erasing natural variation
+  not_equivalent_tasks:
+  - complete acne removal, freckle removal, mole removal, scar removal, or wrinkle removal
+  - skin whitening, recoloring, relighting, or makeup replacement
+  - face reshaping, age transformation, or facial-feature editing
+  - global Gaussian blur, airbrushing, pore erasure, or synthetic skin replacement
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate smoothing compliance, local skin continuity, non-target preservation,
+    and rendering quality. Smoothness must not score highly when pores, stable marks, facial detail, skin tone, or source
+    sharpness are lost.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible skin evidence.
+  - Do not reward heavy blur, whitening, recoloring, pore removal, or face reshaping.
+  - Do not treat stable moles, freckles, scars, fine lines, or makeup as generic imperfections.
+  - One severe texture, identity, facial-feature, or scene error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_visible_skin: skip_sample_and_log_no_assessable_skin
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: Enough visible facial skin must be present to compare texture, pores, tone, and detail.
+  wrong_task_examples:
+  - remove all acne, freckles, moles, scars, wrinkles, or pigmentation
+  - whiten, recolor, tan, or relight the skin
+  - reshape facial features or face contour
+  - replace makeup or create a fully airbrushed beauty filter
+  conflict_examples:
+  - erase all pores while preserving realistic pores
+  - apply heavy blur while requiring high-definition texture
+  - preserve exact skin texture while requiring visible smoothing
+  visibility_failures:
+  - the face is too small or blurred to assess pores and texture
+  - most facial skin is fully occluded
+  - compression artifacts prevent reliable comparison of skin detail
+skin_detail_protocol:
+  smooth_or_reduce:
+  - minor transient roughness
+  - small temporary blemishes
+  - isolated texture irregularities
+  - mildly uneven local skin appearance
+  preserve_by_default:
+  - pores and fine skin texture
+  - stable moles, freckles, beauty marks, and scars
+  - natural fine lines and expression-related folds
+  - makeup, facial hair, peach fuzz, and normal tonal variation
+  uncertainty_rule: When a visible mark may be stable or identity-bearing, preserve it rather than aggressively removing it.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: A clean-looking face cannot compensate for erased pores, plastic skin, changed skin tone, damaged
+    features, identity drift, or global blur.
+  skin_smoothing_disambiguation_rule: Correct smoothing reduces roughness while preserving pores/fine lines and source tone.
+    Whitening, plastic filtering, global blur, acne-patch editing, and identity-changing beauty retouching are substitute
+    operations.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Visible roughness, minor imperfections, or uneven skin texture remain mostly unchanged; smoothing is
+          absent or too weak.
+        severity_guidance: Tiny but visible natural smoothing may be severity 1. Correct but weak/incomplete smoothing should
+          be severity 2. Mostly unchanged roughness/imperfections must be severity 3. Absent, reversed/worse, or non-skin-only
+          change must be severity 4-5.
+        affected_l3:
+        - skin_smoothing_primary_outcome_match
+        - skin_smoothing_minor_imperfection_reduction_match
+        - skin_smoothing_magnitude_restraint_match
+        - skin_smoothing_visible_region_consistency_match
+        - skin_smoothing_photorealistic_hd_finish_match
+        - skin_smoothing_edit_localized_to_skin_surface
+        - skin_smoothing_blending_uniformity_quality
+        - skin_smoothing_pore_retention_match
+        - skin_smoothing_natural_texture_variation_match
+        - skin_smoothing_original_skin_tone_match
+        - skin_smoothing_facial_landmark_boundary_integrity
+        - skin_smoothing_identity_face_geometry_preservation
+        - skin_smoothing_facial_features_expression_gaze_preservation
+        - skin_smoothing_makeup_marks_facial_hair_preservation
+        - skin_smoothing_hair_clothing_body_preservation
+        - skin_smoothing_scene_camera_lighting_preservation
+        - skin_smoothing_artifact_background_stability
+      over_smoothing_plastic_or_beauty_filter_skin:
+        detect_when: Pores, fine lines, natural texture variation, source grain, or facial surface detail are erased into
+          waxy, plastic, poreless, doll-like, synthetic, or heavy beauty-filter skin.
+        severity_guidance: Slight texture loss may be severity 1-2. Clear pore/fine-line/source-grain loss must be severity
+          3. Poreless, waxy, doll-like, heavy beauty-filter, or younger/different-looking skin must be severity 4-5.
+        affected_l3:
+        - skin_smoothing_magnitude_restraint_match
+        - skin_smoothing_pore_retention_match
+        - skin_smoothing_natural_texture_variation_match
+        - skin_smoothing_photorealistic_hd_finish_match
+        - skin_smoothing_texture_frequency_continuity
+        - skin_smoothing_identity_face_geometry_preservation
+        - skin_smoothing_microtexture_surface_realism
+        - skin_smoothing_source_focus_grain_resolution_match
+        - skin_smoothing_artifact_background_stability
+        - skin_smoothing_primary_outcome_match
+        - skin_smoothing_minor_imperfection_reduction_match
+        - skin_smoothing_original_skin_tone_match
+        - skin_smoothing_visible_region_consistency_match
+        - skin_smoothing_edit_localized_to_skin_surface
+        - skin_smoothing_facial_landmark_boundary_integrity
+        - skin_smoothing_tone_shadow_gradient_continuity
+        - skin_smoothing_face_curvature_perspective_consistency
+        - skin_smoothing_blending_uniformity_quality
+      substitute_whitening_tone_shift_or_global_blur_filter:
+        detect_when: The result mainly brightens/whitens/recolors skin, changes contrast/saturation, applies full-image blur/soft
+          focus, or changes lighting instead of locally smoothing skin texture.
+        severity_guidance: Minor local tone drift may be severity 1. Clear whitening/recoloring/global blur/lighting shift
+          must be severity 2-3. Full-image filter, skin recolor, or focus/grain replacement must be severity 4-5.
+        affected_l3:
+        - skin_smoothing_original_skin_tone_match
+        - skin_smoothing_visible_region_consistency_match
+        - skin_smoothing_edit_localized_to_skin_surface
+        - skin_smoothing_tone_shadow_gradient_continuity
+        - skin_smoothing_scene_camera_lighting_preservation
+        - skin_smoothing_source_focus_grain_resolution_match
+        - skin_smoothing_artifact_background_stability
+        - skin_smoothing_primary_outcome_match
+        - skin_smoothing_minor_imperfection_reduction_match
+        - skin_smoothing_magnitude_restraint_match
+        - skin_smoothing_pore_retention_match
+        - skin_smoothing_natural_texture_variation_match
+        - skin_smoothing_photorealistic_hd_finish_match
+        - skin_smoothing_facial_landmark_boundary_integrity
+        - skin_smoothing_identity_face_geometry_preservation
+        - skin_smoothing_facial_features_expression_gaze_preservation
+        - skin_smoothing_makeup_marks_facial_hair_preservation
+        - skin_smoothing_hair_clothing_body_preservation
+      wrong_region_or_identity_marks_removed:
+        detect_when: Hair, clothing, background, makeup, facial hair, stable moles/freckles/identity marks, or non-skin content
+          changes; smoothing removes marks that should be preserved.
+        severity_guidance: Clear wrong-region or stable-mark change must be at least severity 2. Identity mark/facial hair/makeup
+          removal or broad non-target edit must be severity 3-5.
+        affected_l3:
+        - skin_smoothing_edit_localized_to_skin_surface
+        - skin_smoothing_facial_landmark_boundary_integrity
+        - skin_smoothing_makeup_marks_facial_hair_preservation
+        - skin_smoothing_hair_clothing_body_preservation
+        - skin_smoothing_scene_camera_lighting_preservation
+        - skin_smoothing_artifact_background_stability
+        - skin_smoothing_primary_outcome_match
+        - skin_smoothing_minor_imperfection_reduction_match
+        - skin_smoothing_magnitude_restraint_match
+        - skin_smoothing_pore_retention_match
+        - skin_smoothing_natural_texture_variation_match
+        - skin_smoothing_original_skin_tone_match
+        - skin_smoothing_visible_region_consistency_match
+        - skin_smoothing_photorealistic_hd_finish_match
+        - skin_smoothing_identity_face_geometry_preservation
+        - skin_smoothing_facial_features_expression_gaze_preservation
+      skin_texture_boundary_or_gradient_artifact:
+        detect_when: Skin has patch edges, blotchy texture, frequency mismatch, banding, smeared pores, halo, mask seams,
+          unnatural shadow gradients, or boundary damage around facial landmarks.
+        severity_guidance: Clear local reconstruction artifact must be at least severity 2. Heavy patching, mask seams, or
+          broken landmark boundary must be severity 3-5.
+        affected_l3:
+        - skin_smoothing_facial_landmark_boundary_integrity
+        - skin_smoothing_texture_frequency_continuity
+        - skin_smoothing_tone_shadow_gradient_continuity
+        - skin_smoothing_face_curvature_perspective_consistency
+        - skin_smoothing_microtexture_surface_realism
+        - skin_smoothing_blending_uniformity_quality
+        - skin_smoothing_artifact_background_stability
+        - skin_smoothing_primary_outcome_match
+        - skin_smoothing_natural_texture_variation_match
+        - skin_smoothing_photorealistic_hd_finish_match
+        - skin_smoothing_edit_localized_to_skin_surface
+        - skin_smoothing_source_focus_grain_resolution_match
+      identity_expression_geometry_or_scene_drift:
+        detect_when: Identity, face geometry, facial features, expression, gaze, pose, hair, clothing, body, lighting, background,
+          focus, grain, or camera state changes beyond skin smoothing.
+        severity_guidance: Minor local drift may be severity 1. Clear scene/lighting/focus drift must be at least severity
+          2. Identity, expression, or facial-geometry drift must be severity 3-5.
+        affected_l3:
+        - skin_smoothing_identity_face_geometry_preservation
+        - skin_smoothing_facial_features_expression_gaze_preservation
+        - skin_smoothing_hair_clothing_body_preservation
+        - skin_smoothing_scene_camera_lighting_preservation
+        - skin_smoothing_source_focus_grain_resolution_match
+        - skin_smoothing_artifact_background_stability
+        - skin_smoothing_primary_outcome_match
+        - skin_smoothing_edit_localized_to_skin_surface
+        - skin_smoothing_makeup_marks_facial_hair_preservation
+        - skin_smoothing_microtexture_surface_realism
+        - skin_smoothing_blending_uniformity_quality
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Skin smoothing means natural local reduction of minor skin roughness while preserving pores, fine
+    texture, skin tone, identity marks, makeup/facial hair, focus/grain, and source state. It is not whitening, recoloring,
+    full-image blur, heavy beauty filter, or identity-changing retouching.
+  no_compensation_rule: If natural smoothing is absent, preservation/background/photorealism must not raise edit-dependent
+    facets. If skin becomes plastic, whitened, blurred, mark-erased, or identity-changing, a cleaner-looking face must not
+    raise natural-smoothing facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample reduces mild skin roughness and small imperfections while preserving realistic
+    pores, fine lines, natural tonal variation, identity, facial geometry, source sharpness, and photographic detail.
+  success_gate_conditions:
+  - Skin roughness and minor imperfections are visibly reduced, but pores, fine lines, expression lines, and texture variation
+    remain present.
+  - Original skin tone, shadows, face curvature, facial landmarks, makeup, facial hair, moles/marks, and source identity remain
+    stable.
+  - The result is not whitening, global blur, poreless plastic skin, full-face beauty filtering, or synthetic skin replacement.
+  - Texture frequency, tone gradients, focus, grain, resolution, and local blending remain source-consistent.
+  - Hair, clothing, body, background, lighting, crop, and camera state do not drift.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- skin_smoothing_primary_outcome_match
+- skin_smoothing_minor_imperfection_reduction_match
+- skin_smoothing_magnitude_restraint_match
+- skin_smoothing_pore_retention_match
+- skin_smoothing_natural_texture_variation_match
+- skin_smoothing_original_skin_tone_match
+- skin_smoothing_visible_region_consistency_match
+- skin_smoothing_photorealistic_hd_finish_match
+- skin_smoothing_edit_localized_to_skin_surface
+- skin_smoothing_facial_landmark_boundary_integrity
+- skin_smoothing_texture_frequency_continuity
+- skin_smoothing_tone_shadow_gradient_continuity
+- skin_smoothing_face_curvature_perspective_consistency
+- skin_smoothing_identity_face_geometry_preservation
+- skin_smoothing_facial_features_expression_gaze_preservation
+- skin_smoothing_makeup_marks_facial_hair_preservation
+- skin_smoothing_hair_clothing_body_preservation
+- skin_smoothing_scene_camera_lighting_preservation
+- skin_smoothing_microtexture_surface_realism
+- skin_smoothing_source_focus_grain_resolution_match
+- skin_smoothing_blending_uniformity_quality
+- skin_smoothing_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Skin Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    skin_smoothing_primary_outcome_match: 0.19
+    skin_smoothing_minor_imperfection_reduction_match: 0.15
+    skin_smoothing_magnitude_restraint_match: 0.14
+    skin_smoothing_pore_retention_match: 0.16
+    skin_smoothing_natural_texture_variation_match: 0.12
+    skin_smoothing_original_skin_tone_match: 0.1
+    skin_smoothing_visible_region_consistency_match: 0.08
+    skin_smoothing_photorealistic_hd_finish_match: 0.06
+  Localization and Skin Integration:
+    skin_smoothing_edit_localized_to_skin_surface: 0.22
+    skin_smoothing_facial_landmark_boundary_integrity: 0.2
+    skin_smoothing_texture_frequency_continuity: 0.22
+    skin_smoothing_tone_shadow_gradient_continuity: 0.19
+    skin_smoothing_face_curvature_perspective_consistency: 0.17
+  Subject Preservation:
+    skin_smoothing_identity_face_geometry_preservation: 0.27
+    skin_smoothing_facial_features_expression_gaze_preservation: 0.24
+    skin_smoothing_makeup_marks_facial_hair_preservation: 0.2
+    skin_smoothing_hair_clothing_body_preservation: 0.14
+    skin_smoothing_scene_camera_lighting_preservation: 0.15
+  Task Realism and Image Quality:
+    skin_smoothing_microtexture_surface_realism: 0.28
+    skin_smoothing_source_focus_grain_resolution_match: 0.27
+    skin_smoothing_blending_uniformity_quality: 0.25
+    skin_smoothing_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.50 * P + 0.22 * L + 0.18 * S + 0.10 * Q
+  pore_score: T = score(skin_smoothing_pore_retention_match) / 9.0
+  identity_score: I = score(skin_smoothing_identity_face_geometry_preservation) / 9.0
+  final_formula: reward = base_reward * (T ** 0.24) * (I ** 0.17)
+taxonomy:
+  Prompt Compliance:
+    Requested Skin Smoothing:
+      skin_smoothing_primary_outcome_match:
+        title: Primary skin-smoothing outcome
+        definition: Whether visible facial skin becomes cleaner and smoother while retaining realistic detail.
+        anchors:
+          0: No smoothing, worse texture, or a different task.
+          3: Weak, inconsistent, or highly artificial smoothing.
+          5: Partial improvement with major residual or over-smoothing.
+          7: Clear successful smoothing with one material issue.
+          9: Skin is consistently smoother, clean, detailed, and natural.
+        rubric: Whether visible facial skin becomes cleaner and smoother while retaining realistic detail. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_minor_imperfection_reduction_match:
+        title: Minor-imperfection reduction
+        definition: Whether small transient imperfections and mild roughness are reduced without broad lesion removal.
+        anchors:
+          0: Minor imperfections remain unchanged or worsen.
+          3: Only isolated or inconsistent correction.
+          5: Some correction exists but clear targets remain.
+          7: Nearly complete with one minor residual.
+          9: Minor imperfections are naturally and comprehensively reduced.
+        rubric: Whether small transient imperfections and mild roughness are reduced without broad lesion removal. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_magnitude_restraint_match:
+        title: Smoothing magnitude and restraint
+        definition: Whether smoothing is visible but controlled, avoiding heavy blur or artificial perfection.
+        anchors:
+          0: No visible effect or destructive airbrushing.
+          3: Severely too weak, too strong, or uneven.
+          5: Recognizable smoothing with clear intensity mismatch.
+          7: Appropriate intensity with one minor issue.
+          9: Smoothing strength is exactly appropriate and realistic.
+        rubric: Whether smoothing is visible but controlled, avoiding heavy blur or artificial perfection. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_pore_retention_match:
+        title: Realistic pore retention
+        definition: Whether pores remain visibly plausible rather than being erased or uniformly regenerated.
+        anchors:
+          0: Pores are fully erased, painted, or replaced by artificial texture.
+          3: Major pore loss, repetition, or density mismatch.
+          5: Pores remain but one clear realism problem exists.
+          7: Natural pores with one minor issue.
+          9: Pore density, scale, and visibility remain fully realistic.
+        rubric: Whether pores remain visibly plausible rather than being erased or uniformly regenerated. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_natural_texture_variation_match:
+        title: Natural texture variation
+        definition: Whether normal regional differences across forehead, nose, cheeks, and chin remain.
+        anchors:
+          0: Skin becomes uniformly flat or synthetic.
+          3: Strong loss of natural regional variation.
+          5: Some variation remains but clear uniformity is visible.
+          7: Natural variation with one minor issue.
+          9: Regional skin character remains fully natural.
+        rubric: Whether normal regional differences across forehead, nose, cheeks, and chin remain. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_original_skin_tone_match:
+        title: Original skin tone
+        definition: Whether hue, undertone, brightness, saturation, and local color variation remain unchanged.
+        anchors:
+          0: Major whitening, recoloring, tanning, or exposure shift.
+          3: Strong global or regional skin-tone drift.
+          5: Mostly preserved with one obvious tonal change.
+          7: Preserved with one minor difference.
+          9: Original skin tone and color variation remain unchanged.
+        rubric: Whether hue, undertone, brightness, saturation, and local color variation remain unchanged. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_visible_region_consistency_match:
+        title: Visible-region consistency
+        definition: Whether all assessable facial skin regions receive consistent, proportionate treatment.
+        anchors:
+          0: Large visible areas are missed or edited in opposite ways.
+          3: Strong regional inconsistency or patchiness.
+          5: Most areas are treated but one clear region differs.
+          7: Consistent with one minor regional difference.
+          9: All assessable skin regions are treated coherently.
+        rubric: Whether all assessable facial skin regions receive consistent, proportionate treatment. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_photorealistic_hd_finish_match:
+        title: Photorealistic high-definition finish
+        definition: Whether the final skin remains detailed, source-sharp, and believable at normal and close viewing.
+        anchors:
+          0: Low-detail, blurred, synthetic, or visibly damaged finish.
+          3: Strong loss of resolution or photorealism.
+          5: Generally usable but visibly processed.
+          7: High-quality with one minor issue.
+          9: The finish is clean, detailed, photorealistic, and high-definition.
+        rubric: Whether the final skin remains detailed, source-sharp, and believable at normal and close viewing. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Skin Integration:
+    Localized Surface Processing:
+      skin_smoothing_edit_localized_to_skin_surface:
+        title: Edit localization
+        definition: Whether changes are confined to visible facial skin and minimum blending areas.
+        anchors:
+          0: Broad facial-feature, hair, clothing, or scene editing.
+          3: Significant spill into non-skin regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to intended facial skin.
+        rubric: Whether changes are confined to visible facial skin and minimum blending areas. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_facial_landmark_boundary_integrity:
+        title: Facial-landmark boundary integrity
+        definition: Whether eyes, brows, lashes, nostrils, lips, teeth, hairline, ears, and facial hair retain clean boundaries.
+        anchors:
+          0: Protected landmarks are blurred, erased, fused, or warped.
+          3: Major boundary damage around one or more features.
+          5: Mostly preserved with one clear boundary error.
+          7: Preserved with one minor issue.
+          9: All facial-feature boundaries remain exact and sharp.
+        rubric: Whether eyes, brows, lashes, nostrils, lips, teeth, hairline, ears, and facial hair retain clean boundaries.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_texture_frequency_continuity:
+        title: Texture-frequency continuity
+        definition: Whether pore scale, fine-detail frequency, and texture density transition naturally across edited and
+          unedited skin.
+        anchors:
+          0: Severe texture discontinuity, repetition, or blank patches.
+          3: Major frequency or density mismatch.
+          5: Generally continuous with one obvious texture break.
+          7: Continuous with one minor issue.
+          9: Texture frequency remains seamless across the face.
+        rubric: Whether pore scale, fine-detail frequency, and texture density transition naturally across edited and unedited
+          skin. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_tone_shadow_gradient_continuity:
+        title: Tone and shadow-gradient continuity
+        definition: Whether color, highlights, midtones, pores, and facial shadows remain continuous.
+        anchors:
+          0: Strong patches, halos, stains, or flattened shadows.
+          3: Major tonal or shadow discontinuity.
+          5: Generally plausible with one obvious patch.
+          7: Continuous with one minor difference.
+          9: Color and shadow gradients remain seamless.
+        rubric: Whether color, highlights, midtones, pores, and facial shadows remain continuous. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_face_curvature_perspective_consistency:
+        title: Face curvature and perspective
+        definition: Whether smoothing preserves three-dimensional facial curvature, head pose, depth, and natural asymmetry.
+        anchors:
+          0: Skin appears flat, dented, floating, or anatomically inconsistent.
+          3: Major depth, curvature, or perspective error.
+          5: Generally plausible with one clear spatial issue.
+          7: Coherent with one minor issue.
+          9: Surface detail remains fully compatible with facial anatomy and perspective.
+        rubric: Whether smoothing preserves three-dimensional facial curvature, head pose, depth, and natural asymmetry. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      skin_smoothing_identity_face_geometry_preservation:
+        title: Identity and face-geometry preservation
+        definition: Whether the same person, age impression, head size, face shape, and facial proportions remain unchanged.
+        anchors:
+          0: Different person or major facial redesign.
+          3: Strong identity, age, or face-shape drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and facial geometry remain unchanged.
+        rubric: Whether the same person, age impression, head size, face shape, and facial proportions remain unchanged. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_facial_features_expression_gaze_preservation:
+        title: Facial features, expression, and gaze preservation
+        definition: Whether eyes, brows, nose, lips, ears, teeth, jaw, expression, and gaze remain stable.
+        anchors:
+          0: Major feature, expression, or gaze change.
+          3: Strong drift in one or more facial features.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All facial features, expression, and gaze remain unchanged.
+        rubric: Whether eyes, brows, nose, lips, ears, teeth, jaw, expression, and gaze remain stable. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_makeup_marks_facial_hair_preservation:
+        title: Makeup, stable marks, and facial-hair preservation
+        definition: Whether makeup, freckles, moles, scars, beauty marks, fine lines, facial hair, and peach fuzz remain source-consistent.
+        anchors:
+          0: Multiple stable marks or appearance details are removed or redesigned.
+          3: Strong alteration of identity-bearing surface details.
+          5: Mostly preserved with one clear loss or change.
+          7: Preserved with one minor difference.
+          9: All stable marks, makeup, and facial hair remain unchanged.
+        rubric: Whether makeup, freckles, moles, scars, beauty marks, fine lines, facial hair, and peach fuzz remain source-consistent.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_hair_clothing_body_preservation:
+        title: Hair, clothing, and body preservation
+        definition: Whether hairstyle, hair color, clothing, accessories, neck, body, and pose remain unchanged.
+        anchors:
+          0: Major hair, clothing, body, or pose replacement.
+          3: Strong non-target appearance drift.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: Hair, clothing, body, and pose remain unchanged.
+        rubric: Whether hairstyle, hair color, clothing, accessories, neck, body, and pose remain unchanged. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_scene_camera_lighting_preservation:
+        title: Scene, camera, and lighting preservation
+        definition: Whether background, crop, camera angle, composition, global lighting, aspect ratio, and resolution remain
+          stable.
+        anchors:
+          0: Major scene, framing, lighting, or camera replacement.
+          3: Strong background, crop, scale, or illumination drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: Scene, camera, framing, and global lighting remain unchanged.
+        rubric: Whether background, crop, camera angle, composition, global lighting, aspect ratio, and resolution remain
+          stable. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      skin_smoothing_microtexture_surface_realism:
+        title: Microtexture and surface realism
+        definition: Whether pores, fine lines, makeup, peach fuzz, and skin microstructure look physically plausible after
+          smoothing.
+        anchors:
+          0: Severely synthetic, painted, waxy, or textureless skin.
+          3: Strong artificial texture, repetition, or plasticity.
+          5: Usable but visibly generated or processed.
+          7: Realistic with one minor detail issue.
+          9: Skin microstructure is fully photorealistic.
+        rubric: Whether pores, fine lines, makeup, peach fuzz, and skin microstructure look physically plausible after smoothing.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_source_focus_grain_resolution_match:
+        title: Source focus, grain, and resolution match
+        definition: Whether skin matches source sharpness, depth of field, sensor grain, compression, and resolution.
+        anchors:
+          0: Severe blur, oversharpening, noise, or resolution mismatch.
+          3: Major focus, grain, or detail discontinuity.
+          5: Generally compatible with one obvious mismatch.
+          7: Matched with one minor issue.
+          9: Focus, grain, and resolution are fully source-consistent.
+        rubric: Whether skin matches source sharpness, depth of field, sensor grain, compression, and resolution. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_blending_uniformity_quality:
+        title: Blending and treatment uniformity
+        definition: Whether smoothing avoids masks, halos, patch edges, repeated zones, and uneven intensity.
+        anchors:
+          0: Severe mask boundaries, stains, or compositing failure.
+          3: Multiple obvious seams, halos, or inconsistent patches.
+          5: One clear boundary or moderate unevenness.
+          7: Clean with one minor blending issue.
+          9: Treatment is seamless and consistently integrated.
+        rubric: Whether smoothing avoids masks, halos, patch edges, repeated zones, and uneven intensity. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      skin_smoothing_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Whether duplicated texture, warped features, facial tearing, hair deformation, and background changes
+          are absent.
+        anchors:
+          0: Severe structural artifacts or image instability.
+          3: Multiple obvious repetitions, distortions, or scene changes.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; face and surrounding image remain fully stable.
+        rubric: Whether duplicated texture, warped features, facial tearing, hair deformation, and background changes are
+          absent. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+prompt_applicability:
+  purpose: All prompts share one fixed skin-smoothing request. All eight Prompt Compliance facets are always applicable.
+  always_applicable:
+  - skin_smoothing_primary_outcome_match
+  - skin_smoothing_minor_imperfection_reduction_match
+  - skin_smoothing_magnitude_restraint_match
+  - skin_smoothing_pore_retention_match
+  - skin_smoothing_natural_texture_variation_match
+  - skin_smoothing_original_skin_tone_match
+  - skin_smoothing_visible_region_consistency_match
+  - skin_smoothing_photorealistic_hd_finish_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+judge_role: You are a strict expert evaluator for natural skin smoothing, pore/texture preservation, identity preservation,
+  and photographic realism.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare original pores, fine lines, roughness, blemishes, skin tone, natural texture variation, shadows,
+  facial landmarks, expression, makeup, moles/freckles/marks, facial hair, hair, clothing, lighting, background, focus, grain,
+  and camera state.
+
+
+  2) Task target. A successful edit reduces mild roughness and small imperfections while retaining realistic pores, fine lines,
+  source skin tone, face geometry, identity, source sharpness, and photographic detail. It is not whitening, global blur,
+  plastic beauty filtering, acne-specific patch removal, or synthetic skin replacement.
+
+
+  3) Task-specific failures. Treat absent/weak smoothing, over-smoothing/plastic skin, whitening/global filter substitute,
+  wrong-region/non-skin edits, texture-frequency artifacts, and identity/source drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires visible smoothing with preserved texture. If skin becomes waxy, poreless, whitened,
+  or identity-changing, target success cannot compensate.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '

@@ -1,0 +1,146 @@
+task_key: unified_human_edit_l1_balanced
+task_title: Unified L1-Only Human Editing Rubric (Balanced)
+task_title_zh: 统一四维人物编辑评价Rubric（指令与身份等权）
+version: v2_l1_only_balanced_integer_0to9
+
+description: >
+  A unified L1-only reward for fine-grained human-centric image editing.
+  The judge directly scores four top-level dimensions. No L2 taxonomy,
+  L3 facets, facet activation, or facet-level aggregation is used.
+
+input_contract:
+  source_image: Original image before editing.
+  edit_instruction: User-provided editing instruction.
+  edited_image: Generated result to evaluate.
+
+output_contract:
+  score_type: integer
+  score_range: [0, 9]
+  score_order:
+    - Prompt Compliance
+    - Localization and Anatomical Integration
+    - Subject Preservation
+    - Task Realism and Image Quality
+  required_json:
+    score_vector:
+      type: array
+      length: 4
+      item_type: integer
+      item_range: [0, 9]
+    failure_severity:
+      type: object
+      keys:
+        - target_absent_or_wrong
+        - wrong_region_or_over_editing
+        - identity_or_non_target_drift
+        - artifact_or_quality_failure
+      value_type: integer
+      value_range: [0, 5]
+
+judge_role: >
+  You are a strict expert evaluator for fine-grained human-centric image
+  editing. Compare the source image and edited image under the exact edit
+  instruction. Directly score only the four listed L1 dimensions.
+
+judge_instructions: |-
+  - Infer the exact requested operation, subtype, direction, target region, and strength.
+  - Do not reward generic beautification or a plausible substitute operation.
+  - Judge preservation against the source image, including identity, expression, pose, clothing, background, lighting, color, texture, and every non-target region.
+  - A realistic result is not successful when the requested edit is absent, wrong, or applied to the wrong region.
+  - A correct target edit is not successful when identity or unrelated content visibly drifts.
+  - Assign one integer from 0 to 9 to each L1 dimension in the fixed order.
+  - Independently assign severity 0-5 to every listed failure type.
+  - Use the full scale. A score of 9 is rare; do not use 7 as a default.
+  - Return only the required JSON object. Do not output L2, L3, explanations, or an overall score.
+
+l1_dimensions:
+  Prompt Compliance:
+    weight: 0.42
+    definition: >
+      Whether the requested edit family, subtype, direction, target attribute,
+      strength, and required components are correctly realized.
+    score_guidance:
+      9: Exact requested edit with correct subtype, direction, region, and strength.
+      7: Correct edit with one minor visible mismatch.
+      5: Partial edit with an important missing or inaccurate requirement.
+      3: Weak or mostly incorrect attempt.
+      0: Edit is absent, reversed, unrelated, or replaced by another operation.
+
+  Localization and Anatomical Integration:
+    weight: 0.11
+    definition: >
+      Whether the edit is confined to the intended region and integrates
+      naturally with adjacent anatomy, boundaries, geometry, and texture.
+    score_guidance:
+      9: Precisely localized and anatomically natural.
+      7: Localized with only a minor boundary or integration issue.
+      5: Visible leakage or a noticeable local integration defect.
+      3: Wrong region, broad leakage, or clear anatomical inconsistency.
+      0: Global or unusable modification instead of the requested local edit.
+
+  Subject Preservation:
+    weight: 0.42
+    definition: >
+      Whether identity, non-target facial/body structure, expression, pose,
+      clothing, accessories, background, framing, lighting, color, and texture
+      remain consistent with the source image.
+    score_guidance:
+      9: Identity and all non-target content are essentially unchanged.
+      7: Preserved with one minor visible non-target difference.
+      5: Noticeable identity, geometry, expression, pose, scene, or color drift.
+      3: Strong identity drift or major non-target modification.
+      0: Subject or scene is substantially changed or unrecognizable.
+
+  Task Realism and Image Quality:
+    weight: 0.05
+    definition: >
+      Whether the result is photorealistic, sharp, texturally coherent, and
+      free of blur, over-smoothing, warping, broken anatomy, and local artifacts.
+    score_guidance:
+      9: Photorealistic, sharp, natural, and artifact-free.
+      7: Realistic with one minor local quality issue.
+      5: Visible smoothing, blur, texture loss, color mismatch, or boundary defect.
+      3: Strong artifact, warping, or rendering instability.
+      0: Severe artifact or unusable image quality.
+
+failure_aware_policy:
+  severity_scale:
+    0: Failure absent.
+    1: Minor visible issue.
+    2: Clear failure.
+    3: Major failure.
+    4: Severe failure.
+    5: Primary requirement absent, reversed, unrelated, or unusable.
+  cap_by_severity:
+    0: 9
+    1: 7
+    2: 5
+    3: 4
+    4: 3
+    5: 1
+  failures:
+    target_absent_or_wrong:
+      affected_l1:
+        - Prompt Compliance
+        - Localization and Anatomical Integration
+    wrong_region_or_over_editing:
+      affected_l1:
+        - Prompt Compliance
+        - Localization and Anatomical Integration
+        - Subject Preservation
+    identity_or_non_target_drift:
+      affected_l1:
+        - Subject Preservation
+        - Task Realism and Image Quality
+    artifact_or_quality_failure:
+      affected_l1:
+        - Localization and Anatomical Integration
+        - Task Realism and Image Quality
+
+aggregation:
+  normalization: Divide every capped L1 score by 9.
+  formula: >
+    reward = 0.42 * Prompt_Compliance
+           + 0.11 * Localization_and_Anatomical_Integration
+           + 0.42 * Subject_Preservation
+           + 0.05 * Task_Realism_and_Image_Quality

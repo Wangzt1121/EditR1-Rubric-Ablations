@@ -1,0 +1,891 @@
+task_key: beard_edit
+task_title: Beard Editing
+task_title_zh: 胡须编辑
+version: v35_fixed_22_l3_beard_family_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority
+target_region: mustache, goatee, beard, stubble, sideburns, cheeks, chin, jawline, and neck boundary
+target_action_summary: Add, replace, reshape, recolor, remove, or clean-shave the requested facial-hair style while preserving
+  identity and realistic skin attachment.
+judge_role: You are a strict expert evaluator specializing in human facial-hair editing and beard-family discrimination. Judge
+  the edited image against the exact requested facial-hair family, not against generic attractiveness or realism.
+judge_instructions: '- First infer the exact requested facial-hair family from the prompt, such as mustache-only, beard shadow,
+  short stubble, long stubble, goatee, circle beard, Van Dyke, anchor beard, soul patch, chin strap, sideburns, mutton chops,
+  boxed beard, full beard, extended goatee, or clean-shaven removal.
+
+  - Treat these families as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute family
+  must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, good color, or clean rendering compensate for the wrong beard family, wrong coverage map, wrong
+  connection topology, wrong length regime, or extra unrequested facial hair.
+
+  - For stubble or beard-shadow requests, preserve visible skin between follicles; a solid opaque beard mass is not correct
+  stubble.
+
+  - For mustache-only requests, extra chin, cheek, jaw, sideburn, or neck hair is a major coverage and family error.
+
+  - For goatee, Van Dyke, circle beard, anchor beard, chin strap, sideburn, and mutton-chop requests, explicitly check the
+  defining components, clean zones, and connection/disconnection pattern.
+
+  - Preserve the source person''s identity, mouth, jaw, skin texture, background color, global white balance, lighting contrast,
+  saturation, and all non-target regions independently from target beard quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong beard family, wrong length regime, wrong
+  density, wrong coverage region, wrong connection topology, extra unrequested facial hair, identity drift, mouth/jaw/face-shape
+  change, background color or lighting shift, blur, smoothing, or mask-like artifacts.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a
+  minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested beard family is wrong, all family-related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested beard family is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should
+  be 0-6.
+
+  - If the face identity, mouth, jaw, or face shape changes visibly, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation
+  constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but
+  visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a
+  recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant
+  trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.'
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add extra rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial identity must remain one dedicated, high-impact L3 facet rather than being diluted across easy preservation checks.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for facial
+    identity drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- Treat beard as the task-level umbrella term covering mustaches, goatees, stubble, sideburns, mutton chops, chin straps,
+  soul patches, full beards, and clean-shaven beard removal.
+- First infer the requested beard family from the prompt, then judge every candidate against that exact family rather than
+  against generic plausibility.
+- A realistic but wrong beard family must score low: stubble is not a short boxed beard; a goatee is not a full beard; a mustache-only
+    edit must not receive credit for adding chin or cheek hair; sideburn or mutton-chop edits must not be scored as ordinary
+    cheek beards.
+- If the primary requested family is replaced by another family, requested_beard_operation_style_family_match should be 0-3
+  even when the result is photorealistic.
+- If the family is related but the subtype is wrong, such as circle beard vs disconnected goatee, Van Dyke vs full goatee,
+  chin strap vs jaw beard, or dense stubble vs short beard, requested_beard_operation_style_family_match should normally be
+  4-5.
+- Do not interpret accidental missing hairs as intentional segmentation or sparsity.
+- Judge symmetry relative to head pose rather than raw mirror symmetry.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is good. A correct color cannot compensate for wrong
+    geometry, and realistic rendering cannot compensate for a missing requested component.
+  beard_family_disambiguation_rule: Treat each beard family as mutually distinct unless the prompt explicitly allows alternatives.
+    Mustache-only, stubble, goatee, circle beard, Van Dyke, anchor beard, soul patch, chin strap, sideburns, mutton chops,
+    cheek beard, full beard, boxed beard, extended goatee, and clean-shaven removal must not substitute for each other.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited face against the source as the same individual. A plausible or attractive face is not
+    sufficient. Visible drift in landmark geometry, feature spacing, face outline, age impression, gender presentation, or
+    characteristic details must lower the identity score.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct beard edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Beard Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Add, replace, reshape, recolor, remove, or clean-shave the requested facial-hair style while preserving
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_beard_operation_style_family_match
+          - requested_beard_edit_strength_match
+          - requested_beard_region_coverage_match
+          - requested_beard_component_completeness
+          - requested_beard_connection_topology_match
+          - requested_beard_size_length_match
+          - requested_beard_density_thickness_match
+          - requested_beard_shape_direction_match
+          - requested_beard_edge_fade_grooming_match
+          - requested_beard_texture_strand_finish_match
+          - requested_beard_color_gray_pattern_match
+          - unrequested_beard_properties_preserved
+          - beard_edit_localized_to_facial_hair_regions
+          - beard_follicle_skin_attachment_natural
+          - beard_anatomical_flow_continuity
+          - beard_pose_aware_bilateral_balance
+          - beard_facial_identity_landmark_consistency
+          - beard_expression_mouth_jaw_adjacent_face_preserved
+          - beard_strand_density_variation_realistic
+          - beard_shadow_lighting_color_integration
+          - beard_boundary_occlusion_contact_consistent
+          - beard_artifact_sharpness_no_painted_mask
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Beard Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on mustache, goatee, beard, stubble, sideburns, cheeks, chin, jawline, and neck boundary.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_beard_operation_style_family_match
+          - requested_beard_edit_strength_match
+          - requested_beard_region_coverage_match
+          - requested_beard_component_completeness
+          - requested_beard_connection_topology_match
+          - requested_beard_size_length_match
+          - requested_beard_density_thickness_match
+          - requested_beard_shape_direction_match
+          - requested_beard_edge_fade_grooming_match
+          - requested_beard_texture_strand_finish_match
+          - requested_beard_color_gray_pattern_match
+          - unrequested_beard_properties_preserved
+          - beard_edit_localized_to_facial_hair_regions
+          - beard_follicle_skin_attachment_natural
+          - beard_anatomical_flow_continuity
+          - beard_pose_aware_bilateral_balance
+          - beard_facial_identity_landmark_consistency
+          - beard_expression_mouth_jaw_adjacent_face_preserved
+          - beard_artifact_sharpness_no_painted_mask
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_beard_edit_strength_match
+          - requested_beard_region_coverage_match
+          - requested_beard_component_completeness
+          - requested_beard_connection_topology_match
+          - requested_beard_size_length_match
+          - requested_beard_density_thickness_match
+          - requested_beard_shape_direction_match
+          - requested_beard_edge_fade_grooming_match
+          - requested_beard_texture_strand_finish_match
+          - requested_beard_color_gray_pattern_match
+          - unrequested_beard_properties_preserved
+          - beard_edit_localized_to_facial_hair_regions
+          - beard_follicle_skin_attachment_natural
+          - beard_anatomical_flow_continuity
+          - beard_pose_aware_bilateral_balance
+          - beard_strand_density_variation_realistic
+          - beard_shadow_lighting_color_integration
+          - beard_boundary_occlusion_contact_consistent
+          - beard_artifact_sharpness_no_painted_mask
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of mustache, goatee, beard, stubble, sideburns, cheeks, chin, jawline, and neck boundary, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_beard_region_coverage_match
+          - requested_beard_component_completeness
+          - requested_beard_connection_topology_match
+          - requested_beard_size_length_match
+          - requested_beard_density_thickness_match
+          - requested_beard_shape_direction_match
+          - requested_beard_edge_fade_grooming_match
+          - requested_beard_texture_strand_finish_match
+          - requested_beard_color_gray_pattern_match
+          - unrequested_beard_properties_preserved
+          - beard_edit_localized_to_facial_hair_regions
+          - beard_follicle_skin_attachment_natural
+          - beard_anatomical_flow_continuity
+          - beard_pose_aware_bilateral_balance
+          - beard_strand_density_variation_realistic
+          - beard_shadow_lighting_color_integration
+          - beard_boundary_occlusion_contact_consistent
+          - beard_artifact_sharpness_no_painted_mask
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_beard_operation_style_family_match
+          - requested_beard_edit_strength_match
+          - requested_beard_region_coverage_match
+          - requested_beard_component_completeness
+          - requested_beard_connection_topology_match
+          - requested_beard_size_length_match
+          - requested_beard_density_thickness_match
+          - requested_beard_shape_direction_match
+          - requested_beard_edge_fade_grooming_match
+          - requested_beard_texture_strand_finish_match
+          - requested_beard_color_gray_pattern_match
+          - unrequested_beard_properties_preserved
+          - beard_edit_localized_to_facial_hair_regions
+          - beard_follicle_skin_attachment_natural
+          - beard_anatomical_flow_continuity
+          - beard_pose_aware_bilateral_balance
+          - beard_facial_identity_landmark_consistency
+          - beard_expression_mouth_jaw_adjacent_face_preserved
+          - beard_strand_density_variation_realistic
+          - beard_shadow_lighting_color_integration
+          - beard_boundary_occlusion_contact_consistent
+          - beard_artifact_sharpness_no_painted_mask
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - beard_edit_localized_to_facial_hair_regions
+          - beard_follicle_skin_attachment_natural
+          - beard_anatomical_flow_continuity
+          - beard_pose_aware_bilateral_balance
+          - beard_strand_density_variation_realistic
+          - beard_shadow_lighting_color_integration
+          - beard_boundary_occlusion_contact_consistent
+          - beard_artifact_sharpness_no_painted_mask
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_beard_operation_style_family_match
+- requested_beard_edit_strength_match
+- requested_beard_region_coverage_match
+- requested_beard_component_completeness
+- requested_beard_connection_topology_match
+- requested_beard_size_length_match
+- requested_beard_density_thickness_match
+- requested_beard_shape_direction_match
+- requested_beard_edge_fade_grooming_match
+- requested_beard_texture_strand_finish_match
+- requested_beard_color_gray_pattern_match
+- unrequested_beard_properties_preserved
+- beard_edit_localized_to_facial_hair_regions
+- beard_follicle_skin_attachment_natural
+- beard_anatomical_flow_continuity
+- beard_pose_aware_bilateral_balance
+- beard_facial_identity_landmark_consistency
+- beard_expression_mouth_jaw_adjacent_face_preserved
+- beard_strand_density_variation_realistic
+- beard_shadow_lighting_color_integration
+- beard_boundary_occlusion_contact_consistent
+- beard_artifact_sharpness_no_painted_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_beard_operation_style_family_match: 0.24
+    requested_beard_edit_strength_match: 0.05
+    requested_beard_region_coverage_match: 0.11
+    requested_beard_component_completeness: 0.09
+    requested_beard_connection_topology_match: 0.11
+    requested_beard_size_length_match: 0.1
+    requested_beard_density_thickness_match: 0.09
+    requested_beard_shape_direction_match: 0.08
+    requested_beard_edge_fade_grooming_match: 0.05
+    requested_beard_texture_strand_finish_match: 0.04
+    requested_beard_color_gray_pattern_match: 0.02
+    unrequested_beard_properties_preserved: 0.02
+  Localization and Anatomical Integration:
+    beard_edit_localized_to_facial_hair_regions: 0.24
+    beard_follicle_skin_attachment_natural: 0.3
+    beard_anatomical_flow_continuity: 0.26
+    beard_pose_aware_bilateral_balance: 0.2
+  Subject Preservation:
+    beard_facial_identity_landmark_consistency: 0.8
+    beard_expression_mouth_jaw_adjacent_face_preserved: 0.2
+  Task Realism and Image Quality:
+    beard_strand_density_variation_realistic: 0.3
+    beard_shadow_lighting_color_integration: 0.24
+    beard_boundary_occlusion_contact_consistent: 0.24
+    beard_artifact_sharpness_no_painted_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Operation and Spatial Design:
+      requested_beard_operation_style_family_match:
+        title: Requested beard operation and style family match
+        definition: Judge add, replace, reshape, remove, or clean-shaven operation together with the exact requested facial-hair
+          family. Distinguish mustache-only, stubble/beard shadow, goatee, circle beard, Van Dyke, anchor beard, soul patch,
+          chin strap, sideburns, mutton chops, cheek beard, boxed beard, full beard, extended goatee, and clean-shaven removal
+          as different families. A photorealistic substitute family is still a failure on this facet.
+        anchors:
+          0: the requested beard operation and style family is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard operation and style family is visible; the central beard operation
+            or style family is essentially unmet.
+          2: A small relevant attempt is present, but the requested beard operation and style family is severely incorrect
+            or incomplete.
+          3: The requested operation is weakly attempted, but the primary family is wrong or one defining family feature is
+            missing.
+          4: The result belongs to a related but clearly wrong family, such as dense stubble becoming a short beard, a goatee
+            becoming a full beard, or a mustache-only request adding chin or cheek hair.
+          5: The requested family is partially recognizable, but the subtype is wrong or a defining component/clean zone is
+            visibly incorrect.
+          6: The family is mostly correct, but one important subtype distinction remains wrong, such as connection, component
+            boundary, or requested removal/addition pattern.
+          7: The exact family is clearly successful, with only a minor visible subtype or local boundary mismatch.
+          8: The exact requested family and operation are highly accurate, with only a tiny local imperfection.
+          9: The exact requested operation and facial-hair family are fully realized with no substitute style, extra family,
+            or missing defining component.
+      requested_beard_edit_strength_match:
+        title: Requested beard edit strength is matched
+        definition: Judge whether subtle, light, clear, dense, strong, dramatic, or clean-shaven intensity is visible at the
+          requested amount without becoming excessive or too weak.
+        anchors:
+          0: the requested beard-edit strength is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard-edit strength is visible; the beard change is far too weak, excessive,
+            or destructive.
+          2: A small relevant attempt is present, but the requested beard-edit strength is severely incorrect or incomplete.
+          3: the requested beard-edit strength is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested beard-edit strength is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested beard-edit strength is moderately achieved, with several substantial visible problems.
+          6: the requested beard-edit strength is mostly correct, but one clear and important issue remains.
+          7: the requested beard-edit strength is clearly successful, with only a minor visible mismatch.
+          8: the requested beard-edit strength is highly accurate and complete, with only a tiny local imperfection.
+          9: The beard change has exactly the requested visibility and strength while remaining natural.
+      requested_beard_region_coverage_match:
+        title: Requested beard region and coverage match
+        definition: 'Judge the exact hair-bearing and clean-shaven map for the requested family: upper lip, philtrum, mouth
+          corners, soul patch, below-lip area, chin, cheeks, jawline, sideburns, mutton-chop zones, and neck boundary. Extra
+          hair in a region that should remain clean is a family/coverage error, not a harmless addition.'
+        anchors:
+          0: the requested facial-hair region and coverage map is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested facial-hair region and coverage map is visible; most requested facial
+            regions or clean zones are wrong.
+          2: A small relevant attempt is present, but the requested facial-hair region and coverage map is severely incorrect
+            or incomplete.
+          3: the requested facial-hair region and coverage map is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: The requested coverage map is recognizable, but a major clean zone or hair-bearing region is wrong, such as cheek
+            hair in a mustache/goatee request or chin hair in a mustache-only request.
+          5: The coverage map is partially correct, but several visible regional boundaries, clean zones, or requested components
+            are wrong.
+          6: The coverage map is mostly correct, but one clear and important region or clean-zone issue remains.
+          7: the requested facial-hair region and coverage map is clearly successful, with only a minor visible mismatch.
+          8: the requested facial-hair region and coverage map is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested hair-bearing and clean-shaven region is exact and complete.
+      requested_beard_component_completeness:
+        title: All requested beard components are completed
+        definition: 'Judge whether all and only the explicitly requested components are present: mustache lobes, connectors,
+          chin beard, goatee body, soul patch, cheek beard, jaw beard, sideburns, mutton-chop mass, stubble field, or clean-shaven
+          removal. Missing a defining component or adding an unrequested defining component should lower this facet.'
+        anchors:
+          0: the completeness of requested beard components is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the completeness of requested beard components is visible; one or more primary beard
+            components are missing.
+          2: A small relevant attempt is present, but the completeness of requested beard components is severely incorrect
+            or incomplete.
+          3: the completeness of requested beard components is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the completeness of requested beard components is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the completeness of requested beard components is moderately achieved, with several substantial visible problems.
+          6: the completeness of requested beard components is mostly correct, but one clear and important issue remains.
+          7: the completeness of requested beard components is clearly successful, with only a minor visible mismatch.
+          8: the completeness of requested beard components is highly accurate and complete, with only a tiny local imperfection.
+          9: All requested facial-hair components are present, visible, and correctly combined.
+      requested_beard_connection_topology_match:
+        title: Requested beard connectivity and topology match
+        definition: 'Judge the family-defining connection pattern: connected or disconnected mustache-to-goatee, circle beard
+          loop, Van Dyke separation, anchor shape, chin-strap jawline, sideburn-to-jaw bridge, mutton-chop cheek mass, full-beard
+          frame, fork, bridge, or intentionally broken-line organization.'
+        anchors:
+          0: the requested beard connection topology is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard connection topology is visible; the defining connection pattern
+            is mostly wrong.
+          2: A small relevant attempt is present, but the requested beard connection topology is severely incorrect or incomplete.
+          3: the requested beard connection topology is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested beard connection topology is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested beard connection topology is moderately achieved, with several substantial visible problems.
+          6: the requested beard connection topology is mostly correct, but one clear and important issue remains.
+          7: the requested beard connection topology is clearly successful, with only a minor visible mismatch.
+          8: the requested beard connection topology is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested connection and disconnection is exact and defines the intended beard topology.
+    Dimensions, Finish, and Color:
+      requested_beard_size_length_match:
+        title: Requested beard size and length match
+        definition: 'Judge the requested growth regime and footprint: clean-shaven/removed, beard shadow, short stubble, long
+          stubble, short trimmed beard, medium beard, long beard, very long beard, small/narrow goatee, wide/full beard, compact
+          chin beard, or extended jaw/cheek dimensions. Stubble must show skin visibility and must not become a continuous
+          short beard.'
+        anchors:
+          0: the requested facial-hair size and length is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested facial-hair size and length is visible; length or size is severely wrong.
+          2: A small relevant attempt is present, but the requested facial-hair size and length is severely incorrect or incomplete.
+          3: the requested facial-hair size and length is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: The requested size or length is recognizable but in the wrong regime, such as stubble becoming beard-length hair
+            or a compact goatee becoming a broad full beard.
+          5: The length/size is partially correct but visibly too short, too long, too wide, or too extended in several regions.
+          6: The length/size is mostly correct, but one clear and important regime or footprint issue remains.
+          7: the requested facial-hair size and length is clearly successful, with only a minor visible mismatch.
+          8: the requested facial-hair size and length is highly accurate and complete, with only a tiny local imperfection.
+          9: The beard has exactly the requested dimensions, growth length, and regional extent.
+      requested_beard_density_thickness_match:
+        title: Requested beard density and thickness match
+        definition: Judge sparse, light, medium, dense, very dense, bushy, thin-line, thick-line, beard-shadow, skin-visible
+          stubble, and patchiness requirements. Dense short stubble means many short follicles with visible skin between them,
+          not a solid opaque beard mass.
+        anchors:
+          0: the requested beard density and thickness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard density and thickness is visible; density or thickness is strongly
+            incorrect.
+          2: A small relevant attempt is present, but the requested beard density and thickness is severely incorrect or incomplete.
+          3: the requested beard density and thickness is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested beard density and thickness is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested beard density and thickness is moderately achieved, with several substantial visible problems.
+          6: the requested beard density and thickness is mostly correct, but one clear and important issue remains.
+          7: the requested beard density and thickness is clearly successful, with only a minor visible mismatch.
+          8: the requested beard density and thickness is highly accurate and complete, with only a tiny local imperfection.
+          9: Density, thickness, and visible growth amount exactly match the instruction.
+      requested_beard_shape_direction_match:
+        title: Requested beard contour and hair direction match
+        definition: 'Judge family-specific silhouette and direction: pointed Van Dyke, rounded or square goatee, anchor, U/V
+          chin shape, crescent or handlebar mustache, forked or fan beard, chin-strap line, mutton-chop cheek shape, boxed-beard
+          outline, upward-curled, downward-drooping, straight, or naturally flowing geometry.'
+        anchors:
+          0: the requested beard contour and directional geometry is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard contour and directional geometry is visible; the defining shape
+            or direction is mostly wrong.
+          2: A small relevant attempt is present, but the requested beard contour and directional geometry is severely incorrect
+            or incomplete.
+          3: the requested beard contour and directional geometry is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested beard contour and directional geometry is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested beard contour and directional geometry is moderately achieved, with several substantial visible
+            problems.
+          6: the requested beard contour and directional geometry is mostly correct, but one clear and important issue remains.
+          7: the requested beard contour and directional geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested beard contour and directional geometry is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Contour, end shape, directional flow, and component balance exactly match the request.
+      requested_beard_edge_fade_grooming_match:
+        title: Requested beard edge, fade, and grooming match
+        definition: 'Judge requested boundary treatment and grooming for the exact family: razor-defined, hard-edged, soft-tapered,
+          faded, natural-irregular, sculpted, trimmed, neat, rugged, wild, business, military, or deliberately unshaven. Wrong
+          edge treatment can make one family look like another and must lower the score.'
+        anchors:
+          0: the requested beard boundary and grooming treatment is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard boundary and grooming treatment is visible; the grooming or edge
+            treatment is substantially wrong.
+          2: A small relevant attempt is present, but the requested beard boundary and grooming treatment is severely incorrect
+            or incomplete.
+          3: the requested beard boundary and grooming treatment is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested beard boundary and grooming treatment is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested beard boundary and grooming treatment is moderately achieved, with several substantial visible
+            problems.
+          6: the requested beard boundary and grooming treatment is mostly correct, but one clear and important issue remains.
+          7: the requested beard boundary and grooming treatment is clearly successful, with only a minor visible mismatch.
+          8: the requested beard boundary and grooming treatment is highly accurate and complete, with only a tiny local imperfection.
+          9: Edges, fades, grooming level, and finish match the requested style exactly.
+      requested_beard_texture_strand_finish_match:
+        title: Requested beard texture and strand finish match
+        definition: Judge straight, curly, coarse, soft, braided, dotted, scattered, separated, bushy, beard-shadow, or short-stubble
+          follicle texture as explicitly requested. Texture must support the requested family; painted masks, continuous smudges,
+          or long strands are wrong for stubble.
+        anchors:
+          0: the requested facial-hair texture and strand finish is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested facial-hair texture and strand finish is visible; the dominant texture
+            is wrong or missing.
+          2: A small relevant attempt is present, but the requested facial-hair texture and strand finish is severely incorrect
+            or incomplete.
+          3: the requested facial-hair texture and strand finish is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested facial-hair texture and strand finish is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested facial-hair texture and strand finish is moderately achieved, with several substantial visible
+            problems.
+          6: the requested facial-hair texture and strand finish is mostly correct, but one clear and important issue remains.
+          7: the requested facial-hair texture and strand finish is clearly successful, with only a minor visible mismatch.
+          8: the requested facial-hair texture and strand finish is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested texture, strand grouping, and surface character are fully realized.
+      requested_beard_color_gray_pattern_match:
+        title: Requested beard color and gray pattern match
+        definition: Judge black, brown, blond, ginger, red, gray, white, salt-and-pepper, warmth, coolness, darkness, gray
+          proportion, and regional color variation.
+        anchors:
+          0: the requested beard color and age pattern is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested beard color and age pattern is visible; the dominant beard color or
+            gray pattern is wrong.
+          2: A small relevant attempt is present, but the requested beard color and age pattern is severely incorrect or incomplete.
+          3: the requested beard color and age pattern is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested beard color and age pattern is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested beard color and age pattern is moderately achieved, with several substantial visible problems.
+          6: the requested beard color and age pattern is mostly correct, but one clear and important issue remains.
+          7: the requested beard color and age pattern is clearly successful, with only a minor visible mismatch.
+          8: the requested beard color and age pattern is highly accurate and complete, with only a tiny local imperfection.
+          9: Hue, depth, warmth, gray proportion, and strand distribution exactly match the prompt.
+      unrequested_beard_properties_preserved:
+        title: Unrequested beard properties are preserved
+        definition: Preserve facial-hair attributes not requested to change, except unavoidable consequences of the target
+          edit.
+        anchors:
+          0: the preservation of unrequested beard properties is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the preservation of unrequested beard properties is visible; unrequested beard attributes
+            are extensively altered.
+          2: A small relevant attempt is present, but the preservation of unrequested beard properties is severely incorrect
+            or incomplete.
+          3: the preservation of unrequested beard properties is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the preservation of unrequested beard properties is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of unrequested beard properties is moderately achieved, with several substantial visible problems.
+          6: the preservation of unrequested beard properties is mostly correct, but one clear and important issue remains.
+          7: the preservation of unrequested beard properties is clearly successful, with only a minor visible mismatch.
+          8: the preservation of unrequested beard properties is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested facial-hair properties remain source-consistent.
+  Localization and Anatomical Integration:
+    Beard Placement and Anatomy:
+      beard_edit_localized_to_facial_hair_regions:
+        title: The beard edit is localized to facial-hair regions
+        definition: Keep changes within requested hair-bearing skin regions and minimal blending zones; avoid pigment or hair
+          on lips, nose, eyes, or unrelated skin.
+        anchors:
+          0: beard-edit localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard-edit localization is visible; large non-target facial areas are altered.
+          2: A small relevant attempt is present, but beard-edit localization is severely incorrect or incomplete.
+          3: beard-edit localization is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: beard-edit localization is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: beard-edit localization is moderately achieved, with several substantial visible problems.
+          6: beard-edit localization is mostly correct, but one clear and important issue remains.
+          7: beard-edit localization is clearly successful, with only a minor visible mismatch.
+          8: beard-edit localization is highly accurate and complete, with only a tiny local imperfection.
+          9: The edit is precisely localized to the requested facial-hair regions with no visible spill.
+      beard_follicle_skin_attachment_natural:
+        title: Follicle attachment and skin contact are natural
+        definition: Judge roots, pores, hair emergence, contact shadows, and attachment to upper lip, cheeks, chin, jaw, and
+          sideburn regions.
+        anchors:
+          0: beard follicle attachment and skin contact is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard follicle attachment and skin contact is visible; facial hair appears pasted,
+            floating, or detached.
+          2: A small relevant attempt is present, but beard follicle attachment and skin contact is severely incorrect or
+            incomplete.
+          3: beard follicle attachment and skin contact is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: beard follicle attachment and skin contact is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: beard follicle attachment and skin contact is moderately achieved, with several substantial visible problems.
+          6: beard follicle attachment and skin contact is mostly correct, but one clear and important issue remains.
+          7: beard follicle attachment and skin contact is clearly successful, with only a minor visible mismatch.
+          8: beard follicle attachment and skin contact is highly accurate and complete, with only a tiny local imperfection.
+          9: Hair roots, pores, and contact shadows are fully natural across all beard regions.
+      beard_anatomical_flow_continuity:
+        title: Facial-hair flow and anatomical continuity are coherent
+        definition: Judge strand direction around lips, chin, jaw, cheeks, and sideburns, including continuous transitions
+          and gravity-aware flow.
+        anchors:
+          0: beard anatomical flow and continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard anatomical flow and continuity is visible; the beard structure is broken or
+            directionally contradictory.
+          2: A small relevant attempt is present, but beard anatomical flow and continuity is severely incorrect or incomplete.
+          3: beard anatomical flow and continuity is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: beard anatomical flow and continuity is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: beard anatomical flow and continuity is moderately achieved, with several substantial visible problems.
+          6: beard anatomical flow and continuity is mostly correct, but one clear and important issue remains.
+          7: beard anatomical flow and continuity is clearly successful, with only a minor visible mismatch.
+          8: beard anatomical flow and continuity is highly accurate and complete, with only a tiny local imperfection.
+          9: All beard components flow and connect naturally with coherent anatomy and grooming.
+      beard_pose_aware_bilateral_balance:
+        title: Beard balance is correct for the head pose
+        definition: Judge centerline, left-right component length, cheek visibility, nostril/mouth perspective, and intended
+          asymmetry relative to head pose.
+        anchors:
+          0: pose-aware beard balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of pose-aware beard balance is visible; major unintended asymmetry or pose mismatch is
+            present.
+          2: A small relevant attempt is present, but pose-aware beard balance is severely incorrect or incomplete.
+          3: pose-aware beard balance is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: pose-aware beard balance is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: pose-aware beard balance is moderately achieved, with several substantial visible problems.
+          6: pose-aware beard balance is mostly correct, but one clear and important issue remains.
+          7: pose-aware beard balance is clearly successful, with only a minor visible mismatch.
+          8: pose-aware beard balance is highly accurate and complete, with only a tiny local imperfection.
+          9: The beard is perfectly balanced for the source pose and intended design.
+  Subject Preservation:
+    Facial Identity and Adjacent Face Preservation:
+      beard_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare the source and edited face as the same individual, not merely as a plausible similar person. Judge
+          face outline, forehead, brow position, eye shape and spacing, nose geometry, mouth placement, chin, jaw, cheek structure,
+          age impression, gender presentation, characteristic asymmetries, skin tone, and stable facial texture. The beard
+          may cover lower-face skin, but it must not reshape the underlying face, change the perceived person, beautify or
+          age-shift the subject, or alter characteristic facial proportions.
+        anchors:
+          0: The edited face is effectively a different person, severely distorted, or no longer identity-consistent with
+            the source.
+          1: Identity correspondence is extremely weak; multiple defining facial landmarks and the overall person impression
+            are replaced.
+          2: Major identity drift affects several defining regions such as face outline, eyes, nose, mouth, jaw, or feature
+            spacing.
+          3: Substantial facial-identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression at normal viewing
+            size.
+          5: The person remains recognizable, but multiple facial landmarks, proportions, age cues, or characteristic details
+            visibly drift.
+          6: The same person is mostly preserved, but one clear identity-affecting geometric, texture, age, or appearance
+            change remains.
+          7: Identity preservation is strong, with only a minor visible drift in one facial landmark, facial proportion, skin
+            tone, or characteristic detail.
+          8: The face is nearly source-identical outside the allowed target change, with only a tiny local discrepancy and
+            no changed-person impression.
+          9: The same person's facial identity, landmark geometry, feature spacing, age impression, skin tone, facial texture,
+            and characteristic details are source-identical apart from unavoidable visual occlusion caused by the requested
+            beard.
+      beard_expression_mouth_jaw_adjacent_face_preserved:
+        title: Expression, background color, and non-target image details are preserved
+        definition: 'Preserve expression, gaze, mouth opening, lip geometry, philtrum, chin and jaw position, cheeks, nose,
+          skin tone, pores, wrinkles, all non-target facial-hair components, clothing-visible edges, background color, global
+          white balance, brightness, contrast, saturation, and lighting mood. Judge these together as non-target preservation:
+          the beard edit must not recolor the background, shift exposure, change contrast, smooth the face, or alter surrounding
+          non-target regions.'
+        anchors:
+          0: Expression, mouth-jaw geometry, adjacent skin, background/color state, and non-target details are severely changed,
+            replaced, or unusable.
+          1: Most expression, mouth-jaw geometry, adjacent skin, background color, or global lighting is clearly inconsistent
+            with the source.
+          2: Several major changes substantially alter expression, mouth-jaw geometry, skin texture, background color, exposure,
+            saturation, or non-target details.
+          3: One major or multiple obvious changes affect expression, mouth-jaw geometry, adjacent skin, background color,
+            global white balance, contrast, or non-target details.
+          4: The non-target image remains recognizable but contains a clear important mismatch in expression, mouth/jaw, skin,
+            background color, exposure, or contrast.
+          5: Non-target preservation is only moderate, with several visible differences in facial details, background color,
+            lighting, or global image tone.
+          6: Most non-target details are preserved, but one clear difference remains in expression, mouth/jaw, skin, background
+            color, brightness, saturation, or contrast.
+          7: Non-target preservation is strong, with only a minor discrepancy in facial details or background/global color.
+          8: Expression, mouth, jaw, skin, background color, white balance, and non-target regions are nearly source-identical,
+            with only a tiny local discrepancy.
+          9: Expression, mouth, jaw, chin, adjacent skin, background color, global white balance, contrast, lighting, and
+            all non-target image details remain source-consistent.
+  Task Realism and Image Quality:
+    Beard Rendering:
+      beard_strand_density_variation_realistic:
+        title: Hair strands and density variation are realistic
+        definition: Judge individual whiskers or appropriate stubble texture, natural thickness variation, growth irregularity,
+          and non-uniform density.
+        anchors:
+          0: beard strand and density realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard strand and density realism is visible; the beard looks painted, uniformly stamped,
+            or synthetic.
+          2: A small relevant attempt is present, but beard strand and density realism is severely incorrect or incomplete.
+          3: beard strand and density realism is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: beard strand and density realism is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: beard strand and density realism is moderately achieved, with several substantial visible problems.
+          6: beard strand and density realism is mostly correct, but one clear and important issue remains.
+          7: beard strand and density realism is clearly successful, with only a minor visible mismatch.
+          8: beard strand and density realism is highly accurate and complete, with only a tiny local imperfection.
+          9: Strands, growth variation, and regional density are photorealistic and naturally irregular.
+      beard_shadow_lighting_color_integration:
+        title: Beard color, shadows, and lighting integrate with the face
+        definition: Judge local occlusion, contact shadows, color-light response, and source-consistent illumination.
+        anchors:
+          0: beard lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard lighting and color integration is visible; lighting or color integration is
+            clearly inconsistent.
+          2: A small relevant attempt is present, but beard lighting and color integration is severely incorrect or incomplete.
+          3: beard lighting and color integration is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: beard lighting and color integration is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: beard lighting and color integration is moderately achieved, with several substantial visible problems.
+          6: beard lighting and color integration is mostly correct, but one clear and important issue remains.
+          7: beard lighting and color integration is clearly successful, with only a minor visible mismatch.
+          8: beard lighting and color integration is highly accurate and complete, with only a tiny local imperfection.
+          9: Color, contact shadows, and illumination perfectly match the source face and scene.
+      beard_boundary_occlusion_contact_consistent:
+        title: Beard boundaries and facial occlusions are physically consistent
+        definition: Judge overlaps at lips, mouth corners, cheeks, jaw, neck, and sideburns, with clean but natural boundaries.
+        anchors:
+          0: beard boundary and occlusion consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard boundary and occlusion consistency is visible; major leakage, gaps, or impossible
+            overlap is visible.
+          2: A small relevant attempt is present, but beard boundary and occlusion consistency is severely incorrect or incomplete.
+          3: beard boundary and occlusion consistency is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: beard boundary and occlusion consistency is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: beard boundary and occlusion consistency is moderately achieved, with several substantial visible problems.
+          6: beard boundary and occlusion consistency is mostly correct, but one clear and important issue remains.
+          7: beard boundary and occlusion consistency is clearly successful, with only a minor visible mismatch.
+          8: beard boundary and occlusion consistency is highly accurate and complete, with only a tiny local imperfection.
+          9: All boundaries, overlaps, and contact relationships are physically coherent.
+      beard_artifact_sharpness_no_painted_mask:
+        title: Artifacts, blur, and painted-mask appearance are controlled
+        definition: Judge duplicated hairs, broken braids, melted forms, noisy dots, blur, smoothing, blocky masks, and resolution
+          loss.
+        anchors:
+          0: beard artifact control and sharpness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of beard artifact control and sharpness is visible; strong artifacts, blur, or mask-like
+            rendering dominate.
+          2: A small relevant attempt is present, but beard artifact control and sharpness is severely incorrect or incomplete.
+          3: beard artifact control and sharpness is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: beard artifact control and sharpness is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: beard artifact control and sharpness is moderately achieved, with several substantial visible problems.
+          6: beard artifact control and sharpness is mostly correct, but one clear and important issue remains.
+          7: beard artifact control and sharpness is clearly successful, with only a minor visible mismatch.
+          8: beard artifact control and sharpness is highly accurate and complete, with only a tiny local imperfection.
+          9: The beard is sharply resolved, artifact-free, and contains no painted-mask appearance.
+identity_preservation_protocol:
+  purpose: Prevent successful target editing from hiding facial-identity drift. Identity is judged by source-to-result correspondence,
+    not by whether the edited face is attractive or realistic.
+  comparison_checklist:
+  - overall face outline and width/length relationship
+  - forehead and hair-independent face contour
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position and natural geometry
+  - cheek, jaw, and chin structure
+  - age impression and gender presentation
+  - skin tone, stable characteristic marks, and facial texture
+  - background hue, saturation, brightness, contrast, and global white balance
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase an identity score because the target edit is attractive or instruction-compliant.
+  - Do not treat a photorealistic but different-looking face as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - The task target region may be excluded only where explicitly necessary; unrelated facial landmarks remain fully constrained.
+  - Identity, expression, background color, and adjacent-face scores are independent of target beard correctness and realism.
+  task_specific_exception: requested beard coverage only

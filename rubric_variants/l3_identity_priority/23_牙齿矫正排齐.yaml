@@ -1,0 +1,755 @@
+task_key: natural_visible_teeth_alignment
+task_title: Natural Visible-Teeth Alignment and Edge Evening
+task_title_zh: 牙齿矫正排齐
+version: v47_fixed_integer_22_l3_natural_visible_teeth_alignment_compact_failurefix_l3_identity_priority
+target_region: all visible assessable teeth inside the current mouth opening, including visible upper and lower tooth rows,
+  individual tooth contours, interdental contacts, and incisal edges, plus only the minimum gum, lip, tongue, and oral-cavity
+  blending zones required for natural dental rearrangement
+target_action_summary: Straighten the visible teeth, reduce visible rotations, tilts, crowding, and overlap, regularize the
+  dental row, and make visible incisal edges more even while preserving tooth count, plausible tooth shapes and sizes, enamel
+  color, gumline, bite, mouth opening, smile geometry, expression, facial identity, lighting, camera state, and all non-target
+  image content.
+judge_role: You are a strict expert evaluator specializing in cosmetic dental alignment, visible tooth-row geometry, incisal-edge
+  regularity, bite and smile preservation, facial identity, and photorealistic portrait editing. Judge actual alignment of
+  the visible dentition, not teeth whitening, generic veneer replacement, smile enlargement, or mouth reshaping.
+judge_instructions: |
+  Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+  1) Source audit first. Compare visible tooth count, rotations, tilts, crowding/overlap, dental arch, incisal edges, spacing, tooth shapes/sizes, enamel color, gumline, bite, lips, mouth opening, smile expression, oral depth, identity, lighting, background, and camera state.
+
+  2) Target definition. The requested edit is natural alignment of visible assessable teeth only: reduce rotations, tilts, crowding, overlap, row discontinuity, and uneven incisal edges while preserving tooth count, tooth identity, tooth size/shape, enamel color, gums, bite, mouth opening, smile geometry, expression, and all non-target content.
+
+  3) Reject substitutes. Teeth whitening, veneer replacement, fake uniform dental blocks, smile enlargement, lip reshaping, mouth stretching, tooth deletion/duplication, or generic smile beautification is not successful alignment.
+
+  4) Primary failure gates. If visible teeth remain crooked/rotated/crowded/overlapped or barely changed, activate target_absent_or_too_weak. If whitening, veneers, replacement teeth, or fake uniform blocks dominate, activate substitute_whitening_or_veneer_replacement. If tooth count/shape/size/gumline/bite/oral depth becomes impossible, activate dental_structure_or_oral_anatomy_broken. If lips, mouth pose, expression, identity, lighting, background, or camera state changes, activate source_state_not_preserved.
+
+  5) Failure propagation. Before outputting the final score_vector, detect failures in global_scoring_policy.failure_propagation, estimate severity 0-5, apply cap_by_severity to every affected L3, and output adjusted scores.
+
+  6) Score calibration and anti-template. 9 is rare; 8 is near-perfect; 7 is strong with only a minor flaw; 6 has one clear issue; 5 is partial; 4 is a major mismatch; 3 is weak; 2 is a small trace; 1 is negligible; 0 is absent/reversed/unusable. Do not use 7 as default; re-check mostly identical or mostly-7 vectors.
+
+  Task-specific focus: visible teeth alignment/order. Do not reward whitening, veneers, fake uniform blocks, tooth deletion/duplication, or smile reshaping as alignment success.
+
+  Hybrid scoring safeguards.
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation before considering any 7-9.
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit into a high reward.
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should not automatically become all 9s.
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak, partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9 for truly extreme evidence.
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+  Return only JSON:
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Alignment operation, row coverage, rotation and tilt, crowding, spacing,
+    incisal edges, tooth geometry, bite, anatomical integration, identity, and rendering quality are separated without repeatedly
+    scoring the same dental defect.
+  constraints:
+    - Exactly 22 active L3 facets; never add a twenty-third facet.
+    - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+    - The judge returns exactly 22 integers in active_l3 order.
+    - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+    - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+    - Alignment magnitude, tooth rotation, crowding, spacing, incisal-edge evenness, and bite are evaluated separately.
+    - Tooth-size, shape, and count preservation are merged into one focused geometry facet.
+    - The rubric permits only the minimum tooth repositioning and contour refinement needed for natural alignment.
+    - Teeth whitening, gum editing, smile enlargement, lip reshaping, missing-tooth generation, and veneer replacement are
+      different tasks.
+    - Easy scene, camera, and background checks are merged rather than expanded into many L3 facets.
+    - Facial identity and smile landmarks remain one dedicated, high-impact L3 facet.
+    - Subject Preservation contributes 44% of the final reward.
+    - Public floating-point values use at most three decimal places.
+evaluation_notes:
+  - The uploaded file contains 94 prompts and 10 unique templates. Six templates appear ten times, three templates appear
+    nine times, and one template appears seven times.
+  - Every prompt targets teeth_alignment with fine control straighten_teeth. Differences are limited to retouching intensity,
+    finish, symmetry, local boundaries, texture, shadow reconstruction, and preservation wording.
+  - 'All prompts request two coordinated outcomes: straighten the visible teeth and make the visible tooth edges more even
+    while preserving a natural smile.'
+  - No prompt requests whitening, veneer replacement, missing-tooth generation, gum reshaping, complete gap closure, smile
+    enlargement, or lip modification.
+  - Alignment should correct visible rotations, tilts, crowding, overlap, and row irregularity while preserving plausible
+    differences in tooth type, width, height, and enamel appearance.
+  - Incisal edges should become more orderly, but not mechanically identical or ruler-straight. Natural canine and lateral-incisor
+    height differences may remain.
+  - Dental arch perspective, upper-lower bite relationship, interdental shadows, gumline, lip overlap, tongue, saliva highlights,
+    and oral-cavity depth must remain physically coherent.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. A 7 requires strong visible evidence after failure propagation;
+    8 requires near-exact source-preserving success; 9 is rare.
+  no_cross_compensation: Do not raise one facet because another is good. Even incisal edges cannot compensate for residual
+    rotation/crowding, and straight teeth cannot compensate for duplicated/deleted teeth, changed smile, identity drift, or
+    lost oral depth.
+  teeth_alignment_disambiguation_rule: Teeth alignment means natural correction of visible tooth rotation, tilt, crowding,
+    overlap, spacing, or row continuity. It is not whitening, veneer replacement, tooth reshaping, smile replacement, or generic
+    facial beautification.
+  visibility_rule: Judge only teeth that are visibly assessable in both source and result. Do not penalize hidden or fully
+    occluded teeth, but do penalize missed visible teeth.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited result as the same individual with the same smile. Tooth positions may improve, but mouth
+    landmarks, tooth identity, expression, age impression, skin tone, and same-person impression must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the teeth are attractive, straight, symmetrical,
+    or prompt-compliant.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Include detected failure names and severity
+      in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Visible teeth remain crooked, rotated, tilted, crowded, overlapped, discontinuous, uneven, or essentially
+          unchanged relative to the source; alignment is absent or only faintly visible.
+        severity_guidance: If the source misalignment is subtle and the candidate makes a tiny but real natural correction,
+          severity may be 1. Clear but incomplete correction should be severity 2. Mostly unchanged visible teeth must be
+          severity 3. No correction, reversed/worse alignment, or unassessable replacement must be severity 4-5. Do not classify
+          source-appropriate subtle correction as full absence.
+        affected_l3:
+          - requested_teeth_alignment_operation_match
+          - requested_visible_teeth_coverage_match
+          - requested_alignment_magnitude_match
+          - requested_dental_arch_row_continuity_match
+          - requested_tooth_rotation_tilt_correction_match
+          - requested_crowding_overlap_reduction_match
+          - requested_spacing_contact_balance_match
+          - requested_incisal_edge_evenness_match
+          - requested_alignment_visibility_finish_match
+          - requested_tooth_size_shape_count_preservation_match
+          - requested_upper_lower_bite_relationship_match
+          - teeth_alignment_edit_localized_to_visible_dentition
+          - teeth_alignment_identity_smile_landmark_consistency
+          - teeth_alignment_expression_face_scene_global_state_preserved
+          - teeth_alignment_artifact_sharpness_no_duplicate_warp
+      substitute_whitening_or_veneer_replacement:
+        detect_when: The result looks improved mainly because teeth are whitened, brightened, replaced with veneers, made
+          into uniform blocks, resized/reshaped, duplicated/deleted, or cosmetically beautified rather than naturally aligned.
+        severity_guidance: Whitening/cleanliness as a side effect may be severity 1-2 if alignment is real and source-preserving.
+          If whitening/veneers/replacement is the main visible improvement, severity 3-4. Tooth replacement, count/shape change,
+          or smile replacement must be severity 4-5.
+        affected_l3:
+          - requested_teeth_alignment_operation_match
+          - requested_visible_teeth_coverage_match
+          - requested_alignment_magnitude_match
+          - requested_dental_arch_row_continuity_match
+          - requested_tooth_rotation_tilt_correction_match
+          - requested_crowding_overlap_reduction_match
+          - requested_spacing_contact_balance_match
+          - requested_incisal_edge_evenness_match
+          - requested_tooth_size_shape_count_preservation_match
+          - requested_upper_lower_bite_relationship_match
+          - requested_alignment_visibility_finish_match
+          - teeth_alignment_tooth_gum_lip_boundary_integrity
+          - teeth_alignment_mouth_pose_arch_perspective_consistent
+          - teeth_alignment_enamel_microtexture_realistic
+          - teeth_alignment_identity_smile_landmark_consistency
+          - teeth_alignment_contact_boundary_oral_depth_consistent
+          - teeth_alignment_artifact_sharpness_no_duplicate_warp
+      dental_structure_or_oral_anatomy_broken:
+        detect_when: Tooth count, tooth size/shape, gumline, bite, oral depth, saliva/tongue occlusion, inter-tooth contacts,
+          tooth-gum-lip boundary, or dental perspective becomes impossible or visibly damaged.
+        severity_guidance: Clear oral anatomy damage must be at least severity 2. Missing/duplicated teeth, fake arch, or
+          impossible oral depth must be severity 3-5.
+        affected_l3:
+          - requested_teeth_alignment_operation_match
+          - requested_alignment_visibility_finish_match
+          - requested_tooth_size_shape_count_preservation_match
+          - requested_upper_lower_bite_relationship_match
+          - requested_pose_aware_dental_balance_match
+          - teeth_alignment_tooth_gum_lip_boundary_integrity
+          - teeth_alignment_mouth_pose_arch_perspective_consistent
+          - teeth_alignment_saliva_tongue_occlusion_consistent
+          - teeth_alignment_identity_smile_landmark_consistency
+          - teeth_alignment_enamel_microtexture_realistic
+          - teeth_alignment_contact_boundary_oral_depth_consistent
+          - teeth_alignment_artifact_sharpness_no_duplicate_warp
+      source_state_not_preserved:
+        detect_when: Lips, mouth opening, smile expression, face identity, skin texture, lighting, background, camera/framing,
+          or non-target image content changes beyond dental alignment.
+        severity_guidance: Minor local lip boundary adaptation may be severity 1. Clear mouth/expression/lip/lighting drift
+          should be severity 2-3. Identity, smile replacement, camera/framing, or broad scene change should be severity 4-5.
+        affected_l3:
+          - requested_tooth_size_shape_count_preservation_match
+          - requested_upper_lower_bite_relationship_match
+          - teeth_alignment_tooth_gum_lip_boundary_integrity
+          - teeth_alignment_mouth_pose_arch_perspective_consistent
+          - teeth_alignment_identity_smile_landmark_consistency
+          - teeth_alignment_expression_face_scene_global_state_preserved
+          - teeth_alignment_lighting_shadow_color_integration
+          - teeth_alignment_contact_boundary_oral_depth_consistent
+          - teeth_alignment_artifact_sharpness_no_duplicate_warp
+  no_compensation_rule: If alignment improvement is absent, preservation/background/photorealism must not raise edit-dependent
+    facets. If teeth are whitened, replaced, reshaped, or smile/identity changes, a prettier smile must not raise natural-alignment
+    facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  success_gate_definition: A positive sample naturally aligns the visible assessable teeth while preserving tooth count, tooth
+    identity, enamel color, gums, bite, lips, mouth pose, smile expression, and the rest of the portrait.
+  success_gate_conditions:
+    - Visible rotations, tilts, crowding, overlap, row discontinuity, and uneven incisal edges are clearly improved.
+    - Tooth count, size, shape, spacing logic, dental arch, bite relationship, gumline, and oral depth remain plausible.
+    - The result is not achieved by whitening, veneers, fake uniform blocks, tooth deletion/duplication, or smile reshaping.
+    - If the source has only subtle visible misalignment, score only concrete visible alignment improvement; unchanged teeth cannot qualify for 7-9.
+    - Lips, mouth opening, expression, identity, lighting, background, and camera state match the source.
+    - Dental boundaries, saliva/tongue/occlusion, enamel texture, and sharpness remain realistic with no significant failure
+      propagation.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, do not automatically assign 8-9 to all preservation or quality facets. Unchanged non-target
+    regions may deserve moderate-to-good preservation scores, but a failed edit should not become high reward through many
+    unrelated 9s.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  task_disambiguation_rule: Correct alignment repositions and reorients visible teeth, reduces crowding or overlap, regularizes
+    spacing and row continuity, and refines incisal-edge levels while preserving dental character. Whitening, veneers, smile
+    widening, lip reshaping, global mouth stretching, and missing-tooth generation are different operations.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+  output_values:
+    - 0.0
+    - 0.111
+    - 0.222
+    - 0.333
+    - 0.444
+    - 0.556
+    - 0.667
+    - 0.778
+    - 0.889
+    - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+  - requested_teeth_alignment_operation_match
+  - requested_visible_teeth_coverage_match
+  - requested_alignment_magnitude_match
+  - requested_dental_arch_row_continuity_match
+  - requested_tooth_rotation_tilt_correction_match
+  - requested_crowding_overlap_reduction_match
+  - requested_spacing_contact_balance_match
+  - requested_incisal_edge_evenness_match
+  - requested_tooth_size_shape_count_preservation_match
+  - requested_upper_lower_bite_relationship_match
+  - requested_pose_aware_dental_balance_match
+  - requested_alignment_visibility_finish_match
+  - teeth_alignment_edit_localized_to_visible_dentition
+  - teeth_alignment_tooth_gum_lip_boundary_integrity
+  - teeth_alignment_mouth_pose_arch_perspective_consistent
+  - teeth_alignment_saliva_tongue_occlusion_consistent
+  - teeth_alignment_identity_smile_landmark_consistency
+  - teeth_alignment_expression_face_scene_global_state_preserved
+  - teeth_alignment_enamel_microtexture_realistic
+  - teeth_alignment_lighting_shadow_color_integration
+  - teeth_alignment_contact_boundary_oral_depth_consistent
+  - teeth_alignment_artifact_sharpness_no_duplicate_warp
+compact_output_contract:
+  format:
+    scores:
+      - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_teeth_alignment_operation_match: 0.18
+    requested_visible_teeth_coverage_match: 0.08
+    requested_alignment_magnitude_match: 0.07
+    requested_dental_arch_row_continuity_match: 0.1
+    requested_tooth_rotation_tilt_correction_match: 0.1
+    requested_crowding_overlap_reduction_match: 0.1
+    requested_spacing_contact_balance_match: 0.08
+    requested_incisal_edge_evenness_match: 0.09
+    requested_tooth_size_shape_count_preservation_match: 0.08
+    requested_upper_lower_bite_relationship_match: 0.05
+    requested_pose_aware_dental_balance_match: 0.04
+    requested_alignment_visibility_finish_match: 0.03
+  Localization and Anatomical Integration:
+    teeth_alignment_edit_localized_to_visible_dentition: 0.29
+    teeth_alignment_tooth_gum_lip_boundary_integrity: 0.27
+    teeth_alignment_mouth_pose_arch_perspective_consistent: 0.24
+    teeth_alignment_saliva_tongue_occlusion_consistent: 0.2
+  Subject Preservation:
+    teeth_alignment_identity_smile_landmark_consistency: 0.8
+    teeth_alignment_expression_face_scene_global_state_preserved: 0.2
+  Task Realism and Image Quality:
+    teeth_alignment_enamel_microtexture_realistic: 0.27
+    teeth_alignment_lighting_shadow_color_integration: 0.27
+    teeth_alignment_contact_boundary_oral_depth_consistent: 0.24
+    teeth_alignment_artifact_sharpness_no_duplicate_warp: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+    - 0.0
+    - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Alignment Operation:
+      requested_teeth_alignment_operation_match:
+        title: Requested natural teeth-alignment operation match
+        definition: Judge whether the visible dentition is genuinely straightened and the tooth edges become more orderly
+          without whitening, veneer replacement, smile enlargement, lip reshaping, or other substitute operations.
+        anchors:
+          0: The requested alignment operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of dental alignment is visible.
+          2: A small relevant attempt exists, but the result is dominated by a substitute operation.
+          3: The teeth are weakly edited, but natural alignment is mostly wrong.
+          4: A recognizable attempt exists, yet a major alignment component is missing or substituted.
+          5: The operation is partially correct, with several substantial method or completeness errors.
+          6: Natural alignment is mostly correct, but one clear operation error remains.
+          7: The requested alignment is clearly achieved, with only a minor visible mismatch.
+          8: The operation is highly accurate, with only a tiny local imperfection.
+          9: All visible dentition is naturally aligned and edge-refined with no substitute operation.
+        rubric: |-
+          Judge whether the visible dentition is genuinely straightened and the tooth edges become more orderly without whitening, veneer replacement, smile enlargement, lip reshaping, or other substitute operations. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_visible_teeth_coverage_match:
+        title: Requested visible-teeth coverage match
+        definition: Judge whether all assessable misaligned visible teeth and tooth-row segments receive coherent treatment.
+          Hidden teeth are ignored, but visible untreated teeth reduce this score.
+        anchors:
+          0: Visible-tooth coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible tooth region is treated.
+          2: A small region changes, but most visible alignment targets remain untreated.
+          3: Coverage is weak and major visible teeth or row segments are missed.
+          4: The target is recognizable, but one major tooth group or side remains untreated or wrongly edited.
+          5: Coverage is partial, with several visible omissions or unnecessary edits.
+          6: Coverage is mostly complete, but one clear visible tooth or row segment remains inconsistent.
+          7: All visible alignment targets are well covered, with only a minor local miss.
+          8: Coverage is highly complete and precise, with only a tiny imperfection.
+          9: Every assessable visible alignment target is treated precisely and coherently.
+        rubric: |-
+          Judge whether all assessable misaligned visible teeth and tooth-row segments receive coherent treatment. Hidden teeth are ignored, but visible untreated teeth reduce this score. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_alignment_magnitude_match:
+        title: Requested alignment-magnitude match
+        definition: Judge whether subtle premium, noticeable, moderate-to-strong, dramatic, maximum-realistic, app-style,
+          studio, commercial, or social-media correction strength is visible without over-regularizing the smile.
+        anchors:
+          0: The requested magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible alignment change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The intensity is weakly attempted but clearly mismatched.
+          4: The correction is recognizable, but the amount has a major mismatch.
+          5: The magnitude is partially appropriate, with several visible intensity problems.
+          6: The amount is mostly correct, but one clear under- or over-correction remains.
+          7: The requested strength is clearly achieved, with only a minor mismatch.
+          8: The intensity is highly accurate, with only a tiny excess or residual.
+          9: The alignment strength is exactly visible enough, source-appropriate, and believable.
+        rubric: |-
+          Judge whether subtle premium, noticeable, moderate-to-strong, dramatic, maximum-realistic, app-style, studio, commercial, or social-media correction strength is visible without over-regularizing the smile. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_dental_arch_row_continuity_match:
+        title: Requested dental-arch and tooth-row continuity match
+        definition: Judge whether visible tooth centers and contours follow a coherent dental-arch path without sudden steps,
+          isolated offsets, flat pasted rows, or perspective-inconsistent placement.
+        anchors:
+          0: Dental-row continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of a coherent row remains.
+          2: The row is severely broken, stepped, flat, or anatomically implausible.
+          3: Continuity is weakly improved and major row irregularities remain.
+          4: The row is recognizable, but a major arch break, offset, or perspective mismatch remains.
+          5: Continuity is partial, with several substantial row-placement problems.
+          6: The dental row is mostly coherent, but one clear step or arch inconsistency remains.
+          7: Row continuity is strong and natural, with only a minor mismatch.
+          8: The dental arch is highly accurate, with only a tiny local imperfection.
+          9: All visible teeth follow a smooth, anatomically plausible, pose-consistent dental arch.
+        rubric: |-
+          Judge whether visible tooth centers and contours follow a coherent dental-arch path without sudden steps, isolated offsets, flat pasted rows, or perspective-inconsistent placement. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_tooth_rotation_tilt_correction_match:
+        title: Requested tooth rotation and tilt correction match
+        definition: Judge correction of visible turned, angled, leaning, or twisted teeth while preserving plausible crown
+          orientation and avoiding mechanically identical frontal-facing teeth.
+        anchors:
+          0: Rotations and tilts are unchanged, worse, reversed, unrelated, or unusable.
+          1: Only a negligible correction of visible orientation is present.
+          2: A small attempt exists, but dominant rotations or tilts remain.
+          3: Orientation correction is weak and largely ineffective.
+          4: The teeth look somewhat straighter, but a major rotated, tilted, or falsely reoriented tooth remains.
+          5: Correction is partial, with several substantial orientation problems.
+          6: Rotations and tilts are mostly corrected, but one clear issue remains.
+          7: Tooth orientations are strong and natural, with only a minor mismatch.
+          8: Correction is highly accurate, with only a tiny local imperfection.
+          9: All assessable visible rotations and tilts are naturally corrected with tooth-specific orientation preserved.
+        rubric: |-
+          Judge correction of visible turned, angled, leaning, or twisted teeth while preserving plausible crown orientation and avoiding mechanically identical frontal-facing teeth. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_crowding_overlap_reduction_match:
+        title: Requested crowding and overlap reduction match
+        definition: Judge reduction of visible tooth overlap, stacking, crowding, and irregular foreground-background ordering
+          while maintaining plausible dental contacts and arch depth.
+        anchors:
+          0: Crowding or overlap is unchanged, worse, reversed, unrelated, or unusable.
+          1: Only a negligible reduction of crowding is visible.
+          2: A small attempt exists, but severe overlap remains dominant.
+          3: Crowding reduction is weak and largely ineffective.
+          4: The row is somewhat cleaner, but a major overlap, stacking, or depth-order error remains.
+          5: Reduction is partial, with several substantial residual or over-separation problems.
+          6: Crowding is mostly reduced, but one clear overlap or ordering issue remains.
+          7: Crowding and overlap are clearly improved, with only a minor mismatch.
+          8: Reduction is highly accurate, with only a tiny local residual.
+          9: Visible crowding and overlap are naturally resolved while preserving believable contacts and depth.
+        rubric: |-
+          Judge reduction of visible tooth overlap, stacking, crowding, and irregular foreground-background ordering while maintaining plausible dental contacts and arch depth. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+    Spacing, Edges, Geometry, and Finish:
+      requested_spacing_contact_balance_match:
+        title: Requested spacing and contact balance match
+        definition: Judge whether excessive visible gaps and compressed contacts are regularized without closing every natural
+          gap, creating new spaces, or merging adjacent teeth.
+        anchors:
+          0: Spacing and contacts are absent, reversed, severely wrong, or unusable.
+          1: Only a negligible improvement in spacing is visible.
+          2: Large gaps, merged contacts, or severe new spacing errors dominate.
+          3: Spacing is weakly corrected and major contact problems remain.
+          4: The row is recognizable, but a major gap, merged contact, or over-closure remains.
+          5: Spacing balance is partial, with several substantial inconsistencies.
+          6: Spacing is mostly correct, but one clear gap or contact issue remains.
+          7: Spacing and contacts are natural, with only a minor mismatch.
+          8: Balance is highly accurate, with only a tiny local imperfection.
+          9: All visible gaps and contacts are naturally regularized while preserving individual tooth separation.
+        rubric: |-
+          Judge whether excessive visible gaps and compressed contacts are regularized without closing every natural gap, creating new spaces, or merging adjacent teeth. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_incisal_edge_evenness_match:
+        title: Requested incisal-edge evenness match
+        definition: Judge whether visible tooth edges become cleaner and more orderly while preserving natural tooth-type
+          differences, edge curvature, canine prominence, and non-mechanical variation.
+        anchors:
+          0: Edge evenness is absent, reversed, severely wrong, or unusable.
+          1: Only a negligible improvement in visible tooth edges is present.
+          2: Edges remain severely jagged or become unnaturally ruler-straight.
+          3: Edge refinement is weak and major irregularity or flattening remains.
+          4: The edges are somewhat cleaner, but a major height, contour, or mechanical-uniformity error remains.
+          5: Evenness is partial, with several substantial edge-shape problems.
+          6: The incisal line is mostly orderly, but one clear height or contour issue remains.
+          7: Tooth edges are strong and natural, with only a minor mismatch.
+          8: Edge levels are highly accurate, with only a tiny local imperfection.
+          9: Visible incisal edges are naturally even, tooth-specific, smooth, and fully believable.
+        rubric: |-
+          Judge whether visible tooth edges become cleaner and more orderly while preserving natural tooth-type differences, edge curvature, canine prominence, and non-mechanical variation. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_tooth_size_shape_count_preservation_match:
+        title: Requested tooth size, shape, and count preservation match
+        definition: Preserve visible tooth count and source-specific crown width, height, contour, tooth type, and individual
+          character. Alignment must not become generic veneer replacement.
+        anchors:
+          0: Tooth size, shape, or count is severely changed, replaced, or unusable.
+          1: Only a negligible amount of source dental geometry remains.
+          2: Major tooth deletion, generation, duplication, merging, resizing, or veneer replacement is visible.
+          3: Preservation is weak and clear dental-geometry replacement remains.
+          4: The smile is recognizable, but a major tooth count, width, height, or shape mismatch remains.
+          5: Preservation is partial, with several visible geometry differences.
+          6: Tooth geometry is mostly preserved, but one clear change remains.
+          7: Size, shape, and count preservation are strong, with only a minor discrepancy.
+          8: The dentition is nearly source-identical in tooth identity and geometry, with only a tiny difference.
+          9: Visible tooth count, tooth types, crown sizes, contours, and individual dental character remain source-consistent.
+        rubric: |-
+          Preserve visible tooth count and source-specific crown width, height, contour, tooth type, and individual character. Alignment must not become generic veneer replacement. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_upper_lower_bite_relationship_match:
+        title: Requested upper-lower bite and row relationship match
+        definition: Judge preservation of upper-versus-lower row overlap, vertical and horizontal bite relation, tooth-row
+          depth, mouth opening, and visible occlusal ordering.
+        anchors:
+          0: The bite relationship is absent, reversed, severely wrong, or unusable.
+          1: Only a negligible trace of source-consistent upper-lower relation remains.
+          2: The tooth rows have severe overlap, depth, bite, or mouth-opening contradictions.
+          3: Bite preservation is weak and major row-relation errors remain.
+          4: The smile is recognizable, but a major upper-lower overlap or depth mismatch remains.
+          5: Bite preservation is partial, with several substantial inconsistencies.
+          6: The upper-lower relation is mostly correct, but one clear issue remains.
+          7: Bite and row depth are strong, with only a minor mismatch.
+          8: The relationship is highly accurate, with only a tiny local imperfection.
+          9: Upper and lower rows retain a fully natural, source-consistent bite, overlap, depth, and mouth-opening relationship.
+        rubric: |-
+          Judge preservation of upper-versus-lower row overlap, vertical and horizontal bite relation, tooth-row depth, mouth opening, and visible occlusal ordering. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_pose_aware_dental_balance_match:
+        title: Requested pose-aware dental balance match
+        definition: Judge left-right row balance, visible tooth widths, near-side and far-side scaling, smile slant, head
+          rotation, lens perspective, and source-supported asymmetry rather than raw mirror symmetry.
+        anchors:
+          0: Pose-aware dental balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct balance remains.
+          2: Severe artificial symmetry, one-sided correction, or perspective conflict dominates.
+          3: Balance is weakly attempted and major side-to-side errors remain.
+          4: The alignment is recognizable, but a major smile-axis, width, or perspective mismatch remains.
+          5: Balance is partial, with several substantial bilateral inconsistencies.
+          6: Pose-aware balance is mostly correct, but one clear side or perspective issue remains.
+          7: Dental balance is strong and natural, with only a minor mismatch.
+          8: Balance is highly accurate, with only a tiny local imperfection.
+          9: The aligned dentition fully respects smile slant, head pose, perspective, and natural asymmetry.
+        rubric: |-
+          Judge left-right row balance, visible tooth widths, near-side and far-side scaling, smile slant, head rotation, lens perspective, and source-supported asymmetry rather than raw mirror symmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_alignment_visibility_finish_match:
+        title: Requested normal-view visibility and alignment-finish match
+        definition: Judge whether straighter teeth and more even edges are easy to notice at normal portrait size and match
+          the requested premium, app-style, studio, editorial, commercial, social-media, polished, or high-fashion finish.
+        anchors:
+          0: The requested visibility and finish are absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible alignment improvement is present.
+          2: A small relevant trace exists, but the result is severely too weak, excessive, or artificial.
+          3: The finish is weakly attempted and remains clearly mismatched.
+          4: The alignment is recognizable, but a major visibility or naturalness problem remains.
+          5: Visibility and finish are partially achieved, with several substantial issues.
+          6: The result is mostly correct, but one clear visibility or finish issue remains.
+          7: The requested presentation is strong, with only a minor mismatch.
+          8: Visibility and naturalness are highly accurate, with only a tiny local issue.
+          9: The alignment is clearly visible, fully believable, photorealistic, and seamlessly finished.
+        rubric: |-
+          Judge whether straighter teeth and more even edges are easy to notice at normal portrait size and match the requested premium, app-style, studio, editorial, commercial, social-media, polished, or high-fashion finish. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Dental Placement and Oral Anatomy:
+      teeth_alignment_edit_localized_to_visible_dentition:
+        title: Alignment editing is localized to visible dentition
+        definition: Keep geometric changes within visible teeth and minimum gum, lip, tongue, and oral-cavity blending zones.
+          Avoid broad mouth, lip, gum, face, skin, or scene modification.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: A small relevant attempt exists, but large non-dental regions are altered.
+          3: Localization is weak and major gum, lip, tongue, mouth, or facial spill remains.
+          4: The dental target is recognizable, but one major non-target oral or facial region is changed.
+          5: Localization is partial, with several substantial spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed dental region remains.
+          7: The edit is well localized, with only a minor local spill.
+          8: Localization is highly accurate, with only a tiny imperfection.
+          9: Geometric editing is precisely confined to visible teeth and minimum natural oral blending zones.
+        rubric: |-
+          Keep geometric changes within visible teeth and minimum gum, lip, tongue, and oral-cavity blending zones. Avoid broad mouth, lip, gum, face, skin, or scene modification. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_tooth_gum_lip_boundary_integrity:
+        title: Tooth, gum, and lip boundary integrity
+        definition: Judge crown edges, gumline, lip-to-tooth contact, mouth corners, partially occluded teeth, and anti-aliased
+          boundaries after tooth repositioning and edge refinement.
+        anchors:
+          0: Boundary integrity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct oral boundaries remains.
+          2: Tooth, gum, or lip boundaries are severely erased, merged, leaking, or displaced.
+          3: Integrity is weakly preserved and major edge failures remain.
+          4: The mouth is recognizable, but a major cutout, gumline, lip-contact, or occlusion error remains.
+          5: Boundary integrity is partial, with several substantial visible problems.
+          6: Boundaries are mostly correct, but one clear tooth-gum or tooth-lip issue remains.
+          7: Boundary integrity is strong, with only a minor mismatch.
+          8: The oral boundaries are highly accurate, with only a tiny local imperfection.
+          9: All tooth, gum, lip, and occlusion boundaries remain precise, naturally anti-aliased, and physically coherent.
+        rubric: |-
+          Judge crown edges, gumline, lip-to-tooth contact, mouth corners, partially occluded teeth, and anti-aliased boundaries after tooth repositioning and edge refinement. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_mouth_pose_arch_perspective_consistent:
+        title: Mouth pose, dental-arch perspective, and depth are consistent
+        definition: Judge head rotation, smile angle, tooth-row curvature, near-to-far tooth scaling, foreshortening, bite
+          depth, and mouth opening after alignment.
+        anchors:
+          0: Mouth pose and dental perspective are absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of source-consistent perspective remains.
+          2: The dental arch or mouth has severe pose, width, depth, or perspective contradictions.
+          3: Consistency is weakly attempted and major spatial errors remain.
+          4: The smile is recognizable, but a major arch, foreshortening, row-depth, or mouth-pose mismatch remains.
+          5: Consistency is partial, with several substantial perspective problems.
+          6: Mouth pose and dental depth are mostly correct, but one clear spatial issue remains.
+          7: Perspective and depth are strong, with only a minor mismatch.
+          8: The spatial relationship is highly accurate, with only a tiny local imperfection.
+          9: Dental-arch curvature, tooth scaling, smile angle, mouth opening, and row depth remain fully pose-consistent.
+        rubric: |-
+          Judge head rotation, smile angle, tooth-row curvature, near-to-far tooth scaling, foreshortening, bite depth, and mouth opening after alignment. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_saliva_tongue_occlusion_consistent:
+        title: Saliva, tongue, lip, and dental occlusion integration is consistent
+        definition: Judge saliva highlights, wetness, tongue overlap, lip overlap, braces or dental attachments when present,
+          tooth-to-tooth contacts, and front-back layering after dental movement.
+        anchors:
+          0: Local reflection and occlusion integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct wetness or layering remains.
+          2: Saliva, tongue, lips, dental attachments, or tooth overlaps are severely erased or wrong.
+          3: Integration is weakly attempted and major reflection or occlusion errors remain.
+          4: The relationships are recognizable, but a major overlap, wetness, attachment, or layering error remains.
+          5: Integration is partial, with several substantial local problems.
+          6: Integration is mostly correct, but one clear reflection or occlusion issue remains.
+          7: Wetness, tongue, lip, and dental-occlusion integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All saliva, tongue, lip, attachment, tooth-contact, and front-back relationships remain physically coherent.
+        rubric: |-
+          Judge saliva highlights, wetness, tongue overlap, lip overlap, braces or dental attachments when present, tooth-to-tooth contacts, and front-back layering after dental movement. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      teeth_alignment_identity_smile_landmark_consistency:
+        title: Facial identity and smile-landmark geometry are preserved
+        definition: Compare source and result as the same individual with the same smile. Judge mouth width, lip geometry,
+          mouth corners, tooth display, tooth identity, nose-to-mouth relation, chin, cheeks, age impression, skin tone, stable
+          marks, and same-person impression. Only necessary visible tooth alignment and edge refinement may change.
+        anchors:
+          0: The edited subject or smile is effectively different, severely distorted, or unusable.
+          1: Identity and smile correspondence are extremely weak; defining landmarks are replaced.
+          2: Major identity or smile drift affects several defining facial or dental regions.
+          3: Substantial drift is visible; the person or smile remains only loosely related to the source.
+          4: The same general subject is suggested, but the face or smile gives a clear changed-person impression.
+          5: The person remains recognizable, but multiple mouth, dental, age, or facial landmarks drift.
+          6: The same person and smile are mostly preserved, but one clear identity-affecting change remains.
+          7: Identity and smile preservation are strong, with only a minor visible drift.
+          8: The face and smile are nearly source-identical apart from alignment, with only a tiny discrepancy.
+          9: The same identity, smile geometry, dental character, age impression, and facial landmarks remain source-consistent
+            apart from necessary tooth alignment.
+        rubric: |-
+          Compare source and result as the same individual with the same smile. Judge mouth width, lip geometry, mouth corners, tooth display, tooth identity, nose-to-mouth relation, chin, cheeks, age impression, skin tone, stable marks, and same-person impression. Only necessary visible tooth alignment and edge refinement may change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_expression_face_scene_global_state_preserved:
+        title: Expression, face, enamel color, scene, camera, and global state are preserved
+        definition: Preserve expression, gaze, mouth opening, lips, tooth color, gums, tongue, cheeks, chin, eyes, brows,
+          nose, ears, hair, facial hair, skin, clothing, background, white balance, exposure, contrast, lighting, crop, camera
+          angle, composition, aspect ratio, and resolution.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are clearly inconsistent with the source.
+          2: Several major changes affect expression, face, oral color, scene, camera, or global image state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image remains recognizable, but a clear important non-target mismatch remains.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Expression, face, oral color, scene, camera, and global state are nearly source-identical, with only a tiny discrepancy.
+          9: All non-target subject, oral-color, scene, camera, lighting, composition, and resolution properties remain source-consistent.
+        rubric: |-
+          Preserve expression, gaze, mouth opening, lips, tooth color, gums, tongue, cheeks, chin, eyes, brows, nose, ears, hair, facial hair, skin, clothing, background, white balance, exposure, contrast, lighting, crop, camera angle, composition, aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Dental Rendering Quality:
+      teeth_alignment_enamel_microtexture_realistic:
+        title: Enamel surface and microtexture are realistic
+        definition: Judge enamel surface variation, fine texture, edge softness, incisal detail, highlights, source focus,
+          sensor grain, compression, and resolution after tooth movement and contour reconstruction.
+        anchors:
+          0: Enamel realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic tooth detail remains.
+          2: The teeth are severely plastic, painted, blurred, repeated, or synthetic.
+          3: Realism is weakly attempted and major enamel-detail damage remains.
+          4: The teeth are recognizable, but a major blur, smoothing, texture, edge, or highlight error remains.
+          5: Realism is partial, with several substantial visible problems.
+          6: Enamel detail is mostly realistic, but one clear texture or focus issue remains.
+          7: Enamel realism is strong, with only a minor mismatch.
+          8: Detail is highly realistic, with only a tiny local imperfection.
+          9: Enamel surface variation, edge detail, highlights, focus, grain, and resolution are fully photorealistic and
+            source-consistent.
+        rubric: |-
+          Judge enamel surface variation, fine texture, edge softness, incisal detail, highlights, source focus, sensor grain, compression, and resolution after tooth movement and contour reconstruction. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_lighting_shadow_color_integration:
+        title: Dental lighting, shadows, and color integrate with the source
+        definition: Judge enamel highlights, curved-surface shading, interdental shadows, gum and lip shadows, oral depth,
+          tooth color, scene white balance, and local illumination after alignment.
+        anchors:
+          0: Lighting, shadow, and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct dental illumination remains.
+          2: Enamel shadows, highlights, or color are severely false or inconsistent.
+          3: Integration is weakly attempted and major lighting or color errors remain.
+          4: The teeth are recognizable, but a major false highlight, halo, flat patch, or color mismatch remains.
+          5: Integration is partial, with several substantial shadow or color problems.
+          6: Lighting and color are mostly correct, but one clear local issue remains.
+          7: Dental lighting, shadows, and color are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All enamel highlights, tooth shadows, oral depth, and color perfectly match the source lighting and white balance.
+        rubric: |-
+          Judge enamel highlights, curved-surface shading, interdental shadows, gum and lip shadows, oral depth, tooth color, scene white balance, and local illumination after alignment. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_contact_boundary_oral_depth_consistent:
+        title: Dental contacts, boundaries, and oral depth are consistent
+        definition: Judge individual tooth contacts, interdental gaps, incisal separations, gum emergence, lip contact, dark
+          oral spaces, posterior depth, tongue overlap, and mouth-corner containment after alignment.
+        anchors:
+          0: Contact, boundary, and oral-depth consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct dental separation or depth remains.
+          2: Major merged teeth, impossible gaps, leakage, floating crowns, or flattened oral depth are visible.
+          3: Consistency is weakly attempted and major oral-boundary errors remain.
+          4: The mouth is recognizable, but a major contact, gap, floating-tooth, or depth error remains.
+          5: Consistency is partial, with several substantial visible problems.
+          6: Contacts and oral depth are mostly correct, but one clear layering or separation issue remains.
+          7: Dental contact and oral-depth consistency are strong, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All tooth contacts, gaps, gum emergence, lip boundaries, oral shadows, and depth relationships are seamless and
+            physically coherent.
+        rubric: |-
+          Judge individual tooth contacts, interdental gaps, incisal separations, gum emergence, lip contact, dark oral spaces, posterior depth, tongue overlap, and mouth-corner containment after alignment. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_alignment_artifact_sharpness_no_duplicate_warp:
+        title: Artifact control, source sharpness, and absence of duplication or warp
+        definition: Judge halos, jagged tooth edges, blur, over-sharpening, duplicated teeth, missing teeth, clone patterns,
+          broken teeth, mask seams, warped lips or gums, stretched mouth, facial distortion, and background deformation.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: Severe duplication, deletion, warping, masking, blur, or broken dental anatomy dominates.
+          3: Artifact control is weakly achieved and major defects remain.
+          4: The result is recognizable, but a major duplicate tooth, missing tooth, warp, mask, break, or sharpness mismatch
+            remains.
+          5: Quality is partial, with several substantial visible artifacts.
+          6: The result is mostly clean, but one clear artifact or sharpness issue remains.
+          7: Artifact control is strong, with only a minor visible defect.
+          8: The result is nearly artifact-free, with only a tiny local imperfection.
+          9: The edited image is source-sharp, seamless, and free of duplicated, missing, merged, broken, warped, masked,
+            or background-deforming content.
+        rubric: |-
+          Judge halos, jagged tooth edges, blur, over-sharpening, duplicated teeth, missing teeth, clone patterns, broken teeth, mask seams, warped lips or gums, stretched mouth, facial distortion, and background deformation. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful dental alignment from hiding changed smile geometry, tooth identity, facial identity, expression,
+    camera, or background drift. Identity is judged by source-to-result correspondence, not by dental perfection.
+  comparison_checklist:
+    - mouth width, mouth corners, lip shape, lip thickness, and mouth opening
+    - visible tooth count, tooth identity, crown size, shape, type, color, and incisal character
+    - tooth-row display, upper-lower bite, gumline, tongue position, and smile asymmetry
+    - nose-to-mouth, mouth-to-chin, cheek, and jaw relationships
+    - eye shape, gaze, brows, expression, and head pose
+    - age impression, skin tone, stable marks, makeup, facial hair, and facial texture
+    - hair, hairstyle, clothing, accessories, and body pose
+    - background hue, texture, brightness, contrast, white balance, and composition
+    - camera angle, crop, framing, lighting, aspect ratio, and resolution
+    - overall same-person and same-smile impression at normal viewing size
+  strict_rules:
+    - Do not increase identity because the teeth are attractive, straight, symmetrical, or prompt-compliant.
+    - Do not treat a photorealistic but different-looking smile or person as identity-preserved.
+    - A score of 7 still requires a strong same-person and same-smile match with only minor drift.
+    - A changed-person or replaced-smile impression must score 4 or below on the dedicated identity facet.
+    - Only necessary visible tooth positions, orientations, contacts, and incisal-edge contours may change.
+    - Alignment correctness, tooth identity, bite, smile, facial identity, expression, background, camera state, and rendering
+      quality are independent.
+  task_specific_exception: only visible tooth positioning, rotation, tilt, overlap, spacing, dental-row continuity, incisal-edge
+    refinement, and the minimum gum, lip, tongue, and oral-cavity reconstruction zones required for natural alignment

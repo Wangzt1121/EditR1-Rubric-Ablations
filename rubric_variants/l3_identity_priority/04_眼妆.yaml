@@ -1,0 +1,896 @@
+task_key: eye_makeup_edit
+task_title: Eye Makeup Editing
+task_title_zh: 眼妆编辑
+version: v35_fixed_22_l3_eye_makeup_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority
+target_region: upper eyelids, creases, outer and inner corners, lower eyelids, aegyo-sal, lash lines, lashes, shimmer, and
+  eye-area decorations
+target_action_summary: Create the requested eye-makeup style, palette, layout, optical effect, component details, and finish
+  without changing eye anatomy.
+judge_role: You are a strict expert evaluator specializing in eye-makeup editing, eye-area cosmetic structure, and human
+  eye-anatomy preservation. Judge the edited image against the exact requested eye-makeup style, components, layout, color,
+  finish, and optical effect, not against generic beauty, attractiveness, or realism.
+judge_instructions: |
+  - First infer the exact requested eye-makeup family and components from the prompt, such as natural/nude makeup, smoky
+    eye, cut crease, cat-eye, fox-eye, rounded/doll-eye effect, bridal eye makeup, gothic eye makeup, glitter/shimmer makeup,
+    eyeliner-only editing, lash/mascara editing, lower-lid makeup, aegyo-sal makeup, eye-area decoration, or makeup removal.
+
+  - Treat these families and components as mutually distinct unless the prompt explicitly allows alternatives. A realistic
+    substitute style must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong eye-makeup family,
+    wrong palette, wrong layout map, wrong eyeliner/lash component, wrong finish, missing shimmer/decorations, or extra
+    unrequested makeup.
+
+  - Optical enlargement, lifting, elongation, rounding, de-puffing, or deepening must be created by makeup placement alone.
+    If the eye shape, iris, gaze direction, eyelid fold, brow shape, or facial landmarks are anatomically changed, lower the
+    relevant Subject Preservation and anatomical integration scores.
+
+  - For eyeliner-only, lash-only, shimmer-only, or eyeshadow-only requests, extra unrequested components are major prompt
+    and localization errors, not harmless improvements.
+
+  - For natural, nude, subtle, or clean-eye requests, preserve skin texture, eyelid folds, and original softness. Overly
+    dramatic pigment, heavy glitter, smoky shadows, or thick eyeliner should score low on Prompt Compliance.
+
+  - For smoky, cut-crease, cat-eye, fox-eye, aegyo-sal, lower-lid, glitter, or decoration requests, explicitly check the
+    defining placement, boundaries, component completeness, and symmetry relative to head pose.
+
+  - Preserve the source person's identity, eye size, gaze, eyelid crease, brow shape, lashes, under-eye skin, skin texture,
+    background color, global white balance, lighting contrast, saturation, and all non-target regions independently from
+    target eye-makeup quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong makeup family, wrong color palette,
+    wrong region layout, missing eyeliner/lashes/shimmer/decoration, extra unrequested makeup, identity drift, eye-shape or
+    gaze change, brow or mouth change, background color or lighting shift, blur, smoothing, muddy pigment, edge bleeding,
+    mask-like artifacts, or texture loss.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a
+    minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested eye-makeup family or primary component is wrong, all family/component-related Prompt Compliance facets
+    should normally be 0-5.
+
+  - If the result is realistic but the requested eye-makeup family, palette, layout, or finish is wrong, do not score Prompt
+    Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should
+    be 0-6.
+
+  - If the face identity, eye anatomy, gaze, eyelid crease, brow shape, or adjacent facial structure changes visibly, Subject
+    Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked
+    preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but
+    visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is
+    a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant
+    trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add extra rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial identity must remain one dedicated, high-impact L3 facet rather than being diluted across easy preservation checks.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for facial
+    identity drift, eye-anatomy drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the requested eye-makeup family and component set from the prompt, then judge every candidate against that
+  exact family rather than against generic plausibility.
+- A realistic but wrong eye-makeup family must score low. Eyeliner-only is not smoky eye; nude makeup is not glitter makeup;
+  cat-eye is not rounded doll-eye; a cut crease is not generic eyeshadow; lash-only editing must not receive credit for adding
+  heavy shadow.
+- If the primary requested family is replaced by another family, requested_eye_makeup_style_match should be 0-3 even when
+  the result is photorealistic.
+- If the family is related but the subtype is wrong, such as fox-eye vs cat-eye, soft smoky vs heavy smoky, nude shimmer vs
+  glitter, or lower-lid/aegyo-sal vs ordinary eyeshadow, requested_eye_makeup_style_match should normally be 4-5.
+- Do not interpret accidental blur, smudging, over-smoothing, or muddy pigment as intentional soft-focus blending.
+- Judge bilateral balance and symmetry relative to head pose rather than raw mirror symmetry.
+- Optical enlargement, lifting, lowering, or de-puffing must be created by makeup rather than anatomical eye reshaping.
+- Soft-focus means smooth pigment blending, not blurred iris, lashes, skin, or eyelid folds.
+- A beautiful but semantically different eye look must score low.
+- Decorations are judged only when explicitly requested, but the fixed facet then evaluates correct absence/preservation otherwise.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is good. A correct color cannot compensate for wrong
+    geometry, and realistic rendering cannot compensate for a missing requested component.
+  eye_makeup_family_disambiguation_rule: Treat each eye-makeup family and component set as distinct unless the prompt explicitly
+    allows alternatives. Natural/nude, smoky, cut crease, cat-eye, fox-eye, rounded/doll-eye, bridal, gothic, glitter/shimmer,
+    eyeliner-only, lash/mascara-only, lower-lid, aegyo-sal, decoration, and removal/clean-eye edits must not substitute for
+    each other.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited face against the source as the same individual. A plausible or attractive face is not
+    sufficient. Visible drift in landmark geometry, feature spacing, face outline, age impression, gender presentation, or
+    characteristic details must lower the identity score.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct eye-makeup edit cannot compensate for visible background recoloring, global color
+    cast, exposure drift, or contrast changes.
+  anti_template_rule: Do not default to all 7s or mostly 7s. If visible defects exist, assign lower scores to the affected
+    facets and use the full 0-9 scale.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Eye Makeup Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Create the requested eye-makeup style, palette, layout, optical effect, component details, and finish
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_eye_makeup_style_match
+          - requested_eye_makeup_visual_effect_match
+          - requested_eye_makeup_palette_match
+          - requested_eyeshadow_region_layout_match
+          - requested_eyeshadow_layer_gradient_depth_match
+          - requested_eyeshadow_blending_edge_match
+          - requested_eye_makeup_eyeliner_component_match
+          - requested_eye_makeup_lash_mascara_match
+          - requested_eye_makeup_shimmer_highlight_match
+          - requested_eye_makeup_decoration_match
+          - requested_eye_makeup_finish_intensity_adaptation_match
+          - unrequested_eye_makeup_properties_preserved
+          - eye_makeup_edit_localized_to_eye_regions
+          - eye_makeup_eyelid_crease_lashline_integration
+          - eye_makeup_pose_aware_bilateral_correspondence
+          - eye_makeup_skin_boundary_clean
+          - eye_makeup_facial_identity_landmark_consistency
+          - eye_makeup_eye_anatomy_gaze_brows_adjacent_face_preserved
+          - eye_makeup_material_particles_realistic
+          - eye_makeup_skin_texture_lighting_preserved
+          - eye_makeup_lashes_liner_structure_coherent
+          - eye_makeup_artifact_sharpness_no_muddy_blur
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Eye Makeup Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on upper eyelids, creases, outer and inner corners, lower eyelids, aegyo-sal, lash lines, lashes, shimmer, and.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_eye_makeup_style_match
+          - requested_eye_makeup_visual_effect_match
+          - requested_eye_makeup_palette_match
+          - requested_eyeshadow_region_layout_match
+          - requested_eyeshadow_layer_gradient_depth_match
+          - requested_eyeshadow_blending_edge_match
+          - requested_eye_makeup_eyeliner_component_match
+          - requested_eye_makeup_lash_mascara_match
+          - requested_eye_makeup_shimmer_highlight_match
+          - requested_eye_makeup_decoration_match
+          - requested_eye_makeup_finish_intensity_adaptation_match
+          - unrequested_eye_makeup_properties_preserved
+          - eye_makeup_edit_localized_to_eye_regions
+          - eye_makeup_eyelid_crease_lashline_integration
+          - eye_makeup_pose_aware_bilateral_correspondence
+          - eye_makeup_skin_boundary_clean
+          - eye_makeup_facial_identity_landmark_consistency
+          - eye_makeup_eye_anatomy_gaze_brows_adjacent_face_preserved
+          - eye_makeup_artifact_sharpness_no_muddy_blur
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_eye_makeup_visual_effect_match
+          - requested_eye_makeup_palette_match
+          - requested_eyeshadow_region_layout_match
+          - requested_eyeshadow_layer_gradient_depth_match
+          - requested_eyeshadow_blending_edge_match
+          - requested_eye_makeup_eyeliner_component_match
+          - requested_eye_makeup_lash_mascara_match
+          - requested_eye_makeup_shimmer_highlight_match
+          - requested_eye_makeup_decoration_match
+          - requested_eye_makeup_finish_intensity_adaptation_match
+          - unrequested_eye_makeup_properties_preserved
+          - eye_makeup_edit_localized_to_eye_regions
+          - eye_makeup_eyelid_crease_lashline_integration
+          - eye_makeup_pose_aware_bilateral_correspondence
+          - eye_makeup_skin_boundary_clean
+          - eye_makeup_material_particles_realistic
+          - eye_makeup_skin_texture_lighting_preserved
+          - eye_makeup_lashes_liner_structure_coherent
+          - eye_makeup_artifact_sharpness_no_muddy_blur
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of upper eyelids, creases, outer and inner corners, lower eyelids, aegyo-sal, lash lines, lashes, shimmer, and, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_eye_makeup_palette_match
+          - requested_eyeshadow_region_layout_match
+          - requested_eyeshadow_layer_gradient_depth_match
+          - requested_eyeshadow_blending_edge_match
+          - requested_eye_makeup_eyeliner_component_match
+          - requested_eye_makeup_lash_mascara_match
+          - requested_eye_makeup_shimmer_highlight_match
+          - requested_eye_makeup_decoration_match
+          - requested_eye_makeup_finish_intensity_adaptation_match
+          - unrequested_eye_makeup_properties_preserved
+          - eye_makeup_edit_localized_to_eye_regions
+          - eye_makeup_eyelid_crease_lashline_integration
+          - eye_makeup_pose_aware_bilateral_correspondence
+          - eye_makeup_skin_boundary_clean
+          - eye_makeup_material_particles_realistic
+          - eye_makeup_skin_texture_lighting_preserved
+          - eye_makeup_lashes_liner_structure_coherent
+          - eye_makeup_artifact_sharpness_no_muddy_blur
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_eye_makeup_style_match
+          - requested_eye_makeup_visual_effect_match
+          - requested_eye_makeup_palette_match
+          - requested_eyeshadow_region_layout_match
+          - requested_eyeshadow_layer_gradient_depth_match
+          - requested_eyeshadow_blending_edge_match
+          - requested_eye_makeup_eyeliner_component_match
+          - requested_eye_makeup_lash_mascara_match
+          - requested_eye_makeup_shimmer_highlight_match
+          - requested_eye_makeup_decoration_match
+          - requested_eye_makeup_finish_intensity_adaptation_match
+          - unrequested_eye_makeup_properties_preserved
+          - eye_makeup_edit_localized_to_eye_regions
+          - eye_makeup_eyelid_crease_lashline_integration
+          - eye_makeup_pose_aware_bilateral_correspondence
+          - eye_makeup_skin_boundary_clean
+          - eye_makeup_facial_identity_landmark_consistency
+          - eye_makeup_eye_anatomy_gaze_brows_adjacent_face_preserved
+          - eye_makeup_material_particles_realistic
+          - eye_makeup_skin_texture_lighting_preserved
+          - eye_makeup_lashes_liner_structure_coherent
+          - eye_makeup_artifact_sharpness_no_muddy_blur
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - eye_makeup_edit_localized_to_eye_regions
+          - eye_makeup_eyelid_crease_lashline_integration
+          - eye_makeup_pose_aware_bilateral_correspondence
+          - eye_makeup_skin_boundary_clean
+          - eye_makeup_material_particles_realistic
+          - eye_makeup_skin_texture_lighting_preserved
+          - eye_makeup_lashes_liner_structure_coherent
+          - eye_makeup_artifact_sharpness_no_muddy_blur
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_eye_makeup_style_match
+- requested_eye_makeup_visual_effect_match
+- requested_eye_makeup_palette_match
+- requested_eyeshadow_region_layout_match
+- requested_eyeshadow_layer_gradient_depth_match
+- requested_eyeshadow_blending_edge_match
+- requested_eye_makeup_eyeliner_component_match
+- requested_eye_makeup_lash_mascara_match
+- requested_eye_makeup_shimmer_highlight_match
+- requested_eye_makeup_decoration_match
+- requested_eye_makeup_finish_intensity_adaptation_match
+- unrequested_eye_makeup_properties_preserved
+- eye_makeup_edit_localized_to_eye_regions
+- eye_makeup_eyelid_crease_lashline_integration
+- eye_makeup_pose_aware_bilateral_correspondence
+- eye_makeup_skin_boundary_clean
+- eye_makeup_facial_identity_landmark_consistency
+- eye_makeup_eye_anatomy_gaze_brows_adjacent_face_preserved
+- eye_makeup_material_particles_realistic
+- eye_makeup_skin_texture_lighting_preserved
+- eye_makeup_lashes_liner_structure_coherent
+- eye_makeup_artifact_sharpness_no_muddy_blur
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_eye_makeup_style_match: 0.11
+    requested_eye_makeup_visual_effect_match: 0.09
+    requested_eye_makeup_palette_match: 0.11
+    requested_eyeshadow_region_layout_match: 0.12
+    requested_eyeshadow_layer_gradient_depth_match: 0.11
+    requested_eyeshadow_blending_edge_match: 0.09
+    requested_eye_makeup_eyeliner_component_match: 0.08
+    requested_eye_makeup_lash_mascara_match: 0.07
+    requested_eye_makeup_shimmer_highlight_match: 0.07
+    requested_eye_makeup_decoration_match: 0.04
+    requested_eye_makeup_finish_intensity_adaptation_match: 0.07
+    unrequested_eye_makeup_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    eye_makeup_edit_localized_to_eye_regions: 0.25
+    eye_makeup_eyelid_crease_lashline_integration: 0.3
+    eye_makeup_pose_aware_bilateral_correspondence: 0.21
+    eye_makeup_skin_boundary_clean: 0.24
+  Subject Preservation:
+    eye_makeup_facial_identity_landmark_consistency: 0.7
+    eye_makeup_eye_anatomy_gaze_brows_adjacent_face_preserved: 0.3
+  Task Realism and Image Quality:
+    eye_makeup_material_particles_realistic: 0.27
+    eye_makeup_skin_texture_lighting_preserved: 0.25
+    eye_makeup_lashes_liner_structure_coherent: 0.25
+    eye_makeup_artifact_sharpness_no_muddy_blur: 0.23
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Style, Color, and Layout:
+      requested_eye_makeup_style_match:
+        title: Requested eye-makeup style match
+        definition: Judge exact named look or style family, such as natural, nude, smoky, cut crease, cat-eye, fox-eye, bridal,
+          retro, Y2K, gothic, cyber, mermaid, or editorial.
+        anchors:
+          0: the requested eye-makeup style is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eye-makeup style is visible; the central eye-makeup style is wrong or
+            missing.
+          2: A small relevant attempt is present, but the requested eye-makeup style is severely incorrect or incomplete.
+          3: the requested eye-makeup style is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested eye-makeup style is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested eye-makeup style is moderately achieved, with several substantial visible problems.
+          6: the requested eye-makeup style is mostly correct, but one clear and important issue remains.
+          7: the requested eye-makeup style is clearly successful, with only a minor visible mismatch.
+          8: the requested eye-makeup style is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact requested eye-makeup style and defining identity are fully realized.
+      requested_eye_makeup_visual_effect_match:
+        title: Requested optical eye effect match
+        definition: Judge makeup-created lifted, lowered, elongated, rounded, enlarged, de-puffed, deepened, or softened visual
+          effect without anatomical eye reshaping.
+        anchors:
+          0: the requested makeup-created optical effect is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested makeup-created optical effect is visible; the intended optical effect
+            is missing or achieved by changing anatomy.
+          2: A small relevant attempt is present, but the requested makeup-created optical effect is severely incorrect or
+            incomplete.
+          3: the requested makeup-created optical effect is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested makeup-created optical effect is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested makeup-created optical effect is moderately achieved, with several substantial visible problems.
+          6: the requested makeup-created optical effect is mostly correct, but one clear and important issue remains.
+          7: the requested makeup-created optical effect is clearly successful, with only a minor visible mismatch.
+          8: the requested makeup-created optical effect is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact requested visual effect is clearly achieved through makeup alone.
+      requested_eye_makeup_palette_match:
+        title: Requested eye-makeup color palette match
+        definition: Judge named colors, warm/cool/neutral balance, saturation, depth, dominance, harmony, and assigned regional
+          color roles.
+        anchors:
+          0: the requested eye-makeup palette is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eye-makeup palette is visible; the dominant palette or color relationships
+            are wrong.
+          2: A small relevant attempt is present, but the requested eye-makeup palette is severely incorrect or incomplete.
+          3: the requested eye-makeup palette is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested eye-makeup palette is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested eye-makeup palette is moderately achieved, with several substantial visible problems.
+          6: the requested eye-makeup palette is mostly correct, but one clear and important issue remains.
+          7: the requested eye-makeup palette is clearly successful, with only a minor visible mismatch.
+          8: the requested eye-makeup palette is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested color, undertone, depth, and palette relationship is exact and harmoniously placed.
+      requested_eyeshadow_region_layout_match:
+        title: Requested eyeshadow region and layout match
+        definition: Judge upper lid, crease, outer V, center lid, inner corner, lower lid, lower outer eye, and aegyo-sal
+          placement.
+        anchors:
+          0: the requested eyeshadow region and layout is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeshadow region and layout is visible; major eyeshadow regions are
+            missing or misplaced.
+          2: A small relevant attempt is present, but the requested eyeshadow region and layout is severely incorrect or incomplete.
+          3: the requested eyeshadow region and layout is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested eyeshadow region and layout is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested eyeshadow region and layout is moderately achieved, with several substantial visible problems.
+          6: the requested eyeshadow region and layout is mostly correct, but one clear and important issue remains.
+          7: the requested eyeshadow region and layout is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeshadow region and layout is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested eyeshadow region and coverage boundary is exact and complete.
+      requested_eyeshadow_layer_gradient_depth_match:
+        title: Requested eyeshadow layers, gradient, and depth match
+        definition: Judge single/two/three-color layering, inner-to-outer or light-to-deep gradient, crease depth, outer-corner
+          intensity, transition width, and depth hierarchy.
+        anchors:
+          0: the requested eyeshadow layering and depth structure is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeshadow layering and depth structure is visible; the defining layer
+            or gradient structure is mostly wrong.
+          2: A small relevant attempt is present, but the requested eyeshadow layering and depth structure is severely incorrect
+            or incomplete.
+          3: the requested eyeshadow layering and depth structure is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested eyeshadow layering and depth structure is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested eyeshadow layering and depth structure is moderately achieved, with several substantial visible
+            problems.
+          6: the requested eyeshadow layering and depth structure is mostly correct, but one clear and important issue remains.
+          7: the requested eyeshadow layering and depth structure is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeshadow layering and depth structure is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Layers, gradients, depth, and regional intensity are exactly structured as requested.
+      requested_eyeshadow_blending_edge_match:
+        title: Requested eyeshadow blending and edge structure match
+        definition: Judge soft diffusion, clear separation, cut-crease boundary, clean outer shape, non-muddy blending, and
+          intentional sharp or soft transitions.
+        anchors:
+          0: the requested eyeshadow blending and edge treatment is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeshadow blending and edge treatment is visible; blending is muddy,
+            overextended, or structurally wrong.
+          2: A small relevant attempt is present, but the requested eyeshadow blending and edge treatment is severely incorrect
+            or incomplete.
+          3: the requested eyeshadow blending and edge treatment is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested eyeshadow blending and edge treatment is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested eyeshadow blending and edge treatment is moderately achieved, with several substantial visible
+            problems.
+          6: the requested eyeshadow blending and edge treatment is mostly correct, but one clear and important issue remains.
+          7: the requested eyeshadow blending and edge treatment is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeshadow blending and edge treatment is highly accurate and complete, with only a tiny local imperfection.
+          9: All shadow transitions and boundaries have the exact requested softness, separation, and cleanliness.
+    Components, Finish, and Adaptation:
+      requested_eye_makeup_eyeliner_component_match:
+        title: Requested eyeliner component match within the eye look
+        definition: Judge requested tightline, natural liner, half wing, lifted wing, lower liner, colored liner, thickness,
+          angle, and placement when eyeliner is part of the eye-makeup prompt.
+        anchors:
+          0: the requested eyeliner component is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner component is visible; a primary requested eyeliner component
+            is missing or wrong.
+          2: A small relevant attempt is present, but the requested eyeliner component is severely incorrect or incomplete.
+          3: the requested eyeliner component is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested eyeliner component is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested eyeliner component is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner component is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner component is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner component is highly accurate and complete, with only a tiny local imperfection.
+          9: The eyeliner component exactly matches the requested eye-makeup design.
+      requested_eye_makeup_lash_mascara_match:
+        title: Requested lash and mascara component match
+        definition: Judge upper/lower lash emphasis, curl, length, separation, density, mascara color, and lash-root visibility
+          when requested.
+        anchors:
+          0: the requested lash and mascara treatment is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lash and mascara treatment is visible; the requested lash treatment
+            is missing or materially wrong.
+          2: A small relevant attempt is present, but the requested lash and mascara treatment is severely incorrect or incomplete.
+          3: the requested lash and mascara treatment is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested lash and mascara treatment is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested lash and mascara treatment is moderately achieved, with several substantial visible problems.
+          6: the requested lash and mascara treatment is mostly correct, but one clear and important issue remains.
+          7: the requested lash and mascara treatment is clearly successful, with only a minor visible mismatch.
+          8: the requested lash and mascara treatment is highly accurate and complete, with only a tiny local imperfection.
+          9: Lash curl, length, separation, density, and mascara exactly match the prompt.
+      requested_eye_makeup_shimmer_highlight_match:
+        title: Requested shimmer and highlight match
+        definition: Judge center-lid shimmer, inner-corner highlight, aegyo-sal highlight, pearl, metallic, duochrome, teary
+          glow, color, amount, and location.
+        anchors:
+          0: the requested eye-area shimmer and highlight is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eye-area shimmer and highlight is visible; the shimmer or highlight
+            is missing, misplaced, or materially wrong.
+          2: A small relevant attempt is present, but the requested eye-area shimmer and highlight is severely incorrect or
+            incomplete.
+          3: the requested eye-area shimmer and highlight is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested eye-area shimmer and highlight is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested eye-area shimmer and highlight is moderately achieved, with several substantial visible problems.
+          6: the requested eye-area shimmer and highlight is mostly correct, but one clear and important issue remains.
+          7: the requested eye-area shimmer and highlight is clearly successful, with only a minor visible mismatch.
+          8: the requested eye-area shimmer and highlight is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested highlight and shimmer accent is exact in material, amount, color, and placement.
+      requested_eye_makeup_decoration_match:
+        title: Requested eye decoration match
+        definition: Judge rhinestones, crystals, star glitter, graphic particles, count, scale, orientation, location, and
+          physical attachment when explicitly requested.
+        anchors:
+          0: the requested eye-area decoration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eye-area decoration is visible; the decoration is missing or substantially
+            incorrect.
+          2: A small relevant attempt is present, but the requested eye-area decoration is severely incorrect or incomplete.
+          3: the requested eye-area decoration is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested eye-area decoration is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested eye-area decoration is moderately achieved, with several substantial visible problems.
+          6: the requested eye-area decoration is mostly correct, but one clear and important issue remains.
+          7: the requested eye-area decoration is clearly successful, with only a minor visible mismatch.
+          8: the requested eye-area decoration is highly accurate and complete, with only a tiny local imperfection.
+          9: All requested decorations have exact type, count, size, placement, and integration.
+      requested_eye_makeup_finish_intensity_adaptation_match:
+        title: Requested finish, intensity, and eye-shape adaptation match
+        definition: Judge matte, powder, satin, dewy, shimmer, soft-focus finish; subtle-to-intense strength; and suitability
+          for the source monolid, hooded, round, almond, downturned, deep-set, or other eye anatomy.
+        anchors:
+          0: the requested finish, intensity, and eye-shape adaptation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested finish, intensity, and eye-shape adaptation is visible; finish, strength,
+            or anatomical adaptation is substantially wrong.
+          2: A small relevant attempt is present, but the requested finish, intensity, and eye-shape adaptation is severely
+            incorrect or incomplete.
+          3: the requested finish, intensity, and eye-shape adaptation is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: the requested finish, intensity, and eye-shape adaptation is recognizable, but a major mismatch, omission, or
+            excessive change remains.
+          5: the requested finish, intensity, and eye-shape adaptation is moderately achieved, with several substantial visible
+            problems.
+          6: the requested finish, intensity, and eye-shape adaptation is mostly correct, but one clear and important issue
+            remains.
+          7: the requested finish, intensity, and eye-shape adaptation is clearly successful, with only a minor visible mismatch.
+          8: the requested finish, intensity, and eye-shape adaptation is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: The finish and strength exactly match the prompt and are ideally adapted to the source eye anatomy.
+      unrequested_eye_makeup_properties_preserved:
+        title: Unrequested eye-makeup properties are preserved
+        definition: Preserve existing eye-makeup attributes not requested to change, except unavoidable consequences of the
+          target look.
+        anchors:
+          0: the preservation of unrequested eye-makeup properties is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the preservation of unrequested eye-makeup properties is visible; unrequested eye-makeup
+            attributes are extensively altered.
+          2: A small relevant attempt is present, but the preservation of unrequested eye-makeup properties is severely incorrect
+            or incomplete.
+          3: the preservation of unrequested eye-makeup properties is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the preservation of unrequested eye-makeup properties is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of unrequested eye-makeup properties is moderately achieved, with several substantial visible
+            problems.
+          6: the preservation of unrequested eye-makeup properties is mostly correct, but one clear and important issue remains.
+          7: the preservation of unrequested eye-makeup properties is clearly successful, with only a minor visible mismatch.
+          8: the preservation of unrequested eye-makeup properties is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: All unrequested eye-makeup properties remain source-consistent.
+  Localization and Anatomical Integration:
+    Eye-area Localization and Anatomy:
+      eye_makeup_edit_localized_to_eye_regions:
+        title: The eye-makeup edit is localized to requested regions
+        definition: Keep pigment, liner, shimmer, and decoration within requested eyelid and eye-area regions and minimal
+          blending zones.
+        anchors:
+          0: eye-makeup localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eye-makeup localization is visible; large non-target facial regions are altered.
+          2: A small relevant attempt is present, but eye-makeup localization is severely incorrect or incomplete.
+          3: eye-makeup localization is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: eye-makeup localization is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: eye-makeup localization is moderately achieved, with several substantial visible problems.
+          6: eye-makeup localization is mostly correct, but one clear and important issue remains.
+          7: eye-makeup localization is clearly successful, with only a minor visible mismatch.
+          8: eye-makeup localization is highly accurate and complete, with only a tiny local imperfection.
+          9: The edit is precisely confined to requested eye regions with no visible spill.
+      eye_makeup_eyelid_crease_lashline_integration:
+        title: Eyelid, crease, and lash-line integration are natural
+        definition: Judge makeup contact with eyelid folds, crease, lash roots, inner/outer corners, and lower-lid anatomy.
+        anchors:
+          0: eyelid, crease, and lash-line integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyelid, crease, and lash-line integration is visible; makeup floats, crosses anatomy,
+            or breaks contact.
+          2: A small relevant attempt is present, but eyelid, crease, and lash-line integration is severely incorrect or incomplete.
+          3: eyelid, crease, and lash-line integration is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: eyelid, crease, and lash-line integration is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eyelid, crease, and lash-line integration is moderately achieved, with several substantial visible problems.
+          6: eyelid, crease, and lash-line integration is mostly correct, but one clear and important issue remains.
+          7: eyelid, crease, and lash-line integration is clearly successful, with only a minor visible mismatch.
+          8: eyelid, crease, and lash-line integration is highly accurate and complete, with only a tiny local imperfection.
+          9: All makeup components conform perfectly to eyelid, crease, and lash-line anatomy.
+      eye_makeup_pose_aware_bilateral_correspondence:
+        title: Left-right eye makeup correspondence is correct for the pose
+        definition: Judge intended symmetry, eye-angle perspective, visible-lid differences, and consistent style across both
+          eyes without demanding raw mirror symmetry.
+        anchors:
+          0: pose-aware bilateral eye-makeup correspondence is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of pose-aware bilateral eye-makeup correspondence is visible; major unintended asymmetry
+            or perspective mismatch is present.
+          2: A small relevant attempt is present, but pose-aware bilateral eye-makeup correspondence is severely incorrect
+            or incomplete.
+          3: pose-aware bilateral eye-makeup correspondence is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: pose-aware bilateral eye-makeup correspondence is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: pose-aware bilateral eye-makeup correspondence is moderately achieved, with several substantial visible problems.
+          6: pose-aware bilateral eye-makeup correspondence is mostly correct, but one clear and important issue remains.
+          7: pose-aware bilateral eye-makeup correspondence is clearly successful, with only a minor visible mismatch.
+          8: pose-aware bilateral eye-makeup correspondence is highly accurate and complete, with only a tiny local imperfection.
+          9: Both eyes match the requested design perfectly under the source pose and perspective.
+      eye_makeup_skin_boundary_clean:
+        title: Eye-makeup boundaries and skin transitions are clean
+        definition: Judge leakage toward eyebrows, nose bridge, cheeks, sclera, or iris, as well as halos, jagged masks, muddy
+          spill, and pasted particles.
+        anchors:
+          0: eye-makeup boundary cleanliness and skin integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eye-makeup boundary cleanliness and skin integration is visible; major leakage, halos,
+            or muddy spill is visible.
+          2: A small relevant attempt is present, but eye-makeup boundary cleanliness and skin integration is severely incorrect
+            or incomplete.
+          3: eye-makeup boundary cleanliness and skin integration is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: eye-makeup boundary cleanliness and skin integration is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: eye-makeup boundary cleanliness and skin integration is moderately achieved, with several substantial visible
+            problems.
+          6: eye-makeup boundary cleanliness and skin integration is mostly correct, but one clear and important issue remains.
+          7: eye-makeup boundary cleanliness and skin integration is clearly successful, with only a minor visible mismatch.
+          8: eye-makeup boundary cleanliness and skin integration is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Every makeup boundary and skin transition is controlled, clean, and naturally blended.
+  Subject Preservation:
+    Facial Identity and Eye Preservation:
+      eye_makeup_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare the complete source and edited face as the same individual. Judge face outline, forehead, brows,
+          eye spacing, nose, cheeks, mouth, jaw, chin, age impression, gender presentation, skin tone, and characteristic
+          details. Eye makeup may change appearance around the lids, but it must not create a different person.
+        anchors:
+          0: The edited face is effectively a different person, severely distorted, or no longer identity-consistent with
+            the source.
+          1: Identity correspondence is extremely weak; multiple defining facial landmarks and the overall person impression
+            are replaced.
+          2: Major identity drift affects several defining regions such as face outline, eyes, nose, mouth, jaw, or feature
+            spacing.
+          3: Substantial facial-identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression at normal viewing
+            size.
+          5: The person remains recognizable, but multiple facial landmarks, proportions, age cues, or characteristic details
+            visibly drift.
+          6: The same person is mostly preserved, but one clear identity-affecting geometric or appearance change remains.
+          7: Identity preservation is strong, with only a minor visible drift in one facial landmark or characteristic detail.
+          8: The face is nearly source-identical outside the allowed target change, with only a tiny local discrepancy.
+          9: The same person's facial identity, landmark geometry, feature spacing, age impression, and characteristic details
+            are source-identical apart from the requested eye-makeup pigment and optical effects.
+      eye_makeup_eye_anatomy_gaze_brows_adjacent_face_preserved:
+        title: Eye anatomy, gaze, expression, brows, iris, and adjacent face are preserved
+        definition: Preserve eye aperture, eyelid folds, canthi, iris, pupil, sclera, gaze direction, blink state, expression,
+          eyebrow geometry, under-eye anatomy, nose bridge, cheeks, and non-target facial makeup. Makeup-created optical lifting
+          or enlargement must not become anatomical eye reshaping.
+        anchors:
+          0: eye anatomy, gaze, expression, brows, iris, and adjacent facial details is severely changed, replaced, or unusable.
+          1: Most of eye anatomy, gaze, expression, brows, iris, and adjacent facial details is clearly inconsistent with
+            the source.
+          2: Several major changes substantially alter eye anatomy, gaze, expression, brows, iris, and adjacent facial details.
+          3: One major or multiple obvious changes affect eye anatomy, gaze, expression, brows, iris, and adjacent facial
+            details.
+          4: eye anatomy, gaze, expression, brows, iris, and adjacent facial details remains recognizable but contains a clear
+            important mismatch.
+          5: eye anatomy, gaze, expression, brows, iris, and adjacent facial details is only moderately preserved, with several
+            visible differences.
+          6: Most of eye anatomy, gaze, expression, brows, iris, and adjacent facial details is preserved, but one clear difference
+            remains.
+          7: eye anatomy, gaze, expression, brows, iris, and adjacent facial details is strongly preserved, with only a minor
+            discrepancy.
+          8: eye anatomy, gaze, expression, brows, iris, and adjacent facial details is nearly source-identical, with only
+            a tiny local discrepancy.
+          9: Eye anatomy, gaze, expression, brows, iris, sclera, and all adjacent non-target facial details remain source-consistent.
+  Task Realism and Image Quality:
+    Eye-makeup Rendering:
+      eye_makeup_material_particles_realistic:
+        title: Eyeshadow, liner, shimmer, and particles have realistic material
+        definition: Judge powder/cream deposition, shimmer scale, glitter reflectivity, rhinestone attachment, and non-plastic
+          product texture.
+        anchors:
+          0: eye-makeup material and particle realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eye-makeup material and particle realism is visible; makeup looks painted, plastic,
+            noisy, or detached.
+          2: A small relevant attempt is present, but eye-makeup material and particle realism is severely incorrect or incomplete.
+          3: eye-makeup material and particle realism is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: eye-makeup material and particle realism is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eye-makeup material and particle realism is moderately achieved, with several substantial visible problems.
+          6: eye-makeup material and particle realism is mostly correct, but one clear and important issue remains.
+          7: eye-makeup material and particle realism is clearly successful, with only a minor visible mismatch.
+          8: eye-makeup material and particle realism is highly accurate and complete, with only a tiny local imperfection.
+          9: All makeup materials and particles are photorealistic and product-consistent.
+      eye_makeup_skin_texture_lighting_preserved:
+        title: Skin texture and lighting remain realistic
+        definition: Judge pores, eyelid texture, fine lines, source light direction, shadows, highlights, and absence of over-smoothing.
+        anchors:
+          0: eye-area skin texture and lighting realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eye-area skin texture and lighting realism is visible; skin is waxy, blurred, or relit
+            inconsistently.
+          2: A small relevant attempt is present, but eye-area skin texture and lighting realism is severely incorrect or
+            incomplete.
+          3: eye-area skin texture and lighting realism is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: eye-area skin texture and lighting realism is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eye-area skin texture and lighting realism is moderately achieved, with several substantial visible problems.
+          6: eye-area skin texture and lighting realism is mostly correct, but one clear and important issue remains.
+          7: eye-area skin texture and lighting realism is clearly successful, with only a minor visible mismatch.
+          8: eye-area skin texture and lighting realism is highly accurate and complete, with only a tiny local imperfection.
+          9: Skin texture and illumination remain fully natural beneath and around the makeup.
+      eye_makeup_lashes_liner_structure_coherent:
+        title: Lashes, eyeliner, and decorative structures are coherent
+        definition: Judge individual lashes, liner continuity, lash-root contact, particle placement, decoration orientation,
+          and no duplicated or melted structures.
+        anchors:
+          0: lashes, liner, and decoration structural coherence is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of lashes, liner, and decoration structural coherence is visible; lashes, liner, or decorations
+            are visibly broken or duplicated.
+          2: A small relevant attempt is present, but lashes, liner, and decoration structural coherence is severely incorrect
+            or incomplete.
+          3: lashes, liner, and decoration structural coherence is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: lashes, liner, and decoration structural coherence is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: lashes, liner, and decoration structural coherence is moderately achieved, with several substantial visible problems.
+          6: lashes, liner, and decoration structural coherence is mostly correct, but one clear and important issue remains.
+          7: lashes, liner, and decoration structural coherence is clearly successful, with only a minor visible mismatch.
+          8: lashes, liner, and decoration structural coherence is highly accurate and complete, with only a tiny local imperfection.
+          9: All fine structures are sharp, continuous, and physically coherent.
+      eye_makeup_artifact_sharpness_no_muddy_blur:
+        title: Artifacts, sharpness loss, muddy blending, and blur are controlled
+        definition: Judge smearing, muddy color, posterization, overexposure, noisy glitter, halos, blur, melted anatomy,
+          and resolution loss.
+        anchors:
+          0: eye-makeup artifact control and sharpness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eye-makeup artifact control and sharpness is visible; strong blur, muddy pigment,
+            or generation artifacts dominate.
+          2: A small relevant attempt is present, but eye-makeup artifact control and sharpness is severely incorrect or incomplete.
+          3: eye-makeup artifact control and sharpness is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: eye-makeup artifact control and sharpness is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eye-makeup artifact control and sharpness is moderately achieved, with several substantial visible problems.
+          6: eye-makeup artifact control and sharpness is mostly correct, but one clear and important issue remains.
+          7: eye-makeup artifact control and sharpness is clearly successful, with only a minor visible mismatch.
+          8: eye-makeup artifact control and sharpness is highly accurate and complete, with only a tiny local imperfection.
+          9: The eye makeup is clean, sharply resolved, non-muddy, and artifact-free.
+identity_preservation_protocol:
+  purpose: Prevent successful target editing from hiding facial-identity drift. Identity is judged by source-to-result correspondence,
+    not by whether the edited face is attractive or realistic.
+  comparison_checklist:
+  - overall face outline and width/length relationship
+  - forehead and hair-independent face contour
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position and natural geometry
+  - cheek, jaw, and chin structure
+  - age impression and gender presentation
+  - skin tone, stable characteristic marks, and facial texture
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase an identity score because the target edit is attractive or instruction-compliant.
+  - Do not treat a photorealistic but different-looking face as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - The task target region may be excluded only where explicitly necessary; unrelated facial landmarks remain fully constrained.
+  - Identity, expression, and adjacent-face scores are independent of clothing and background preservation.
+  task_specific_exception: requested eye-makeup pigment, eyeliner, lash, shimmer, and decoration only

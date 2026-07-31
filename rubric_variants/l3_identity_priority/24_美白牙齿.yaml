@@ -1,0 +1,747 @@
+task_key: natural_visible_teeth_whitening
+task_title: Natural Visible-Teeth Whitening
+task_title_zh: 美白牙齿
+version: v47_fixed_integer_22_l3_natural_visible_teeth_whitening_compact_failurefix_l3_identity_priority
+target_region: all visible assessable enamel surfaces inside the current mouth opening, including partially visible front
+  and side teeth, while excluding gums, lips, tongue, oral cavity, facial skin, and hidden teeth
+target_action_summary: Whiten all visible teeth by reducing yellow or dull discoloration and increasing enamel brightness
+  to a natural source-compatible level. Preserve tooth geometry, alignment, spacing, enamel translucency, interdental shadows,
+  gum and lip color, mouth shape, smile, identity, expression, lighting, camera state, and all non-target image content.
+judge_role: You are a strict expert evaluator specializing in dental appearance retouching, enamel color, tooth and gum boundaries,
+  smile preservation, facial identity, and photorealistic portrait editing. Judge actual natural teeth whitening, not generic
+  brightness, veneer replacement, tooth reshaping, or global relighting.
+judge_instructions: |
+  Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+  1) Source audit first. Compare visible enamel color/brightness, yellow stains, toothwise variation, translucency, interdental shadows, tooth geometry/alignment/spacing, gums, lips, tongue, saliva/reflections, mouth pose, smile, identity, skin tone, lighting, background, and camera state.
+
+  2) Target definition. The requested edit is natural localized whitening of visible teeth only: reduce yellow/dull discoloration and increase enamel brightness to a source-compatible level while preserving tooth geometry, alignment, spacing, translucency, shadows, gums, lips, mouth shape, identity, and scene lighting.
+
+  3) Reject substitutes. Veneer replacement, tooth reshaping, teeth alignment, smile editing, global exposure/white-balance change, lip/gum recoloring, skin brightening, or mask spill is not successful teeth whitening.
+
+  4) Primary failure gates. If visible teeth remain yellow/dull or whitening is too weak/incomplete, activate target_absent_or_too_weak. If teeth become pure-white, glowing, blue/gray, chalky, flat, textureless, or veneer-like, activate overwhitened_glowing_or_veneer_like. If whitening changes tooth geometry/alignment/gums/lips/oral depth, activate dental_or_oral_structure_changed. If whitening spills outside visible enamel or global lighting/skin/background changes, activate non_target_color_or_global_lighting_drift.
+
+  5) Failure propagation. Before outputting the final score_vector, detect failures in global_scoring_policy.failure_propagation, estimate severity 0-5, apply cap_by_severity to every affected L3, and output adjusted scores.
+
+  6) Score calibration and anti-template. 9 is rare; 8 is near-perfect; 7 is strong with only a minor flaw; 6 has one clear issue; 5 is partial; 4 is a major mismatch; 3 is weak; 2 is a small trace; 1 is negligible; 0 is absent/reversed/unusable. Do not use 7 as default; re-check mostly identical or mostly-7 vectors.
+
+  Task-specific focus: natural enamel whitening. Do not reward global exposure, skin/lip/background brightening, glowing/chalky teeth, or veneer-like replacement as whitening success.
+
+  Hybrid scoring safeguards.
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation before considering any 7-9.
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit into a high reward.
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should not automatically become all 9s.
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak, partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9 for truly extreme evidence.
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+  Return only JSON:
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Whitening success, target coverage, stain reduction, enamel hue, brightness
+    ceiling, translucency, tooth separation, dental geometry, oral-color preservation, anatomical integration, identity, and
+    rendering quality are separated without repeatedly scoring the same issue.
+  constraints:
+    - Exactly 22 active L3 facets; never add a twenty-third facet.
+    - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+    - The judge returns exactly 22 integers in active_l3 order.
+    - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+    - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+    - Whitening magnitude, yellow-stain reduction, enamel hue, and glow prevention are evaluated separately.
+    - Enamel translucency and tooth-to-tooth separation are evaluated separately from generic image realism.
+    - Tooth geometry and alignment are preserved; dental reshaping is not part of this task.
+    - Gums, lips, tongue, and oral cavity are merged into one focused non-target oral-color facet.
+    - Easy scene, camera, and background checks are merged rather than expanded into many L3 facets.
+    - Facial identity and smile landmarks remain one dedicated, high-impact L3 facet.
+    - Subject Preservation contributes 44% of the final reward.
+    - Public floating-point values use at most three decimal places.
+evaluation_notes:
+  - The uploaded file contains 98 prompts and 10 unique templates. Eight templates appear ten times and two templates appear
+    nine times.
+  - Every prompt targets teeth_whitening with fine control whiten_teeth. Differences are limited to retouching intensity,
+    finish, edge quality, symmetry, texture, shadow reconstruction, and preservation wording.
+  - All prompts explicitly require visible teeth to become naturally whiter without glowing. No prompt requests tooth alignment,
+    tooth reshaping, gap closure, missing-tooth generation, gum modification, or smile enlargement.
+  - Whitening should reduce yellow, brownish, or dull casts while retaining a believable warm-neutral enamel tone. Perfect
+    printer-paper white is not the target.
+  - 'The result should preserve natural depth: posterior teeth, shaded teeth, and teeth partly covered by lips may remain
+    darker than fully illuminated front teeth.'
+  - Interdental lines, incisal-edge translucency, small surface highlights, enamel texture, and oral-cavity shadows must remain
+    visible enough to prevent a flat white mask.
+  - The edit must remain strictly inside visible enamel. White spill onto gums, lips, tongue, skin, or mouth shadows is a
+    major localization failure.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. A 7 requires strong visible evidence after failure propagation;
+    8 requires near-exact source-compatible whitening; 9 is rare.
+  no_cross_compensation: Do not raise one facet because another is good. Bright teeth cannot compensate for glow, lost enamel
+    texture, recolored gums/lips, altered tooth geometry, identity drift, or global relighting.
+  teeth_whitening_disambiguation_rule: Teeth whitening means localized natural enamel color improvement. It is not global
+    exposure correction, face/skin brightening, white-balance shift, veneer replacement, tooth reshaping, smile replacement,
+    or generic beautification.
+  visibility_rule: Judge only teeth that are visibly assessable in both source and result. Do not penalize hidden or fully
+    occluded teeth, but do penalize missed visible teeth.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited result as the same individual with the same smile. Tooth color may change, but tooth
+    geometry, mouth landmarks, expression, age impression, skin tone, and same-person impression must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the teeth are attractive, bright, realistic,
+    or prompt-compliant.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Include detected failure names and severity
+      in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Visible teeth remain yellow, dull, stained, or only negligibly brighter relative to source, or whitening
+          misses visible enamel.
+        severity_guidance: Tiny but real enamel-local brightening may be severity 1. Clear but weak/incomplete whitening should
+          be severity 2. Mostly unchanged enamel must be severity 3. Absent, reversed/darker, or non-enamel-only change must
+          be severity 4-5.
+        affected_l3:
+          - requested_teeth_whitening_operation_match
+          - requested_visible_teeth_coverage_match
+          - requested_whitening_magnitude_match
+          - requested_yellow_stain_reduction_match
+          - requested_enamel_hue_neutrality_match
+          - requested_brightness_ceiling_no_glow_match
+          - requested_enamel_translucency_gradient_match
+          - requested_toothwise_consistency_balance_match
+          - requested_teeth_whitening_visibility_finish_match
+          - teeth_whitening_edit_localized_to_visible_enamel
+      overwhitened_glowing_or_veneer_like:
+        detect_when: Teeth become pure white, glowing, blown-out, blue/gray, chalky, flat, textureless, sticker-like, plastic,
+          or veneer-like.
+        severity_guidance: Slight over-brightness may be severity 1-2. Clear unnatural whitening, clipped highlights, or loss
+          of enamel texture must be severity 3. Glowing/veneer-like/fake replacement must be severity 4-5.
+        affected_l3:
+          - requested_teeth_whitening_operation_match
+          - requested_visible_teeth_coverage_match
+          - requested_whitening_magnitude_match
+          - requested_enamel_hue_neutrality_match
+          - requested_brightness_ceiling_no_glow_match
+          - requested_enamel_translucency_gradient_match
+          - requested_intertooth_separation_depth_match
+          - requested_toothwise_consistency_balance_match
+          - teeth_whitening_edit_localized_to_visible_enamel
+          - teeth_whitening_tooth_gum_lip_boundary_integrity
+          - teeth_whitening_identity_smile_landmark_consistency
+          - teeth_whitening_enamel_microtexture_realistic
+          - teeth_whitening_lighting_shadow_color_integration
+          - teeth_whitening_boundary_contact_oral_depth_consistent
+          - teeth_whitening_artifact_sharpness_no_mask_spill
+      dental_or_oral_structure_changed:
+        detect_when: Tooth geometry, alignment, spacing, count, gumline, lips, saliva/reflections, oral depth, mouth pose,
+          or smile expression changes instead of only enamel color.
+        severity_guidance: Clear tooth/gum/lip/oral-depth change must be at least severity 2. Tooth reshaping, alignment change,
+          or mouth-shape change must be severity 3-5.
+        affected_l3:
+          - requested_teeth_whitening_operation_match
+          - requested_visible_teeth_coverage_match
+          - requested_tooth_geometry_alignment_preservation_match
+          - requested_intertooth_separation_depth_match
+          - requested_toothwise_consistency_balance_match
+          - requested_gum_lip_oral_color_preservation_match
+          - teeth_whitening_tooth_gum_lip_boundary_integrity
+          - teeth_whitening_mouth_pose_perspective_consistent
+          - teeth_whitening_saliva_reflection_occlusion_consistent
+          - teeth_whitening_identity_smile_landmark_consistency
+          - teeth_whitening_boundary_contact_oral_depth_consistent
+          - teeth_whitening_artifact_sharpness_no_mask_spill
+      non_target_color_or_global_lighting_drift:
+        detect_when: Whitening spills onto gums, lips, tongue, facial skin, hair, clothing, or background, or the image uses
+          global exposure, white balance, contrast, saturation, skin brightening, or full-image filter to simulate whiter
+          teeth.
+        severity_guidance: Minor local spill may be severity 1-2. Clear skin/background/lighting/color drift must be at least
+          severity 3. Global filter, face brightening, or scene color replacement must be severity 4-5.
+        affected_l3:
+          - requested_teeth_whitening_operation_match
+          - requested_visible_teeth_coverage_match
+          - requested_whitening_magnitude_match
+          - requested_enamel_hue_neutrality_match
+          - requested_brightness_ceiling_no_glow_match
+          - requested_gum_lip_oral_color_preservation_match
+          - requested_toothwise_consistency_balance_match
+          - requested_teeth_whitening_visibility_finish_match
+          - teeth_whitening_edit_localized_to_visible_enamel
+          - teeth_whitening_tooth_gum_lip_boundary_integrity
+          - teeth_whitening_identity_smile_landmark_consistency
+          - teeth_whitening_expression_face_scene_global_state_preserved
+          - teeth_whitening_enamel_microtexture_realistic
+          - teeth_whitening_lighting_shadow_color_integration
+          - teeth_whitening_boundary_contact_oral_depth_consistent
+          - teeth_whitening_artifact_sharpness_no_mask_spill
+  no_compensation_rule: If whitening is absent, preservation/background/photorealism must not raise edit-dependent facets.
+    If the image is globally brightened or teeth look fake, a whiter smile must not raise natural-whitening facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  success_gate_definition: A positive sample whitens only visible enamel naturally, reducing yellow or stained appearance
+    while preserving tooth geometry, oral structure, skin tone, lighting, and source identity.
+  success_gate_conditions:
+    - Visible enamel is clearly brighter/cleaner with reduced yellow cast or stains at normal viewing size.
+    - 'Whitening remains natural: no glowing, chalky, blown-out, blue/gray, flat, sticker-like, or veneer-like teeth.'
+    - Tooth alignment, count, shape, spacing, gumline, lips, mouth pose, and oral depth are unchanged.
+    - Gums, lips, tongue, skin, background, and global exposure/white balance do not shift to simulate whitening.
+    - Enamel microtexture, intertooth separation, lighting, reflections, and boundaries remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, do not automatically assign 8-9 to all preservation or quality facets. Unchanged non-target
+    regions may deserve moderate-to-good preservation scores, but a failed edit should not become high reward through many
+    unrelated 9s.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  task_disambiguation_rule: Correct teeth whitening changes visible enamel color and brightness while preserving dental geometry,
+    mouth shape, enamel depth, gums, lips, and scene lighting. Veneer replacement, dental reshaping, smile editing, global
+    exposure changes, and oral-region recoloring are different operations.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+  output_values:
+    - 0.0
+    - 0.111
+    - 0.222
+    - 0.333
+    - 0.444
+    - 0.556
+    - 0.667
+    - 0.778
+    - 0.889
+    - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+  - requested_teeth_whitening_operation_match
+  - requested_visible_teeth_coverage_match
+  - requested_whitening_magnitude_match
+  - requested_yellow_stain_reduction_match
+  - requested_enamel_hue_neutrality_match
+  - requested_brightness_ceiling_no_glow_match
+  - requested_enamel_translucency_gradient_match
+  - requested_intertooth_separation_depth_match
+  - requested_tooth_geometry_alignment_preservation_match
+  - requested_gum_lip_oral_color_preservation_match
+  - requested_toothwise_consistency_balance_match
+  - requested_teeth_whitening_visibility_finish_match
+  - teeth_whitening_edit_localized_to_visible_enamel
+  - teeth_whitening_tooth_gum_lip_boundary_integrity
+  - teeth_whitening_mouth_pose_perspective_consistent
+  - teeth_whitening_saliva_reflection_occlusion_consistent
+  - teeth_whitening_identity_smile_landmark_consistency
+  - teeth_whitening_expression_face_scene_global_state_preserved
+  - teeth_whitening_enamel_microtexture_realistic
+  - teeth_whitening_lighting_shadow_color_integration
+  - teeth_whitening_boundary_contact_oral_depth_consistent
+  - teeth_whitening_artifact_sharpness_no_mask_spill
+compact_output_contract:
+  format:
+    scores:
+      - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_teeth_whitening_operation_match: 0.18
+    requested_visible_teeth_coverage_match: 0.1
+    requested_whitening_magnitude_match: 0.08
+    requested_yellow_stain_reduction_match: 0.1
+    requested_enamel_hue_neutrality_match: 0.08
+    requested_brightness_ceiling_no_glow_match: 0.1
+    requested_enamel_translucency_gradient_match: 0.08
+    requested_intertooth_separation_depth_match: 0.08
+    requested_tooth_geometry_alignment_preservation_match: 0.07
+    requested_gum_lip_oral_color_preservation_match: 0.05
+    requested_toothwise_consistency_balance_match: 0.04
+    requested_teeth_whitening_visibility_finish_match: 0.04
+  Localization and Anatomical Integration:
+    teeth_whitening_edit_localized_to_visible_enamel: 0.3
+    teeth_whitening_tooth_gum_lip_boundary_integrity: 0.27
+    teeth_whitening_mouth_pose_perspective_consistent: 0.22
+    teeth_whitening_saliva_reflection_occlusion_consistent: 0.21
+  Subject Preservation:
+    teeth_whitening_identity_smile_landmark_consistency: 0.8
+    teeth_whitening_expression_face_scene_global_state_preserved: 0.2
+  Task Realism and Image Quality:
+    teeth_whitening_enamel_microtexture_realistic: 0.27
+    teeth_whitening_lighting_shadow_color_integration: 0.27
+    teeth_whitening_boundary_contact_oral_depth_consistent: 0.24
+    teeth_whitening_artifact_sharpness_no_mask_spill: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+    - 0.0
+    - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Whitening Operation:
+      requested_teeth_whitening_operation_match:
+        title: Requested natural teeth-whitening operation match
+        definition: Judge whether visible enamel becomes naturally whiter without tooth replacement, reshaping, smile editing,
+          gum modification, global exposure change, or other substitute operations.
+        anchors:
+          0: The requested whitening operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of visible enamel whitening is present.
+          2: A small relevant attempt exists, but the result is dominated by a substitute operation.
+          3: The teeth are weakly edited, but natural whitening is mostly wrong.
+          4: A recognizable whitening attempt exists, yet a major part is missing or replaced by exposure, glow, or geometry
+            change.
+          5: The operation is partially correct, with several substantial method or completeness errors.
+          6: Natural whitening is mostly correct, but one clear operation error remains.
+          7: The requested whitening is clearly achieved, with only a minor visible mismatch.
+          8: The operation is highly accurate, with only a tiny local imperfection.
+          9: All visible enamel is naturally whitened with no substitute operation or non-target change.
+        rubric: |-
+          Judge whether visible enamel becomes naturally whiter without tooth replacement, reshaping, smile editing, gum modification, global exposure change, or other substitute operations. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_visible_teeth_coverage_match:
+        title: Requested visible-teeth coverage match
+        definition: Judge whether all assessable visible tooth surfaces receive coherent whitening, including partially visible
+          side teeth, while hidden teeth are ignored.
+        anchors:
+          0: Visible-tooth coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible enamel region is treated.
+          2: A small tooth region changes, but most visible teeth remain untreated.
+          3: Coverage is weak and major visible teeth or tooth surfaces are missed.
+          4: The target is recognizable, but one major tooth group or side remains untreated or incorrectly included.
+          5: Coverage is partial, with several visible omissions or spills.
+          6: Coverage is mostly complete, but one clear visible tooth or region remains inconsistent.
+          7: All visible teeth are well covered, with only a minor local miss.
+          8: Coverage is highly complete and precise, with only a tiny imperfection.
+          9: Every assessable visible enamel surface is whitened precisely and consistently.
+        rubric: |-
+          Judge whether all assessable visible tooth surfaces receive coherent whitening, including partially visible side teeth, while hidden teeth are ignored. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_whitening_magnitude_match:
+        title: Requested whitening-magnitude match
+        definition: Judge whether subtle premium, noticeable, moderate-to-strong, dramatic, maximum-realistic, app-style,
+          studio, commercial, or social-media intensity is visible without exceeding realism.
+        anchors:
+          0: The requested magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible brightness change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The intensity is weakly attempted but clearly mismatched.
+          4: The effect is recognizable, but the amount has a major mismatch.
+          5: The magnitude is partially appropriate, with several visible intensity problems.
+          6: The amount is mostly correct, but one clear under- or over-whitening issue remains.
+          7: The requested strength is clearly achieved, with only a minor mismatch.
+          8: The intensity is highly accurate, with only a tiny excess or residual.
+          9: The whitening strength is exactly visible enough, source-appropriate, and believable.
+        rubric: |-
+          Judge whether subtle premium, noticeable, moderate-to-strong, dramatic, maximum-realistic, app-style, studio, commercial, or social-media intensity is visible without exceeding realism. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_yellow_stain_reduction_match:
+        title: Requested yellow-cast and visible-stain reduction match
+        definition: Judge reduction of yellow, brownish, gray, or dull discoloration on visible enamel while preserving natural
+          regional and tooth-to-tooth variation.
+        anchors:
+          0: Discoloration is unchanged, worse, reversed, unrelated, or unusable.
+          1: Only a negligible reduction of yellow or dull cast is visible.
+          2: A small relevant reduction exists, but discoloration remains dominant.
+          3: Stain reduction is weak and largely ineffective.
+          4: The teeth look somewhat cleaner, but a major yellow, gray, brown, or uneven cast remains.
+          5: Reduction is partial, with several substantial residual or over-removal problems.
+          6: Discoloration is mostly reduced, but one clear residual or uneven area remains.
+          7: Yellow and dull casts are clearly improved, with only a minor mismatch.
+          8: Reduction is highly accurate, with only a tiny local residual.
+          9: Visible discoloration is fully and naturally reduced without flattening enamel variation.
+        rubric: |-
+          Judge reduction of yellow, brownish, gray, or dull discoloration on visible enamel while preserving natural regional and tooth-to-tooth variation. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_enamel_hue_neutrality_match:
+        title: Requested natural enamel-hue neutrality match
+        definition: Judge whether whitened teeth retain a believable warm-neutral enamel hue without blue, cyan, gray, purple,
+          fluorescent, or globally desaturated color.
+        anchors:
+          0: Enamel hue is severely false, reversed, unrelated, or unusable.
+          1: Only a negligible trace of believable enamel color remains.
+          2: The teeth have a severe blue, cyan, gray, purple, fluorescent, or dead-white cast.
+          3: Hue is weakly corrected and remains clearly unnatural.
+          4: The result is recognizable, but a major color-temperature or saturation mismatch remains.
+          5: Hue matching is partial, with several visible color inconsistencies.
+          6: Enamel hue is mostly natural, but one clear tint or desaturation issue remains.
+          7: The hue is strong and believable, with only a minor mismatch.
+          8: Enamel color is highly accurate, with only a tiny local difference.
+          9: The whitened teeth have perfectly natural, warm-neutral, source-compatible enamel color.
+        rubric: |-
+          Judge whether whitened teeth retain a believable warm-neutral enamel hue without blue, cyan, gray, purple, fluorescent, or globally desaturated color. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_brightness_ceiling_no_glow_match:
+        title: Requested brightness ceiling and no-glow match
+        definition: Judge whether enamel brightness remains below clipping and compatible with scene illumination, without
+          halos, self-emission, fluorescent glow, or brighter-than-light-source appearance.
+        anchors:
+          0: Teeth are severely glowing, clipped, reversed, unrelated, or unusable.
+          1: Only a negligible amount of realistic tonal information remains.
+          2: Large tooth regions are paper-white, self-luminous, or severely clipped.
+          3: Brightness control is weak and strong glow or clipping remains.
+          4: Whitening is recognizable, but a major over-bright, halo, or source-light mismatch remains.
+          5: Brightness control is partial, with several substantial glow or clipping problems.
+          6: Brightness is mostly controlled, but one clear over-white or halo issue remains.
+          7: The teeth are bright but believable, with only a minor excess.
+          8: Brightness control is highly accurate, with only a tiny local imperfection.
+          9: The enamel is visibly whiter while remaining fully non-glowing, unclipped, and scene-compatible.
+        rubric: |-
+          Judge whether enamel brightness remains below clipping and compatible with scene illumination, without halos, self-emission, fluorescent glow, or brighter-than-light-source appearance. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+    Enamel Structure, Oral Preservation, and Finish:
+      requested_enamel_translucency_gradient_match:
+        title: Requested enamel translucency and tonal-gradient match
+        definition: Judge preservation of incisal translucency, cervical-to-incisal value gradients, curved-surface shading,
+          subtle internal color, and natural depth across each tooth.
+        anchors:
+          0: Enamel translucency and gradients are absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of natural internal enamel variation remains.
+          2: The teeth are severely flat, opaque, plastic, or uniformly white.
+          3: Depth is weakly preserved and major tonal flattening remains.
+          4: Some enamel depth is recognizable, but a major gradient or translucency mismatch remains.
+          5: Translucency is partial, with several substantial flat or opaque regions.
+          6: Enamel depth is mostly natural, but one clear gradient or translucency issue remains.
+          7: Translucency and gradients are strong, with only a minor mismatch.
+          8: Internal enamel variation is highly accurate, with only a tiny local imperfection.
+          9: Incisal translucency, curved-surface shading, and enamel gradients remain fully natural and source-consistent.
+        rubric: |-
+          Judge preservation of incisal translucency, cervical-to-incisal value gradients, curved-surface shading, subtle internal color, and natural depth across each tooth. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_intertooth_separation_depth_match:
+        title: Requested intertooth separation and oral-depth match
+        definition: Judge preservation of interdental gaps, contact lines, tooth boundaries, incisal separations, posterior
+          depth, and natural dark oral spaces after whitening.
+        anchors:
+          0: Tooth separation and oral depth are absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of individual tooth separation remains.
+          2: Multiple teeth merge into a severe solid white block.
+          3: Separation is weakly preserved and major merged boundaries remain.
+          4: The teeth are recognizable, but a major lost gap, contact line, or depth cue remains.
+          5: Separation is partial, with several substantial boundary or depth problems.
+          6: Individual teeth are mostly distinct, but one clear merged or flattened area remains.
+          7: Intertooth separation and depth are strong, with only a minor mismatch.
+          8: Dental separation is highly accurate, with only a tiny local imperfection.
+          9: Every visible tooth remains individually readable with natural gaps, contact shadows, and oral depth.
+        rubric: |-
+          Judge preservation of interdental gaps, contact lines, tooth boundaries, incisal separations, posterior depth, and natural dark oral spaces after whitening. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_tooth_geometry_alignment_preservation_match:
+        title: Requested tooth geometry and alignment preservation match
+        definition: Preserve visible tooth count, size, shape, edge contour, spacing, rotation, alignment, bite, and source-specific
+          dental character. Only color and brightness may change.
+        anchors:
+          0: Tooth geometry is severely changed, replaced, reversed, or unusable.
+          1: Only a negligible amount of source dental geometry remains.
+          2: Major tooth count, size, shape, alignment, spacing, or bite changes are visible.
+          3: Preservation is weak and clear veneer-like or dental-reshaping errors remain.
+          4: The smile is recognizable, but a major tooth geometry or alignment mismatch remains.
+          5: Preservation is partial, with several visible dental-shape differences.
+          6: Tooth geometry is mostly preserved, but one clear change remains.
+          7: Dental geometry and alignment are strong, with only a minor discrepancy.
+          8: The teeth are nearly source-identical in geometry, with only a tiny difference.
+          9: Visible tooth count, size, shape, spacing, alignment, bite, and edge contours remain exactly source-consistent.
+        rubric: |-
+          Preserve visible tooth count, size, shape, edge contour, spacing, rotation, alignment, bite, and source-specific dental character. Only color and brightness may change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_gum_lip_oral_color_preservation_match:
+        title: Requested gum, lip, tongue, and oral-color preservation match
+        definition: Preserve gum color, gumline, lips, tongue, oral mucosa, mouth shadows, facial skin, and makeup. Whitening
+          must remain confined to enamel.
+        anchors:
+          0: Gums, lips, tongue, oral cavity, or skin are severely whitened, recolored, or unusable.
+          1: Most non-enamel oral colors visibly drift.
+          2: Several major gum, lip, tongue, skin, or oral-cavity color changes are present.
+          3: One major or multiple obvious non-enamel color changes remain.
+          4: The mouth remains recognizable, but a clear important gum, lip, tongue, or oral-color mismatch remains.
+          5: Preservation is moderate, with several visible color differences.
+          6: Most non-enamel colors are preserved, but one clear change remains.
+          7: Oral-color preservation is strong, with only a minor discrepancy.
+          8: Gums, lips, tongue, skin, and mouth shadows are nearly source-identical, with only a tiny difference.
+          9: All non-enamel oral and facial colors remain exactly source-consistent.
+        rubric: |-
+          Preserve gum color, gumline, lips, tongue, oral mucosa, mouth shadows, facial skin, and makeup. Whitening must remain confined to enamel. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_toothwise_consistency_balance_match:
+        title: Requested toothwise consistency and natural balance match
+        definition: Judge whether whitening is coherent across visible teeth while respecting source lighting, depth, tooth
+          orientation, occlusion, and natural posterior-to-anterior brightness differences.
+        anchors:
+          0: Toothwise consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible portion of the teeth has coherent whitening.
+          2: Whitening is severely patchy, contradictory, or ignores visible dental depth.
+          3: Consistency is weak and major tooth-to-tooth conflicts remain.
+          4: The effect is recognizable, but a major bright-dark mismatch or untreated visible tooth remains.
+          5: Consistency is partial, with several substantial toothwise differences.
+          6: Whitening is mostly coherent, but one clear tooth or regional inconsistency remains.
+          7: Toothwise balance is strong and natural, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All visible teeth are coherently whitened while preserving source-supported depth and lighting variation.
+        rubric: |-
+          Judge whether whitening is coherent across visible teeth while respecting source lighting, depth, tooth orientation, occlusion, and natural posterior-to-anterior brightness differences. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_teeth_whitening_visibility_finish_match:
+        title: Requested normal-view visibility and whitening-finish match
+        definition: Judge whether the whitening is easy to notice at normal portrait viewing size and matches the requested
+          premium, app-style, studio, editorial, commercial, social-media, polished, or high-fashion finish.
+        anchors:
+          0: The requested visibility and finish are absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible whitening improvement is present.
+          2: A small relevant trace exists, but the result is severely too weak, excessive, or artificial.
+          3: The finish is weakly attempted and remains clearly mismatched.
+          4: The whitening is recognizable, but a major visibility or naturalness problem remains.
+          5: Visibility and finish are partially achieved, with several substantial issues.
+          6: The result is mostly correct, but one clear visibility or finish issue remains.
+          7: The requested presentation is strong, with only a minor mismatch.
+          8: Visibility and naturalness are highly accurate, with only a tiny local issue.
+          9: The whitening is clearly visible, fully believable, photorealistic, and seamlessly finished.
+        rubric: |-
+          Judge whether the whitening is easy to notice at normal portrait viewing size and matches the requested premium, app-style, studio, editorial, commercial, social-media, polished, or high-fashion finish. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Dental Placement and Oral Anatomy:
+      teeth_whitening_edit_localized_to_visible_enamel:
+        title: Whitening is localized to visible enamel
+        definition: Keep color and brightness changes inside visible enamel surfaces and minimum anti-aliased boundaries.
+          Avoid gums, lips, tongue, mouth shadows, facial skin, and hidden dental regions.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: A small relevant attempt exists, but large non-enamel regions are altered.
+          3: Localization is weak and major gum, lip, tongue, skin, or mouth spill remains.
+          4: The enamel target is recognizable, but one major non-target oral region is changed.
+          5: Localization is partial, with several substantial spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed enamel region remains.
+          7: The edit is well localized, with only a minor local spill.
+          8: Localization is highly accurate, with only a tiny imperfection.
+          9: Whitening is precisely confined to all visible enamel and minimum natural edge blending.
+        rubric: |-
+          Keep color and brightness changes inside visible enamel surfaces and minimum anti-aliased boundaries. Avoid gums, lips, tongue, mouth shadows, facial skin, and hidden dental regions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_tooth_gum_lip_boundary_integrity:
+        title: Tooth, gum, and lip boundary integrity
+        definition: Judge tooth edges, gumline, lip-to-tooth contact, mouth corners, incisal boundaries, and partially occluded
+          teeth for clean but natural separation without halos, cutouts, or white leakage.
+        anchors:
+          0: Boundary integrity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct oral boundaries remains.
+          2: Tooth, gum, or lip boundaries are severely erased, merged, or leaking.
+          3: Integrity is weakly preserved and major edge failures remain.
+          4: The mouth is recognizable, but a major halo, cutout, gumline, or lip-contact error remains.
+          5: Boundary integrity is partial, with several substantial visible problems.
+          6: Boundaries are mostly correct, but one clear tooth-gum or tooth-lip issue remains.
+          7: Boundary integrity is strong, with only a minor mismatch.
+          8: The oral boundaries are highly accurate, with only a tiny local imperfection.
+          9: All tooth, gum, lip, and occlusion boundaries remain exact, clean, and naturally anti-aliased.
+        rubric: |-
+          Judge tooth edges, gumline, lip-to-tooth contact, mouth corners, incisal boundaries, and partially occluded teeth for clean but natural separation without halos, cutouts, or white leakage. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_mouth_pose_perspective_consistent:
+        title: Mouth pose, dental perspective, and depth are consistent
+        definition: Judge head rotation, smile angle, tooth-row perspective, foreshortening, visible tooth widths, bite depth,
+          and mouth opening. Whitening must not flatten or geometrically reorient the dental arch.
+        anchors:
+          0: Mouth pose and perspective are absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of source-consistent dental perspective remains.
+          2: The tooth row or mouth has severe pose, width, depth, or perspective contradictions.
+          3: Consistency is weakly attempted and major spatial errors remain.
+          4: The smile is recognizable, but a major dental-arch, foreshortening, or mouth-pose mismatch remains.
+          5: Consistency is partial, with several substantial perspective problems.
+          6: Mouth pose and dental depth are mostly correct, but one clear spatial issue remains.
+          7: Perspective and depth are strong, with only a minor mismatch.
+          8: The spatial relationship is highly accurate, with only a tiny local imperfection.
+          9: Tooth-row perspective, mouth opening, smile angle, and dental depth remain fully source-consistent.
+        rubric: |-
+          Judge head rotation, smile angle, tooth-row perspective, foreshortening, visible tooth widths, bite depth, and mouth opening. Whitening must not flatten or geometrically reorient the dental arch. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_saliva_reflection_occlusion_consistent:
+        title: Saliva, reflection, and oral occlusion integration is consistent
+        definition: Judge saliva highlights, enamel reflections, wetness, lip overlap, tongue overlap, braces or dental attachments
+          when present, and tooth-to-tooth occlusion after whitening.
+        anchors:
+          0: Reflection and occlusion integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct wetness or layering remains.
+          2: Saliva, highlights, lips, tongue, dental attachments, or tooth overlaps are severely erased or wrong.
+          3: Integration is weakly attempted and major reflection or occlusion errors remain.
+          4: The relationships are recognizable, but a major false highlight, overlap, wetness, or attachment error remains.
+          5: Integration is partial, with several substantial local problems.
+          6: Integration is mostly correct, but one clear reflection or occlusion issue remains.
+          7: Wetness, reflection, and occlusion integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All saliva, enamel reflections, lip and tongue overlaps, and dental occlusions remain physically coherent.
+        rubric: |-
+          Judge saliva highlights, enamel reflections, wetness, lip overlap, tongue overlap, braces or dental attachments when present, and tooth-to-tooth occlusion after whitening. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      teeth_whitening_identity_smile_landmark_consistency:
+        title: Facial identity and smile-landmark geometry are preserved
+        definition: Compare source and result as the same individual with the same smile. Judge mouth width, lip geometry,
+          mouth corners, tooth display, dental character, nose-to-mouth relation, chin, cheeks, age impression, skin tone,
+          stable marks, and same-person impression. Only visible enamel color may change.
+        anchors:
+          0: The edited subject or smile is effectively different, severely distorted, or unusable.
+          1: Identity and smile correspondence are extremely weak; defining landmarks are replaced.
+          2: Major identity or smile drift affects several defining facial or dental regions.
+          3: Substantial drift is visible; the person or smile remains only loosely related to the source.
+          4: The same general subject is suggested, but the face or smile gives a clear changed-person impression.
+          5: The person remains recognizable, but multiple mouth, dental, age, or facial landmarks drift.
+          6: The same person and smile are mostly preserved, but one clear identity-affecting change remains.
+          7: Identity and smile preservation are strong, with only a minor visible drift.
+          8: The face and smile are nearly source-identical apart from enamel color, with only a tiny discrepancy.
+          9: The same identity, smile geometry, dental landmarks, age impression, and facial character remain source-identical
+            apart from natural enamel whitening.
+        rubric: |-
+          Compare source and result as the same individual with the same smile. Judge mouth width, lip geometry, mouth corners, tooth display, dental character, nose-to-mouth relation, chin, cheeks, age impression, skin tone, stable marks, and same-person impression. Only visible enamel color may change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_expression_face_scene_global_state_preserved:
+        title: Expression, face, hair, scene, camera, and global state are preserved
+        definition: Preserve expression, gaze, mouth opening, lips, teeth geometry, tongue, cheeks, chin, eyes, brows, nose,
+          ears, hair, facial hair, skin, clothing, background, white balance, exposure, contrast, lighting, crop, camera angle,
+          composition, aspect ratio, and resolution.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are clearly inconsistent with the source.
+          2: Several major changes affect expression, face, hair, scene, camera, or global image state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image remains recognizable, but a clear important non-target mismatch remains.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Expression, face, scene, camera, and global color are nearly source-identical, with only a tiny discrepancy.
+          9: All non-target subject, scene, camera, lighting, color, composition, and resolution properties remain source-consistent.
+        rubric: |-
+          Preserve expression, gaze, mouth opening, lips, teeth geometry, tongue, cheeks, chin, eyes, brows, nose, ears, hair, facial hair, skin, clothing, background, white balance, exposure, contrast, lighting, crop, camera angle, composition, aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Dental Rendering Quality:
+      teeth_whitening_enamel_microtexture_realistic:
+        title: Enamel surface and microtexture are realistic
+        definition: Judge subtle enamel surface variation, fine texture, natural edge softness, incisal detail, small highlights,
+          source focus, sensor grain, compression, and resolution after whitening.
+        anchors:
+          0: Enamel realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic tooth detail remains.
+          2: The teeth are severely plastic, painted, blurred, repeated, or synthetic.
+          3: Realism is weakly attempted and major enamel-detail damage remains.
+          4: The teeth are recognizable, but a major blur, smoothing, texture, edge, or highlight error remains.
+          5: Realism is partial, with several substantial visible problems.
+          6: Enamel detail is mostly realistic, but one clear texture or focus issue remains.
+          7: Enamel realism is strong, with only a minor mismatch.
+          8: Detail is highly realistic, with only a tiny local imperfection.
+          9: Enamel surface variation, fine detail, highlights, focus, grain, and resolution are fully photorealistic and
+            source-consistent.
+        rubric: |-
+          Judge subtle enamel surface variation, fine texture, natural edge softness, incisal detail, small highlights, source focus, sensor grain, compression, and resolution after whitening. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_lighting_shadow_color_integration:
+        title: Dental lighting, shadows, and color integrate with the source
+        definition: Judge enamel highlights, curved-surface shading, interdental shadows, lip shadows, oral depth, scene white
+          balance, and local color under the original illumination without global relighting.
+        anchors:
+          0: Lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct dental illumination remains.
+          2: A small relevant attempt exists, but enamel shadows or color are severely false or inconsistent.
+          3: Integration is weakly attempted and major lighting errors remain.
+          4: The teeth are recognizable, but a major false highlight, halo, flat patch, or color mismatch remains.
+          5: Integration is partial, with several substantial shadow or color problems.
+          6: Lighting is mostly correct, but one clear local issue remains.
+          7: Dental lighting, shadows, and color are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All enamel highlights, tooth shadows, oral depth, and color perfectly match the source lighting and white balance.
+        rubric: |-
+          Judge enamel highlights, curved-surface shading, interdental shadows, lip shadows, oral depth, scene white balance, and local color under the original illumination without global relighting. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_boundary_contact_oral_depth_consistent:
+        title: Dental boundaries, contacts, and oral depth are consistent
+        definition: Judge individual tooth contacts, gumline, lip contact, incisal edges, dark oral spaces, posterior depth,
+          tongue overlap, and mouth-corner containment for physically coherent relationships.
+        anchors:
+          0: Boundary, contact, and oral-depth consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or depth remains.
+          2: A small relevant attempt exists, but major merged teeth, leakage, gaps, or impossible overlap is visible.
+          3: Consistency is weakly attempted and major oral-boundary errors remain.
+          4: The mouth is recognizable, but a major seam, lost contact, white block, or depth error remains.
+          5: Consistency is partial, with several substantial visible problems.
+          6: Boundaries and oral depth are mostly correct, but one clear contact or layering issue remains.
+          7: Dental contact and oral-depth consistency are strong, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All tooth contacts, gum and lip boundaries, oral shadows, and depth relationships remain seamless and physically
+            coherent.
+        rubric: |-
+          Judge individual tooth contacts, gumline, lip contact, incisal edges, dark oral spaces, posterior depth, tongue overlap, and mouth-corner containment for physically coherent relationships. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      teeth_whitening_artifact_sharpness_no_mask_spill:
+        title: Artifact control, source sharpness, and absence of mask or spill
+        definition: Judge halos, glow, jagged tooth edges, blur, over-sharpening, duplicate teeth, clone patterns, color spill,
+          white gums, pale lips, broken teeth, mask-like whitening, facial warping, and background deformation.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: A small relevant attempt exists, but severe masking, glow, spill, blur, duplication, or distortion dominates.
+          3: Artifact control is weakly achieved and major defects remain.
+          4: The result is recognizable, but a major halo, spill, duplicate tooth, mask, break, or sharpness mismatch remains.
+          5: Quality is partial, with several substantial visible artifacts.
+          6: The result is mostly clean, but one clear artifact or sharpness issue remains.
+          7: Artifact control is strong, with only a minor visible defect.
+          8: The result is nearly artifact-free, with only a tiny local imperfection.
+          9: The edited image is source-sharp, seamless, and free of glow, masking, spill, duplication, broken teeth, or background
+            deformation.
+        rubric: |-
+          Judge halos, glow, jagged tooth edges, blur, over-sharpening, duplicate teeth, clone patterns, color spill, white gums, pale lips, broken teeth, mask-like whitening, facial warping, and background deformation. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful teeth whitening from hiding smile, dental-geometry, facial-identity, expression, camera, or
+    background drift. Identity is judged by source-to-result correspondence, not by tooth brightness.
+  comparison_checklist:
+    - mouth width, mouth corners, lip shape, lip thickness, and mouth opening
+    - visible tooth count, size, shape, spacing, alignment, rotation, bite, and incisal edges
+    - gumline, gum display, tongue position, oral cavity, and smile asymmetry
+    - nose-to-mouth, mouth-to-chin, cheek, and jaw relationships
+    - eye shape, gaze, brows, expression, and head pose
+    - age impression, skin tone, stable marks, makeup, facial hair, and facial texture
+    - hair, hairstyle, clothing, accessories, and body pose
+    - background hue, texture, brightness, contrast, white balance, and composition
+    - camera angle, crop, framing, lighting, aspect ratio, and resolution
+    - overall same-person and same-smile impression at normal viewing size
+  strict_rules:
+    - Do not increase identity because the teeth are attractive, bright, symmetrical, or prompt-compliant.
+    - Do not treat a photorealistic but different-looking smile or person as identity-preserved.
+    - A score of 7 still requires a strong same-person and same-smile match with only minor drift.
+    - A changed-person or changed-smile impression must score 4 or below on the dedicated identity facet.
+    - Only visible enamel color and brightness may change; dental and facial geometry remain constrained.
+    - Whitening correctness, dental geometry, smile, identity, expression, oral color, background, camera state, and rendering
+      quality are independent.
+  task_specific_exception: only visible enamel hue, discoloration, brightness, and the minimum anti-aliased enamel-boundary
+    blending needed for natural whitening

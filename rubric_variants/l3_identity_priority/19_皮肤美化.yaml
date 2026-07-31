@@ -1,0 +1,1442 @@
+task_key: skin_beautification_edit
+task_title: Skin Beautification and Rejuvenation Editing
+task_title_zh: 皮肤美化
+version: v38_fixed_22_l3_skin_state_first_flash_antiflat_integer_0to9_l3_identity_priority
+target_region: requested facial skin surface regions and, only for neck-line prompts, the requested neck-skin region; including
+  pores, pigmentation spots, freckles, blemishes, acne lesions or marks, under-eye skin, fine lines, wrinkles, skin tone,
+  redness, radiance, firmness, plumpness, hydration, matte finish, and minimum blending zones
+target_action_summary: Create the exact requested localized skin-beautification or rejuvenation result while preserving the
+  same person, facial landmarks, face shape, expression, gaze, hair, facial hair, makeup outside the target, body, clothing,
+  accessories, framing, camera angle, background, global lighting, color, and all non-target regions.
+judge_role: You are a strict state-first comparative evaluator specializing in localized human skin beautification and aesthetic-medicine-style
+  surface editing. Before assigning any integer score, silently classify the requested skin-effect family, observed skin state,
+  preservation state, and severity state for every L3 facet. Judge exact prompt compliance and source preservation rather
+  than generic attractiveness, whiteness, youthfulness, or smoothness.
+judge_instructions: "MANDATORY EXECUTION ORDER\n\nA. Parse the prompt into the REQUESTED SKIN STATE.\nB. Compare source and\
+  \ edited image and fill the OBSERVED SKIN STATE.\nC. For every active L3, read only its bound state fields from facet_state_bindings.\n\
+  D. Assign one internal severity label:\n   EXACT, TINY_LOCAL_IMPERFECTION, MINOR_VISIBLE_MISMATCH, CLEAR_IMPORTANT_ISSUE,\n\
+  \   PARTIAL_SUCCESS, MAJOR_MISMATCH, SEVERE_FAILURE, or ABSENT_OR_REVERSED.\nE. Convert the severity label to an integer\
+  \ using state_to_score_consistency_table.\nF. Apply every applicable facet_consistency_rule.\nG. Run flat_vector_recheck_protocol.\n\
+  H. Return only the 22 integers in active_l3 order.\n\nYou must complete the mandatory internal state card before assigning\
+  \ scores. Do not output the card.\n\nREQUESTED SKIN-EFFECT FAMILY\n\nFirst distinguish the exact requested family:\n- IPL-like\
+  \ brightening and tone improvement;\n- picosecond-like pigmentation-spot reduction;\n- blemish, dark-spot, or freckle removal;\n\
+  - acne-mark fading;\n- active-acne reduction;\n- pore refinement;\n- realistic skin smoothing;\n- brighter complexion;\n\
+  - more even tone;\n- redness and visible-capillary reduction;\n- under-eye dark-circle reduction;\n- general facial fine-line\
+  \ softening;\n- forehead-line softening;\n- outer-eye crow's-feet softening;\n- horizontal neck-line softening;\n- firmer\
+  \ or tighter-looking skin;\n- collagen-rich plump and elastic-looking skin;\n- hydrated glowing or dewy skin;\n- clear matte\
+  \ refined skin;\n- overall facial rejuvenation without identity change.\n\nThese are distinct families. A realistic substitute\
+  \ family is still wrong.\nActive acne is not the same as acne marks. Brightness is not the same as evenness or redness reduction.\n\
+  Hydrated glow and clear matte finish are opposite targets. Regional line tasks are not global smoothing tasks.\n\nSTRENGTH\
+  \ INTERPRETATION\n\n- subtle: low intensity but still visibly different and usable for the dataset;\n- natural: controlled\
+  \ and believable;\n- moderate: medium visible strength;\n- refined: controlled, precise, and clearly effective;\n- clear:\
+  \ strongly visible but still natural.\n\nThe constant wording “strong human-centric aesthetic medicine style edit” does\
+  \ not authorize excessive whitening,\nsmoothing, relighting, identity change, or surgical-looking deformation.\n\nSOURCE-PRESERVATION\
+  \ RULE\n\nIf a skin property is not explicitly requested, its requested state is preserve_source.\nDo not judge unspecified\
+  \ pores, freckles, lines, redness, firmness, plumpness, hydration, finish, or age cues\naccording to a generic beauty ideal.\n\
+  \nLOCALIZATION RULE\n\nOnly the requested facial-skin region and minimum blending zones may change.\nFor neck-line softening,\
+  \ the requested neck skin is the target and unrelated facial skin remains preserved.\nDo not process the whole image or\
+  \ convert a local request into a global beauty filter.\n\nSCORE-SELECTION RULE\n\nDo not choose an integer first. Choose\
+  \ the facet severity label first, then convert it:\n\n9 = EXACT.\n8 = TINY_LOCAL_IMPERFECTION.\n7 = MINOR_VISIBLE_MISMATCH.\n\
+  6 = CLEAR_IMPORTANT_ISSUE.\n5 = PARTIAL_SUCCESS.\n4 = MAJOR_MISMATCH with a recognizable target.\n2-3 = SEVERE_FAILURE or\
+  \ a weak relevant trace.\n0-1 = ABSENT_OR_REVERSED, unrelated, or unusable.\n\nA score of 7 is not a neutral or safe score.\n\
+  A 7 is allowed only when one specific minor visible mismatch exists for that exact L3.\nIf the facet is exact, use 9.\n\
+  If only a tiny imperfection exists, use 8.\nIf a clear important issue exists, use 6 or below.\nIf the result is partial\
+  \ or the defining family/region is wrong, use 5 or below.\nIf uncertain between two severity labels, choose the worse label\
+  \ and lower score.\n\nNO CROSS-COMPENSATION\n\nDo not raise Prompt Compliance because the person looks attractive or the\
+  \ skin is smooth.\nDo not raise identity, localization, feature-boundary, makeup, hair, background, color, lighting, or\
+  \ artifact scores\nbecause the requested skin effect appears present.\nDo not reward global whitening, overexposure, airbrushing,\
+  \ waxy smoothing, face reshaping, or age replacement as skin beautification.\n\nMANDATORY CONTRADICTION CHECKS\n\n- Pigmentation\
+  \ reduction, active-acne reduction, acne-mark fading, pore refinement, tone changes, line changes,\n  firmness, plumpness,\
+  \ glow, matte finish, and rejuvenation cannot freely substitute for one another.\n- Regional dark-circle, forehead, crow's-feet,\
+  \ and neck-line requests must affect the exact requested region.\n- Firmness and plumpness must be produced by skin appearance,\
+  \ not facial reshaping, filler-like swelling, or expression change.\n- Natural pore refinement and smoothing must retain\
+  \ skin microtexture.\n- Brightening must not become global exposure or white-balance change.\n- Even tone and redness reduction\
+  \ must retain dimensional complexion and geometry-defining shadows.\n- Overall rejuvenation may improve skin quality but\
+  \ must not replace the person's age identity, face shape, landmarks, or expression.\n- Hair, facial hair, makeup, clothing,\
+  \ accessories, body, framing, camera angle, background, and global image state must be checked independently.\n\nMANDATORY\
+  \ ANTI-FLAT-VECTOR REVIEW\n\nBefore returning, check whether:\n- all scores are 7;\n- all scores are identical;\n- 18 or\
+  \ more scores use the same integer;\n- many scores of 7 lack a specific facet-level minor mismatch;\n- many scores are 8\
+  \ or 9 despite visible contradictions.\n\nWhen triggered, re-open the state card and reassign every affected score from\
+  \ its actual severity label.\nDo not invent artificial differences, but do not preserve a template tie when the bound visual\
+  \ states differ.\n\nReturn only:\n{\"scores\":[22 integers in exact active_l3 order]}"
+mandatory_internal_state_card:
+  required: true
+  output: internal_only
+  instruction: Silently complete every applicable field before assigning any of the 22 scores. Do not output this card; the
+    external response remains exactly 22 integers.
+  requested_state:
+    skin_effect_family:
+    - ipl_photofacial_brightening
+    - picosecond_pigmentation_spot_reduction
+    - blemish_dark_spot_freckle_removal
+    - acne_mark_fading
+    - active_acne_reduction
+    - pore_refinement
+    - realistic_skin_smoothing
+    - brighter_skin_tone
+    - more_even_skin_tone
+    - redness_capillary_reduction
+    - dark_circle_reduction
+    - general_fine_line_softening
+    - forehead_wrinkle_softening
+    - crows_feet_softening
+    - neck_line_softening
+    - firmer_tighter_skin
+    - collagen_rich_plump_elastic_skin
+    - hydrated_glowing_dewy_skin
+    - clear_matte_refined_skin
+    - overall_facial_rejuvenation
+    effect_descriptor:
+    - subtle
+    - natural
+    - moderate
+    - refined
+    - clear
+    effect_strength_level:
+      1: subtle but visibly different
+      2: natural and controlled
+      3: moderate or refined, clearly effective
+      4: clear and strongly visible but still natural
+    target_region:
+    - full_facial_skin
+    - pigmentation_spots_or_freckles
+    - active_acne_regions
+    - acne_mark_regions
+    - pores_across_face
+    - under_eye_skin
+    - general_facial_fine_lines
+    - forehead_lines
+    - outer_eye_crows_feet
+    - horizontal_neck_lines
+    - whole_face_skin_quality
+    requested_surface_changes:
+    - pigmentation_reduction
+    - blemish_or_freckle_reduction
+    - active_acne_reduction
+    - acne_mark_reduction
+    - pore_refinement
+    - texture_smoothing
+    - brightness_increase
+    - tone_evenness_increase
+    - redness_capillary_reduction
+    - dark_circle_reduction
+    - line_wrinkle_softening
+    - firmness_increase
+    - plumpness_elasticity_increase
+    - hydration_radiance_increase
+    - matte_finish
+    - younger_looking_skin_quality
+    protected_constraints:
+    - same facial identity and stable landmarks
+    - same face shape except unavoidable skin-surface appearance
+    - same expression and gaze
+    - same hairstyle and hair color
+    - same facial hair
+    - same makeup outside target
+    - same clothing and accessories
+    - same body pose and camera angle
+    - same framing and subject placement
+    - same background
+    - same global lighting, exposure, contrast, saturation, and white balance
+    - all unrequested skin properties remain source-consistent
+  observed_state:
+    observed_skin_effect_family:
+    - ipl_photofacial_brightening
+    - picosecond_pigmentation_spot_reduction
+    - blemish_dark_spot_freckle_removal
+    - acne_mark_fading
+    - active_acne_reduction
+    - pore_refinement
+    - realistic_skin_smoothing
+    - brighter_skin_tone
+    - more_even_skin_tone
+    - redness_capillary_reduction
+    - dark_circle_reduction
+    - general_fine_line_softening
+    - forehead_wrinkle_softening
+    - crows_feet_softening
+    - neck_line_softening
+    - firmer_tighter_skin
+    - collagen_rich_plump_elastic_skin
+    - hydrated_glowing_dewy_skin
+    - clear_matte_refined_skin
+    - overall_facial_rejuvenation
+    - mixed_or_unclear
+    - generic_global_beauty_filter
+    - global_brightening_or_relighting_only
+    - no_meaningful_edit
+    observed_strength_level: integer 0-4
+    regional_completion:
+    - none
+    - weak
+    - partial
+    - mostly_complete
+    - complete
+    pigmentation_spot_change:
+    - source_consistent
+    - weak
+    - partial
+    - mostly_correct
+    - exact
+    - over_erased_or_wrong
+    active_acne_change:
+    - source_consistent
+    - weak
+    - partial
+    - mostly_correct
+    - exact
+    - wrong_condition_or_over_erased
+    acne_mark_change:
+    - source_consistent
+    - weak
+    - partial
+    - mostly_correct
+    - exact
+    - wrong_condition_or_over_erased
+    pore_texture_state:
+    - source_consistent
+    - refined_natural
+    - too_coarse
+    - too_smooth
+    - plastic_or_textureless
+    brightness_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - too_bright
+    - global_exposure_shift
+    tone_evenness_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - over_flattened
+    - wrong_color_shift
+    redness_capillary_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - over_desaturated
+    - wrong_color_shift
+    dark_circle_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - over_brightened
+    - wrong_region
+    line_wrinkle_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - over_erased
+    - wrong_region
+    firmness_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - face_reshaped_or_lifted
+    plumpness_state:
+    - source_consistent
+    - target_correct
+    - too_weak
+    - swollen_or_filler_like
+    finish_state:
+    - source_consistent
+    - hydrated_dewy_correct
+    - matte_correct
+    - oily_glare
+    - flat_powdery_or_gray
+    - wrong_opposite_finish
+    microtexture_loss:
+    - none
+    - minor
+    - clear
+    - severe
+    plastic_waxy_oversmoothing:
+    - none
+    - minor
+    - clear
+    - severe
+    facial_identity_drift:
+    - none
+    - minor
+    - clear
+    - severe
+    facial_geometry_drift:
+    - none
+    - minor
+    - clear
+    - severe
+    expression_or_gaze_drift:
+    - none
+    - minor
+    - clear
+    - severe
+    feature_boundary_leakage:
+    - none
+    - minor
+    - clear
+    - severe
+    hair_facial_hair_makeup_drift:
+    - none
+    - minor
+    - clear
+    - severe
+    global_color_white_balance_shift:
+    - none
+    - minor
+    - clear
+    - severe
+    global_lighting_exposure_shift:
+    - none
+    - minor
+    - clear
+    - severe
+    body_clothing_background_camera_change:
+    - none
+    - minor
+    - clear
+    - severe
+    transition_or_mask_error:
+    - none
+    - minor
+    - clear
+    - severe
+    artifact_or_blur_error:
+    - none
+    - minor
+    - clear
+    - severe
+  facet_severity_label:
+  - EXACT
+  - TINY_LOCAL_IMPERFECTION
+  - MINOR_VISIBLE_MISMATCH
+  - CLEAR_IMPORTANT_ISSUE
+  - PARTIAL_SUCCESS
+  - MAJOR_MISMATCH
+  - SEVERE_FAILURE
+  - ABSENT_OR_REVERSED
+facet_state_bindings:
+  requested_skin_operation_style_family_match:
+  - requested_state.skin_effect_family
+  - observed_state.observed_skin_effect_family
+  requested_skin_edit_strength_match:
+  - requested_state.effect_strength_level
+  - observed_state.observed_strength_level
+  requested_skin_region_coverage_match:
+  - requested_state.target_region
+  - observed_state.regional_completion
+  - observed_state.feature_boundary_leakage
+  requested_skin_component_completeness:
+  - requested_state.requested_surface_changes
+  - all corresponding observed condition states
+  - observed_state.regional_completion
+  requested_pigmentation_spot_freckle_match:
+  - requested_state.skin_effect_family
+  - observed_state.pigmentation_spot_change
+  requested_acne_lesion_mark_match:
+  - requested_state.skin_effect_family
+  - observed_state.active_acne_change
+  - observed_state.acne_mark_change
+  requested_pore_texture_refinement_match:
+  - requested_state.skin_effect_family
+  - observed_state.pore_texture_state
+  - observed_state.microtexture_loss
+  - observed_state.plastic_waxy_oversmoothing
+  requested_tone_brightness_evenness_redness_match:
+  - requested_state.skin_effect_family
+  - observed_state.brightness_state
+  - observed_state.tone_evenness_state
+  - observed_state.redness_capillary_state
+  - observed_state.global_color_white_balance_shift
+  - observed_state.global_lighting_exposure_shift
+  requested_dark_circle_line_wrinkle_region_match:
+  - requested_state.skin_effect_family
+  - requested_state.target_region
+  - observed_state.dark_circle_state
+  - observed_state.line_wrinkle_state
+  requested_firmness_plumpness_elasticity_match:
+  - requested_state.skin_effect_family
+  - observed_state.firmness_state
+  - observed_state.plumpness_state
+  - observed_state.facial_geometry_drift
+  requested_radiance_hydration_matte_finish_match:
+  - requested_state.skin_effect_family
+  - observed_state.finish_state
+  - observed_state.global_lighting_exposure_shift
+  unrequested_skin_properties_preserved:
+  - all requested_state surface properties not selected by the prompt
+  - all corresponding observed states marked source_consistent
+  skin_edit_localized_to_requested_skin_regions:
+  - requested_state.target_region
+  - observed_state.regional_completion
+  - observed_state.feature_boundary_leakage
+  - observed_state.body_clothing_background_camera_change
+  skin_feature_boundary_protection_natural:
+  - observed_state.feature_boundary_leakage
+  - observed_state.hair_facial_hair_makeup_drift
+  skin_tone_texture_transition_continuity:
+  - observed_state.transition_or_mask_error
+  - observed_state.microtexture_loss
+  - observed_state.global_color_white_balance_shift
+  skin_pose_aware_regional_balance_and_shadow_preservation:
+  - observed_state.facial_geometry_drift
+  - observed_state.global_lighting_exposure_shift
+  - pose-aware regional balance and geometry-defining shadow preservation
+  skin_facial_identity_landmark_expression_consistency:
+  - observed_state.facial_identity_drift
+  - observed_state.facial_geometry_drift
+  - observed_state.expression_or_gaze_drift
+  skin_non_target_face_hair_makeup_body_scene_preserved:
+  - observed_state.hair_facial_hair_makeup_drift
+  - observed_state.body_clothing_background_camera_change
+  - observed_state.global_color_white_balance_shift
+  - observed_state.global_lighting_exposure_shift
+  skin_microtexture_pores_realistic_not_plastic:
+  - observed_state.pore_texture_state
+  - observed_state.microtexture_loss
+  - observed_state.plastic_waxy_oversmoothing
+  skin_lighting_shadow_specular_integration:
+  - observed_state.finish_state
+  - observed_state.global_lighting_exposure_shift
+  - local geometry-defining shadows and highlights
+  skin_boundary_hair_makeup_facial_hair_contact_consistent:
+  - observed_state.feature_boundary_leakage
+  - observed_state.hair_facial_hair_makeup_drift
+  - observed_state.transition_or_mask_error
+  skin_artifact_sharpness_no_waxy_mask:
+  - observed_state.artifact_or_blur_error
+  - observed_state.transition_or_mask_error
+  - observed_state.plastic_waxy_oversmoothing
+state_to_score_consistency_table:
+  facet_severity_to_integer:
+    EXACT: 9
+    TINY_LOCAL_IMPERFECTION: 8
+    MINOR_VISIBLE_MISMATCH: 7
+    CLEAR_IMPORTANT_ISSUE: 6
+    PARTIAL_SUCCESS: 5
+    MAJOR_MISMATCH: 4
+    SEVERE_FAILURE: 2-3
+    ABSENT_OR_REVERSED: 0-1
+  preservation_severity_mapping:
+    none: 9
+    minor: 7
+    clear: 4
+    severe: 1
+  numeric_strength_gap_mapping:
+    gap_0: 9
+    gap_1: 7
+    gap_2: 5
+    gap_3: 3
+    gap_4: 1
+  family_relation_mapping:
+    exact_requested_family: 9
+    same_family_with_tiny_local_issue: 8
+    same_family_with_minor_visible_issue: 7
+    related_family_but_defining_target_or_finish_wrong: 5
+    clearly_wrong_skin_effect_family: 2-4
+    operation_absent_reversed_or_unusable: 0-1
+  rules:
+  - A score of 7 is valid only after identifying one specific MINOR_VISIBLE_MISMATCH for that exact facet.
+  - If no meaningful mismatch exists, 7 is inconsistent; use 8 or 9.
+  - If a clear important issue exists, 7 is inconsistent; use 6 or below.
+  - If the result is only partially successful or the effect family/region is wrong, use 5 or below.
+  - Do not average a defining failure with easy preservation successes into a safe 7; the worse defining state controls the
+    facet.
+  - For every non-requested skin property, compare against source preservation rather than a generic beauty ideal.
+facet_consistency_rules:
+- condition: requested family differs from observed family in a defining treatment target or finish
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_skin_component_completeness: 0-6
+- condition: requested pigmentation/spot/freckle treatment but result is only generic smoothing or global brightening
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-4
+    requested_pigmentation_spot_freckle_match: 0-4
+- condition: requested acne-mark fading but observed result mainly removes active acne, or requested active-acne reduction
+    but only marks fade
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_acne_lesion_mark_match: 0-4
+- condition: requested pore refinement or realistic smoothing and plastic_waxy_oversmoothing is clear or severe
+  required_score_band:
+    requested_pore_texture_refinement_match: 0-4
+    skin_microtexture_pores_realistic_not_plastic: 0-4
+    skin_artifact_sharpness_no_waxy_mask: 0-4
+- condition: requested brighter complexion but observed global exposure shift or broad non-skin brightening
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_tone_brightness_evenness_redness_match: 0-4
+    skin_edit_localized_to_requested_skin_regions: 0-4
+    skin_non_target_face_hair_makeup_body_scene_preserved: 0-4
+- condition: requested more even tone but result only brightens, whitens, desaturates, or flattens natural complexion variation
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_tone_brightness_evenness_redness_match: 0-4
+- condition: requested redness/capillary reduction but result is global desaturation, whitening, or unrelated tone change
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_tone_brightness_evenness_redness_match: 0-4
+- condition: requested dark-circle reduction but whole face is brightened or under-eye region is not specifically improved
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_skin_region_coverage_match: 0-4
+    requested_dark_circle_line_wrinkle_region_match: 0-4
+- condition: requested forehead, crow's-feet, neck-line, or regional wrinkle treatment but wrong region or global smoothing
+    is used
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_skin_region_coverage_match: 0-4
+    requested_dark_circle_line_wrinkle_region_match: 0-4
+    unrequested_skin_properties_preserved: 0-5
+- condition: requested neck-line softening but only facial skin changes and neck lines remain
+  required_score_band:
+    requested_skin_region_coverage_match: 0-3
+    requested_dark_circle_line_wrinkle_region_match: 0-3
+- condition: requested firmer skin but effect is created by face slimming, lifting, jaw reshaping, or expression change
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_firmness_plumpness_elasticity_match: 0-4
+    skin_facial_identity_landmark_expression_consistency: 0-4
+- condition: requested plump elastic skin but observed result is swollen, filler-like, or changes cheeks, lips, jaw, or face
+    shape
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_firmness_plumpness_elasticity_match: 0-4
+    skin_facial_identity_landmark_expression_consistency: 0-4
+- condition: requested hydrated glow but observed matte/flat finish, or requested matte but observed dewy/oily finish
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    requested_radiance_hydration_matte_finish_match: 0-4
+- condition: requested overall rejuvenation but result changes identity, face geometry, expression, or stable person impression
+  required_score_band:
+    requested_skin_operation_style_family_match: 0-5
+    skin_facial_identity_landmark_expression_consistency: 0-4
+- condition: facial_identity_drift, facial_geometry_drift, or expression_or_gaze_drift is clear
+  required_score_band:
+    skin_facial_identity_landmark_expression_consistency: 0-4
+- condition: facial_identity_drift, facial_geometry_drift, or expression_or_gaze_drift is severe
+  required_score_band:
+    skin_facial_identity_landmark_expression_consistency: 0-1
+- condition: hair, facial hair, makeup, body, clothing, background, framing, or camera change is clear or severe
+  required_score_band:
+    skin_non_target_face_hair_makeup_body_scene_preserved: 0-4
+- condition: global color/white-balance or lighting/exposure shift is clear or severe outside the exact requested local skin
+    change
+  required_score_band:
+    skin_non_target_face_hair_makeup_body_scene_preserved: 0-4
+    skin_lighting_shadow_specular_integration: 0-5
+- condition: feature boundary leakage or transition/mask error is clear or severe
+  required_score_band:
+    skin_edit_localized_to_requested_skin_regions: 0-5
+    skin_feature_boundary_protection_natural: 0-4
+    skin_tone_texture_transition_continuity: 0-4
+    skin_boundary_hair_makeup_facial_hair_contact_consistent: 0-4
+- condition: artifact_or_blur_error or plastic_waxy_oversmoothing is clear
+  required_score_band:
+    skin_artifact_sharpness_no_waxy_mask: 0-4
+- condition: artifact_or_blur_error or plastic_waxy_oversmoothing is severe
+  required_score_band:
+    skin_artifact_sharpness_no_waxy_mask: 0-1
+flat_vector_recheck_protocol:
+  mandatory: true
+  triggers:
+  - all 22 scores are 7
+  - all 22 scores are identical
+  - 18 or more of 22 scores use the same integer
+  - multiple distinct L3 facets receive 7 without a facet-specific minor mismatch
+  - 18 or more scores are 8 or 9 while the internal state card contains any clear or severe contradiction
+  recheck_steps:
+  - Re-open the completed requested and observed skin-state card.
+  - For every L3, assign one facet_severity_label before keeping or changing the integer.
+  - For every score of 7, identify internally one specific minor visible mismatch belonging to that exact facet.
+  - If no mismatch exists, replace 7 with 8 or 9 according to the evidence.
+  - If a clear issue exists, replace 7 with 6 or below.
+  - If the effect is partial, wrong-family, wrong-region, globally filtered, plastic, or identity-changing, replace 7 with
+    5 or below on related facets.
+  - Verify every facet_consistency_rule before returning the vector.
+  - Do not manufacture score variation; preserve a tie only when the bound states and severity are genuinely equivalent.
+  invalid_templates:
+  - Using 7 as a generic meaning of acceptable skin beautification.
+  - Copying one overall attractive-skin impression to all 22 facets.
+  - Giving identity, localization, microtexture, color, lighting, makeup, background, and artifact facets the same score merely
+    because the skin looks smoother.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. The rubric is specialized for 20 skin-beautification families. Every
+    score is produced through requested-state parsing, observed-state comparison, severity classification, state-to-score
+    conversion, contradiction checking, and anti-flat-vector review.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, prompt masks, dynamic activation, or per-facet evidence in the training output.
+  - No hard final reward caps, rank bonuses, or external image metrics.
+  - Closely related skin conditions are merged inside one L3 rather than repeated across many easy facets.
+  - Hair, makeup, clothing, background, color, and scene preservation are not split into many easy L3 facets.
+  - Facial identity remains one dedicated high-impact L3 facet.
+  - Subject Preservation contributes 44% of the final reward; successful beautification cannot compensate for identity, geometry,
+    expression, hair, makeup, framing, background, color, or lighting drift.
+  - Public floating-point values use at most three decimal places.
+evaluation_notes:
+- Treat the 20 listed skin effects as distinct families unless the prompt explicitly combines properties.
+- First infer the requested family, strength descriptor, and exact region; then compare the source and result.
+- Subtle must remain visibly different enough for a visual editing dataset, but cannot become invisible or excessive.
+- Picosecond-like spot reduction, blemish/freckle removal, acne-mark fading, and active-acne reduction must not be merged
+  into generic smoothing.
+- Pore refinement and smoothing must preserve natural microtexture and pores at an appropriate scale.
+- Brighter complexion, more even tone, and redness reduction are separate targets and must not be implemented by global exposure,
+  whitening, or desaturation.
+- Under-eye, forehead, crow's-feet, and neck-line tasks require exact regional compliance.
+- Firmer and plumper skin must not alter face shape, landmarks, lips, cheeks, jaw, expression, or identity.
+- Hydrated glowing and clear matte skin are opposite finish families.
+- Overall rejuvenation should improve skin quality while preserving the same person and stable age identity.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing source image, prompt, and edited
+    image.
+  anti_saturation: Do not default plausible skin results to 7 or 8. Scores 0-3 indicate major failure; 4-5 partial or mediocre
+    satisfaction; 6 mostly correct with one clear issue; 7 strong with one minor visible mismatch; 8 nearly exact; 9 essentially
+    exact.
+  mandatory_state_first_rule: The judge must classify requested state, observed state, and a severity label before selecting
+    every integer.
+  anti_default_7_rule: Seven is valid only for a facet with one identified minor visible mismatch. Exact facets should be
+    9; tiny imperfections 8; clear issues 6 or below; partial or wrong-family results 5 or below.
+  no_cross_compensation: Correct skin effect cannot compensate for identity drift, geometry change, global color shift, makeup/hair
+    change, wrong localization, plastic texture, or artifacts. Realism cannot compensate for the wrong requested family.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  flat_vector_rule: All-7, all-identical, or 18-plus repeated-score vectors require mandatory state-card re-evaluation.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Skin Beautification and Rejuvenation Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Create the exact requested localized skin-beautification or rejuvenation result while preserving the
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_skin_operation_style_family_match
+          - requested_skin_edit_strength_match
+          - requested_skin_region_coverage_match
+          - requested_skin_component_completeness
+          - requested_pigmentation_spot_freckle_match
+          - requested_acne_lesion_mark_match
+          - requested_pore_texture_refinement_match
+          - requested_tone_brightness_evenness_redness_match
+          - requested_dark_circle_line_wrinkle_region_match
+          - requested_firmness_plumpness_elasticity_match
+          - requested_radiance_hydration_matte_finish_match
+          - unrequested_skin_properties_preserved
+          - skin_edit_localized_to_requested_skin_regions
+          - skin_feature_boundary_protection_natural
+          - skin_tone_texture_transition_continuity
+          - skin_pose_aware_regional_balance_and_shadow_preservation
+          - skin_facial_identity_landmark_expression_consistency
+          - skin_non_target_face_hair_makeup_body_scene_preserved
+          - skin_microtexture_pores_realistic_not_plastic
+          - skin_lighting_shadow_specular_integration
+          - skin_boundary_hair_makeup_facial_hair_contact_consistent
+          - skin_artifact_sharpness_no_waxy_mask
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Skin Beautification and Rejuvenation Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on requested facial skin surface regions and, only for neck-line prompts, the requested neck-skin region; including.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_skin_operation_style_family_match
+          - requested_skin_edit_strength_match
+          - requested_skin_region_coverage_match
+          - requested_skin_component_completeness
+          - requested_pigmentation_spot_freckle_match
+          - requested_acne_lesion_mark_match
+          - requested_pore_texture_refinement_match
+          - requested_tone_brightness_evenness_redness_match
+          - requested_dark_circle_line_wrinkle_region_match
+          - requested_firmness_plumpness_elasticity_match
+          - requested_radiance_hydration_matte_finish_match
+          - unrequested_skin_properties_preserved
+          - skin_edit_localized_to_requested_skin_regions
+          - skin_feature_boundary_protection_natural
+          - skin_tone_texture_transition_continuity
+          - skin_pose_aware_regional_balance_and_shadow_preservation
+          - skin_facial_identity_landmark_expression_consistency
+          - skin_non_target_face_hair_makeup_body_scene_preserved
+          - skin_artifact_sharpness_no_waxy_mask
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_skin_edit_strength_match
+          - requested_skin_region_coverage_match
+          - requested_skin_component_completeness
+          - requested_pigmentation_spot_freckle_match
+          - requested_acne_lesion_mark_match
+          - requested_pore_texture_refinement_match
+          - requested_tone_brightness_evenness_redness_match
+          - requested_dark_circle_line_wrinkle_region_match
+          - requested_firmness_plumpness_elasticity_match
+          - requested_radiance_hydration_matte_finish_match
+          - unrequested_skin_properties_preserved
+          - skin_edit_localized_to_requested_skin_regions
+          - skin_feature_boundary_protection_natural
+          - skin_tone_texture_transition_continuity
+          - skin_pose_aware_regional_balance_and_shadow_preservation
+          - skin_microtexture_pores_realistic_not_plastic
+          - skin_lighting_shadow_specular_integration
+          - skin_boundary_hair_makeup_facial_hair_contact_consistent
+          - skin_artifact_sharpness_no_waxy_mask
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of requested facial skin surface regions and, only for neck-line prompts, the requested neck-skin region; including, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_skin_region_coverage_match
+          - requested_skin_component_completeness
+          - requested_pigmentation_spot_freckle_match
+          - requested_acne_lesion_mark_match
+          - requested_pore_texture_refinement_match
+          - requested_tone_brightness_evenness_redness_match
+          - requested_dark_circle_line_wrinkle_region_match
+          - requested_firmness_plumpness_elasticity_match
+          - requested_radiance_hydration_matte_finish_match
+          - unrequested_skin_properties_preserved
+          - skin_edit_localized_to_requested_skin_regions
+          - skin_feature_boundary_protection_natural
+          - skin_tone_texture_transition_continuity
+          - skin_pose_aware_regional_balance_and_shadow_preservation
+          - skin_microtexture_pores_realistic_not_plastic
+          - skin_lighting_shadow_specular_integration
+          - skin_boundary_hair_makeup_facial_hair_contact_consistent
+          - skin_artifact_sharpness_no_waxy_mask
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_skin_operation_style_family_match
+          - requested_skin_edit_strength_match
+          - requested_skin_region_coverage_match
+          - requested_skin_component_completeness
+          - requested_pigmentation_spot_freckle_match
+          - requested_acne_lesion_mark_match
+          - requested_pore_texture_refinement_match
+          - requested_tone_brightness_evenness_redness_match
+          - requested_dark_circle_line_wrinkle_region_match
+          - requested_firmness_plumpness_elasticity_match
+          - requested_radiance_hydration_matte_finish_match
+          - unrequested_skin_properties_preserved
+          - skin_edit_localized_to_requested_skin_regions
+          - skin_feature_boundary_protection_natural
+          - skin_tone_texture_transition_continuity
+          - skin_pose_aware_regional_balance_and_shadow_preservation
+          - skin_facial_identity_landmark_expression_consistency
+          - skin_non_target_face_hair_makeup_body_scene_preserved
+          - skin_microtexture_pores_realistic_not_plastic
+          - skin_lighting_shadow_specular_integration
+          - skin_boundary_hair_makeup_facial_hair_contact_consistent
+          - skin_artifact_sharpness_no_waxy_mask
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - skin_edit_localized_to_requested_skin_regions
+          - skin_feature_boundary_protection_natural
+          - skin_tone_texture_transition_continuity
+          - skin_pose_aware_regional_balance_and_shadow_preservation
+          - skin_microtexture_pores_realistic_not_plastic
+          - skin_lighting_shadow_specular_integration
+          - skin_boundary_hair_makeup_facial_hair_contact_consistent
+          - skin_artifact_sharpness_no_waxy_mask
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_skin_operation_style_family_match
+- requested_skin_edit_strength_match
+- requested_skin_region_coverage_match
+- requested_skin_component_completeness
+- requested_pigmentation_spot_freckle_match
+- requested_acne_lesion_mark_match
+- requested_pore_texture_refinement_match
+- requested_tone_brightness_evenness_redness_match
+- requested_dark_circle_line_wrinkle_region_match
+- requested_firmness_plumpness_elasticity_match
+- requested_radiance_hydration_matte_finish_match
+- unrequested_skin_properties_preserved
+- skin_edit_localized_to_requested_skin_regions
+- skin_feature_boundary_protection_natural
+- skin_tone_texture_transition_continuity
+- skin_pose_aware_regional_balance_and_shadow_preservation
+- skin_facial_identity_landmark_expression_consistency
+- skin_non_target_face_hair_makeup_body_scene_preserved
+- skin_microtexture_pores_realistic_not_plastic
+- skin_lighting_shadow_specular_integration
+- skin_boundary_hair_makeup_facial_hair_contact_consistent
+- skin_artifact_sharpness_no_waxy_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  requirements:
+  - complete mandatory internal skin-state card before scoring
+  - assign one internal severity label per L3
+  - apply state-to-score and contradiction rules
+  - run flat-vector recheck
+  - return exactly 22 integers
+  - do not output state card, severity labels, explanations, masks, or N/A
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 8
+    - 9
+    - 7
+    - 8
+    - 7
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 7
+    - 8
+    - 9
+    - 9
+    - 7
+    - 8
+    - 8
+    - 7
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_skin_operation_style_family_match: 0.24
+    requested_skin_edit_strength_match: 0.05
+    requested_skin_region_coverage_match: 0.1
+    requested_skin_component_completeness: 0.09
+    requested_pigmentation_spot_freckle_match: 0.08
+    requested_acne_lesion_mark_match: 0.08
+    requested_pore_texture_refinement_match: 0.08
+    requested_tone_brightness_evenness_redness_match: 0.09
+    requested_dark_circle_line_wrinkle_region_match: 0.07
+    requested_firmness_plumpness_elasticity_match: 0.05
+    requested_radiance_hydration_matte_finish_match: 0.04
+    unrequested_skin_properties_preserved: 0.03
+  Localization and Anatomical Integration:
+    skin_edit_localized_to_requested_skin_regions: 0.28
+    skin_feature_boundary_protection_natural: 0.27
+    skin_tone_texture_transition_continuity: 0.25
+    skin_pose_aware_regional_balance_and_shadow_preservation: 0.2
+  Subject Preservation:
+    skin_facial_identity_landmark_expression_consistency: 0.6
+    skin_non_target_face_hair_makeup_body_scene_preserved: 0.4
+  Task Realism and Image Quality:
+    skin_microtexture_pores_realistic_not_plastic: 0.32
+    skin_lighting_shadow_specular_integration: 0.24
+    skin_boundary_hair_makeup_facial_hair_contact_consistent: 0.22
+    skin_artifact_sharpness_no_waxy_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Skin Effect and Surface State:
+      requested_skin_operation_style_family_match:
+        title: Requested skin-beautification operation and effect family match
+        definition: 'Judge whether the edited result realizes the exact requested skin-beautification family rather than generic
+          beautification. Distinguish IPL-like brightening, picosecond-like pigmentation reduction, blemish/freckle removal,
+          acne-mark fading, active-acne reduction, pore refinement, realistic smoothing, brighter complexion, more even tone,
+          redness/capillary reduction, dark-circle reduction, facial fine-line softening, forehead-line softening, crow''s-feet
+          softening, neck-line softening, firmer skin, collagen-rich plump skin, hydrated glowing skin, clear matte skin,
+          and overall facial rejuvenation. A photorealistic substitute family is still wrong. Before selecting the integer
+          for requested_skin_operation_style_family_match, silently inspect its bound requested and observed state fields,
+          assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5,
+          MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible mismatch
+          has been identified.'
+        anchors:
+          0: The requested skin operation and effect family are absent, reversed, unrelated, or unusable.
+          1: Only a negligible relevant skin change is visible; the requested family is essentially unmet.
+          2: A small related edit exists, but the requested skin family is severely incorrect or incomplete.
+          3: The edit is weakly related, but a defining family property or target condition is wrong.
+          4: The result belongs to a related but clearly wrong family, such as general brightening instead of spot reduction,
+            smoothing instead of acne reduction, glow instead of matte, or global filtering instead of localized skin treatment.
+          5: The requested family is partially recognizable, but one defining treatment target or finish is visibly wrong.
+          6: The family is mostly correct, but one clear and important family-level distinction remains wrong.
+          7: The exact requested family is clearly successful, with only a minor visible mismatch.
+          8: The requested family is highly accurate, with only a tiny local imperfection.
+          9: The exact requested skin-beautification operation and effect family are fully realized with no substitute treatment
+            or missing defining property.
+      requested_skin_edit_strength_match:
+        title: Requested skin-edit strength and visibility match
+        definition: 'Judge the requested descriptor and visible magnitude. Interpret subtle as low but still clearly visible
+          for the dataset; natural as controlled and believable; moderate as medium strength; refined as controlled, precise,
+          and clearly effective; and clear as a strong visible effect. The constant phrase strong human-centric edit does
+          not authorize excessive whitening, smoothing, or face replacement. Before selecting the integer for requested_skin_edit_strength_match,
+          silently inspect its bound requested and observed state fields, assign one severity label, and convert it with the
+          fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score
+          of 7 is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: The requested effect strength is absent, reversed, destructive, or unusable.
+          1: Only a negligible change is visible when a dataset-visible edit is required, or the effect is extremely excessive.
+          2: The effect is severely too weak or too strong.
+          3: The intended strength is weakly approached and remains clearly outside the requested range.
+          4: The edit is recognizable, but a major under- or over-treatment remains.
+          5: The strength is partially appropriate, with several substantial visibility or intensity problems.
+          6: The strength is mostly correct, but one clear and important mismatch remains.
+          7: The requested strength is clearly achieved, with only a minor visible mismatch.
+          8: The magnitude is highly accurate, with only a tiny under- or over-treatment.
+          9: The final skin change exactly matches the requested subtle, natural, moderate, refined, or clear visibility.
+      requested_skin_region_coverage_match:
+        title: Requested facial or neck skin-region coverage match
+        definition: 'Judge whether the edit covers the exact requested region: full facial skin, pigmentation spots, freckles,
+          acne marks, active acne lesions, pores across the face, under-eye skin, forehead lines, outer-eye crow''s-feet,
+          horizontal neck lines, or whole-face rejuvenation. Do not reward whole-face processing for a localized request.
+          Before selecting the integer for requested_skin_region_coverage_match, silently inspect its bound requested and
+          observed state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7,
+          CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific
+          minor visible mismatch has been identified.'
+        anchors:
+          0: The requested skin region is not edited, is edited in the wrong place, or is unusable.
+          1: Only a negligible part of the required region is changed; unrelated regions dominate.
+          2: A small relevant region is edited, but most requested coverage is missing or misplaced.
+          3: Coverage is weak and major requested areas remain untreated.
+          4: The target region is recognizable, but one major area is missing or a major unrequested area is processed.
+          5: Coverage is moderately complete, with several visible omissions or excessive regions.
+          6: Most required skin regions are treated correctly, but one clear coverage problem remains.
+          7: The requested region coverage is clearly successful, with only a minor local omission or excess.
+          8: Coverage is highly accurate and complete, with only a tiny local imperfection.
+          9: The edit covers exactly all requested facial or neck skin regions and excludes all unrequested regions.
+      requested_skin_component_completeness:
+        title: All defining requested skin-effect components are completed
+        definition: 'Judge whether every defining component named or implied by the requested family is completed. Examples:
+          IPL brightening requires brighter and more even skin; spot reduction requires visibly lighter target spots; acne
+          reduction requires fewer inflamed lesions; pore refinement requires finer pores while preserving texture; rejuvenation
+          requires a coordinated younger-looking skin-quality improvement without identity change. Before selecting the integer
+          for requested_skin_component_completeness, silently inspect its bound requested and observed state fields, assign
+          one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4,
+          SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible mismatch has been
+          identified.'
+        anchors:
+          0: The requested effect components are absent, reversed, unrelated, or unusable.
+          1: Only a negligible component is completed; most defining requirements are missing.
+          2: A small relevant component is present, but the requested effect is severely incomplete.
+          3: The effect is weakly completed and multiple defining components are absent.
+          4: The requested result is recognizable, but one major defining component is missing.
+          5: Several components are present, but substantial omissions remain.
+          6: Most requested components are complete, but one clear and important component is missing or weak.
+          7: All main components are completed, with only a minor local omission.
+          8: The requested components are nearly complete, with only a tiny imperfection.
+          9: Every defining component of the requested skin effect is fully and simultaneously completed.
+    Condition, Tone, Texture, and Finish:
+      requested_pigmentation_spot_freckle_match:
+        title: Requested pigmentation, dark-spot, blemish, and freckle change match
+        definition: 'For IPL, picosecond-like treatment, blemish removal, or spot/freckle reduction, judge the requested change
+          in pigmentation visibility, size, darkness, and distribution. For other prompts, preserve source pigmentation, freckles,
+          moles, and characteristic marks unless their alteration is an unavoidable part of the stated effect. Before selecting
+          the integer for requested_pigmentation_spot_freckle_match, silently inspect its bound requested and observed state
+          fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5,
+          MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible mismatch
+          has been identified.'
+        anchors:
+          0: The requested or source-preserved pigmentation state is absent, opposite, unrelated, or unusable.
+          1: Only a negligible relevant change or preservation remains.
+          2: Pigmentation or spots are severely under-treated, over-erased, recolored, or changed when not requested.
+          3: The intended state is weakly achieved and major spot/freckle errors remain.
+          4: The target is recognizable, but one major pigmentation, blemish, freckle, or mark-preservation mismatch remains.
+          5: The result is partially correct, with several substantial visible spot or pigmentation problems.
+          6: Pigmentation handling is mostly correct, but one clear and important issue remains.
+          7: The requested reduction or source preservation is clearly successful, with only a minor mismatch.
+          8: Pigmentation, spots, and freckles are highly accurate, with only a tiny local imperfection.
+          9: Targeted spots and pigmentation change exactly as requested, while all unrequested freckles, moles, and identity
+            marks remain source-consistent.
+      requested_acne_lesion_mark_match:
+        title: Requested active-acne and acne-mark change match
+        definition: 'Distinguish active inflamed acne or pimples from residual red or brown acne marks. Active-acne reduction
+          must reduce raised or inflamed lesions; acne-mark fading must reduce residual discoloration without pretending that
+          smoothing or generic brightening is the requested treatment. Preserve acne state when not targeted. Before selecting
+          the integer for requested_acne_lesion_mark_match, silently inspect its bound requested and observed state fields,
+          assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5,
+          MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible mismatch
+          has been identified.'
+        anchors:
+          0: The requested acne or acne-mark change is absent, opposite, unrelated, or unusable.
+          1: Only a negligible relevant acne change or preservation remains.
+          2: Active lesions or marks are severely untreated, wrongly substituted, over-erased, or altered when not requested.
+          3: The intended acne condition is weakly addressed and defining lesion-versus-mark errors remain.
+          4: The correct condition is recognizable, but one major lesion, inflammation, mark, or preservation mismatch remains.
+          5: The result is partially correct, with several substantial visible acne-condition problems.
+          6: Acne handling is mostly correct, but one clear and important issue remains.
+          7: The requested reduction or source preservation is clearly successful, with only a minor mismatch.
+          8: The acne or mark state is highly accurate, with only a tiny local imperfection.
+          9: Active lesions and residual marks change exactly according to the requested family, with no wrong-condition substitution
+            or unrequested erasure.
+      requested_pore_texture_refinement_match:
+        title: Requested pore-size and skin-texture refinement match
+        definition: 'Judge requested pore reduction and realistic smoothing separately from plastic blur. Smaller pores should
+          remain visible at a finer scale; smoother skin should reduce roughness while retaining natural microtexture, pores,
+          fine tonal variation, and facial character. For unrelated prompts, preserve source texture. Before selecting the
+          integer for requested_pore_texture_refinement_match, silently inspect its bound requested and observed state fields,
+          assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5,
+          MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible mismatch
+          has been identified.'
+        anchors:
+          0: The requested or source-preserved pore and texture state is absent, opposite, plastic, or unusable.
+          1: Only a negligible relevant refinement or preservation remains.
+          2: Pores or texture are severely wrong, erased, heavily blurred, sharpened unnaturally, or changed when not requested.
+          3: The intended refinement is weakly recognizable, but major plasticity, blur, or texture errors remain.
+          4: The target is recognizable, but one major pore-scale, roughness, microtexture, or preservation mismatch remains.
+          5: The result is partially correct, with several substantial texture problems.
+          6: Pore and texture refinement is mostly correct, but one clear and important issue remains.
+          7: The requested refinement or source preservation is clearly successful, with only a minor mismatch.
+          8: Pore scale and texture are highly accurate, with only a tiny local imperfection.
+          9: Pores, microtexture, fine tonal variation, and surface smoothness exactly match the request while remaining natural
+            and non-plastic.
+      requested_tone_brightness_evenness_redness_match:
+        title: Requested brightness, tone evenness, redness, and capillary change match
+        definition: 'Distinguish brighter complexion from more even tone and from redness/capillary reduction. Brightening
+          must not become global overexposure or skin whitening; even tone must reduce blotchiness without flattening all
+          color; redness reduction must specifically reduce red flush or visible capillaries. Preserve untargeted tone properties.
+          Before selecting the integer for requested_tone_brightness_evenness_redness_match, silently inspect its bound requested
+          and observed state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7,
+          CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific
+          minor visible mismatch has been identified.'
+        anchors:
+          0: The requested or source-preserved skin-tone state is absent, opposite, globally filtered, or unusable.
+          1: Only a negligible relevant tone change or preservation remains.
+          2: Brightness, evenness, or redness is severely wrong, globally shifted, or changed when not requested.
+          3: The intended tone effect is weakly recognizable, but major overexposure, whitening, blotchiness, redness, or
+            color-loss errors remain.
+          4: The target is recognizable, but one major brightness, evenness, redness, capillary, or preservation mismatch
+            remains.
+          5: The result is partially correct, with several substantial tone problems.
+          6: Tone handling is mostly correct, but one clear and important issue remains.
+          7: The requested tone effect or source preservation is clearly successful, with only a minor mismatch.
+          8: Brightness, evenness, and redness are highly accurate, with only a tiny local imperfection.
+          9: The exact requested brightness, evenness, or redness reduction is achieved while preserving natural complexion
+            depth, local color variation, and source lighting.
+      requested_dark_circle_line_wrinkle_region_match:
+        title: Requested dark-circle, fine-line, and wrinkle-region change match
+        definition: 'Distinguish under-eye dark-circle reduction, general facial fine-line softening, forehead-line softening,
+          outer-eye crow''s-feet softening, and horizontal neck-line softening. Judge both the correct condition and the exact
+          region. For unrelated prompts, preserve source lines and under-eye structure. Before selecting the integer for requested_dark_circle_line_wrinkle_region_match,
+          silently inspect its bound requested and observed state fields, assign one severity label, and convert it with the
+          fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score
+          of 7 is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: The requested or source-preserved under-eye or line state is absent, opposite, processed in the wrong region,
+            or unusable.
+          1: Only a negligible relevant regional change or preservation remains.
+          2: The wrong line region is edited, or target dark circles/wrinkles are severely untreated or over-erased.
+          3: The intended regional effect is weakly recognizable, but major location or severity errors remain.
+          4: The target is recognizable, but one major under-eye, forehead, outer-eye, facial-line, neck-line, or preservation
+            mismatch remains.
+          5: The result is partially correct, with several substantial regional or line-condition problems.
+          6: Regional line or dark-circle handling is mostly correct, but one clear and important issue remains.
+          7: The requested regional softening or source preservation is clearly successful, with only a minor mismatch.
+          8: The region and line/dark-circle state are highly accurate, with only a tiny local imperfection.
+          9: The exact requested under-eye, facial fine-line, forehead, crow's-feet, or neck-line change is achieved without
+            processing unrelated regions.
+      requested_firmness_plumpness_elasticity_match:
+        title: Requested firmness, plumpness, and elasticity appearance match
+        definition: 'Distinguish firmer or tighter-looking skin from collagen-rich plump, elastic-looking skin. Firmness must
+          not be produced by face slimming, lifting, jaw reshaping, or changed expression. Plumpness must not become swelling,
+          filler-like distortion, enlarged lips, altered cheeks, or a different face. Preserve these properties when not requested.
+          Before selecting the integer for requested_firmness_plumpness_elasticity_match, silently inspect its bound requested
+          and observed state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7,
+          CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific
+          minor visible mismatch has been identified.'
+        anchors:
+          0: The requested or source-preserved firmness/plumpness state is absent, opposite, distorted, or unusable.
+          1: Only a negligible relevant change or preservation remains.
+          2: Firmness or plumpness is severely wrong, created through facial reshaping, swelling, or changed features.
+          3: The intended effect is weakly recognizable, but major geometry or surface-tension errors remain.
+          4: The target is recognizable, but one major firmness, plumpness, elasticity, or preservation mismatch remains.
+          5: The result is partially correct, with several substantial visible problems.
+          6: Firmness or plumpness is mostly correct, but one clear and important issue remains.
+          7: The requested effect or source preservation is clearly successful, with only a minor mismatch.
+          8: Firmness, plumpness, and elasticity appearance are highly accurate, with only a tiny local imperfection.
+          9: The exact requested firm or plump elastic skin quality is achieved entirely through natural surface appearance
+            without facial reshaping or swelling.
+      requested_radiance_hydration_matte_finish_match:
+        title: Requested radiance, hydration, glow, or matte finish match
+        definition: 'Distinguish hydrated dewy glow from clear matte complexion. Glow requires moisturized radiance with controlled
+          highlights rather than oily glare, overexposure, or global relighting. Matte requires reduced shine with dimensional
+          skin rather than flat, powdery, gray, dry, or textureless skin. Preserve finish when not requested. Before selecting
+          the integer for requested_radiance_hydration_matte_finish_match, silently inspect its bound requested and observed
+          state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6,
+          PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible
+          mismatch has been identified.'
+        anchors:
+          0: The requested or source-preserved finish is absent, opposite, unrelated, or unusable.
+          1: Only a negligible relevant finish change or preservation remains.
+          2: The finish is severely wrong, such as glow instead of matte, matte instead of glow, oily glare, or flat gray
+            skin.
+          3: The intended finish is weakly recognizable, but major hydration, highlight, shine, or flatness errors remain.
+          4: The target finish is recognizable, but one major radiance, hydration, matte, or preservation mismatch remains.
+          5: The result is partially correct, with several substantial finish problems.
+          6: The finish is mostly correct, but one clear and important issue remains.
+          7: The requested finish or source preservation is clearly successful, with only a minor mismatch.
+          8: Radiance or matte quality is highly accurate, with only a tiny local imperfection.
+          9: The exact requested hydrated-glowing or clear-matte finish is achieved with natural dimensionality and source-consistent
+            illumination.
+      unrequested_skin_properties_preserved:
+        title: Unrequested skin properties and characteristic marks are preserved
+        definition: 'Preserve every skin property not explicitly requested: pigmentation, freckles, moles, acne state, pore
+          scale, microtexture, brightness, evenness, redness, under-eye tone, lines, wrinkles, firmness, plumpness, hydration,
+          finish, age cues, and characteristic facial marks. Only the exact requested family and necessary transitions may
+          change. Before selecting the integer for unrequested_skin_properties_preserved, silently inspect its bound requested
+          and observed state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7,
+          CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific
+          minor visible mismatch has been identified.'
+        anchors:
+          0: Unrequested skin properties are broadly replaced, erased, reversed, or unusable.
+          1: Only a negligible amount of the original untargeted skin state remains.
+          2: Several major unrequested skin properties or characteristic marks are severely changed.
+          3: One major or multiple obvious unrequested-property changes remain.
+          4: The source skin remains recognizable, but one important unrequested property is clearly altered.
+          5: Unrequested-property preservation is moderate, with several visible differences.
+          6: Most unrequested properties are preserved, but one clear difference remains.
+          7: Unrequested skin properties are strongly preserved, with only a minor discrepancy.
+          8: The source skin is nearly identical outside the requested attributes, with only a tiny local discrepancy.
+          9: Every unrequested skin property, age cue, freckle, mole, characteristic mark, and surface condition remains source-consistent.
+  Localization and Anatomical Integration:
+    Skin Placement and Facial Integration:
+      skin_edit_localized_to_requested_skin_regions:
+        title: The skin edit is localized to requested facial or neck skin regions
+        definition: 'Keep changes within the exact requested facial-skin or neck-skin regions and minimum blending zones.
+          Do not process hair, eyebrows, eyelashes, eyes, lips, teeth, facial hair, makeup outside the target, ears, clothing,
+          body, background, or the whole image. A localized request must not become a global beauty filter. Before selecting
+          the integer for skin_edit_localized_to_requested_skin_regions, silently inspect its bound requested and observed
+          state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6,
+          PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible
+          mismatch has been identified.'
+        anchors:
+          0: Localization is absent, reversed, broadly global, or unusable.
+          1: Only a negligible localized edit is visible; large non-target regions are processed.
+          2: A small relevant localized attempt exists, but spill into non-target regions is severe.
+          3: Localization is weakly attempted; one or more major facial-feature, hair, body, or scene regions change.
+          4: The edit is recognizably skin-focused, but one major localization or global-filter error remains.
+          5: Localization is moderately achieved, with several substantial non-target changes.
+          6: The edit is mostly localized, but one clear and important spill or overextended region remains.
+          7: Localization is clearly successful, with only a minor local mismatch.
+          8: The edit is highly localized, with only a tiny transition excess.
+          9: The edit is precisely confined to the requested facial or neck skin regions and minimum natural blending zones.
+      skin_feature_boundary_protection_natural:
+        title: Eyes, brows, lips, hairline, facial hair, and makeup boundaries are protected
+        definition: 'Judge boundaries around eyelids, lashes, brows, nostrils, lips, teeth, hairline, ears, beard, moustache,
+          sideburns, and makeup. Skin treatment must not blur, recolor, reshape, erase, sharpen unnaturally, or leak across
+          these protected structures. Before selecting the integer for skin_feature_boundary_protection_natural, silently
+          inspect its bound requested and observed state fields, assign one severity label, and convert it with the fixed
+          mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7
+          is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: Protected facial-feature boundaries are broadly erased, contaminated, distorted, or unusable.
+          1: Only a negligible amount of correct boundary protection remains.
+          2: Multiple major protected structures are blurred, recolored, reshaped, or contaminated.
+          3: One major or several obvious feature-boundary errors remain.
+          4: The face is recognizable, but one important eye, brow, lip, hairline, facial-hair, or makeup boundary is clearly
+            altered.
+          5: Boundary protection is moderate, with several visible differences.
+          6: Most protected boundaries are correct, but one clear and important issue remains.
+          7: Protected feature boundaries are strongly preserved, with only a minor local mismatch.
+          8: Feature boundaries are nearly source-identical, with only a tiny local discrepancy.
+          9: Eyes, brows, lips, nostrils, teeth, hairline, ears, facial hair, and makeup boundaries remain perfectly protected
+            and source-consistent.
+      skin_tone_texture_transition_continuity:
+        title: Edited and unedited skin transition continuously in tone and texture
+        definition: 'Judge transitions across forehead, temples, cheeks, nose, under-eye, mouth area, jaw, ears, hairline,
+          beard line, and neck. Tone, pore scale, texture, highlights, and shadows should change smoothly without hard masks,
+          halos, patch boundaries, repeated textures, or pasted retouching. Before selecting the integer for skin_tone_texture_transition_continuity,
+          silently inspect its bound requested and observed state fields, assign one severity label, and convert it with the
+          fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score
+          of 7 is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: Skin transition continuity is absent, severely masked, contradictory, or unusable.
+          1: Only a negligible natural transition remains; hard retouching boundaries dominate.
+          2: A small relevant transition exists, but tone or texture discontinuity is severe.
+          3: Continuity is weakly attempted and contains major patch, halo, mask, or repeated-texture errors.
+          4: The result is recognizable, but one major tone or texture transition mismatch remains.
+          5: Transition continuity is moderate, with several substantial visible problems.
+          6: The transition is mostly natural, but one clear and important issue remains.
+          7: Tone and texture continuity are clearly successful, with only a minor local mismatch.
+          8: The transition is highly seamless, with only a tiny local imperfection.
+          9: All edited-to-unedited skin transitions are seamless in tone, pores, texture, highlights, shadows, and local
+            detail.
+      skin_pose_aware_regional_balance_and_shadow_preservation:
+        title: Regional balance, facial geometry, and source shadow structure are preserved
+        definition: 'Judge left-right regional balance according to pose, perspective, expression, and source asymmetry. Preserve
+          nose-side shadows, eye-socket depth, cheek contours, nasolabial shading, jaw shadows, neck shadows, and other geometry-defining
+          luminance. Do not flatten the face or force mirror symmetry. Before selecting the integer for skin_pose_aware_regional_balance_and_shadow_preservation,
+          silently inspect its bound requested and observed state fields, assign one severity label, and convert it with the
+          fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score
+          of 7 is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: Regional balance or facial shadow structure is absent, severely contradictory, or unusable.
+          1: Only a negligible amount of source geometry and pose-aware balance remains.
+          2: Major unintended asymmetry, face flattening, or shadow loss dominates.
+          3: Balance is weakly attempted and contains major pose, perspective, or geometry contradictions.
+          4: The skin edit is recognizable, but one major regional-balance or geometry-defining shadow mismatch remains.
+          5: Pose-aware balance is moderate, with several substantial visible problems.
+          6: Regional balance and shadows are mostly correct, but one clear and important issue remains.
+          7: Pose-aware balance and geometry-defining shadows are strongly preserved, with only a minor mismatch.
+          8: The regional treatment is highly accurate, with only a tiny local discrepancy.
+          9: The skin treatment exactly follows source pose and asymmetry while preserving all geometry-defining facial and
+            neck shadows.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      skin_facial_identity_landmark_expression_consistency:
+        title: Facial identity, landmarks, gaze, expression, and stable age cues are preserved
+        definition: 'Compare the source and edited person as the same individual. Judge face outline, forehead, brows, eyes,
+          nose, lips, teeth, cheeks, jaw, chin, feature spacing, gaze, expression, characteristic asymmetries, stable facial
+          marks, gender presentation, and overall person impression. Intended skin-quality improvement is allowed, but face
+          reshaping, feature regeneration, expression change, or changed-person appearance is not. Before selecting the integer
+          for skin_facial_identity_landmark_expression_consistency, silently inspect its bound requested and observed state
+          fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5,
+          MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible mismatch
+          has been identified.'
+        anchors:
+          0: The edited face is effectively a different person, severely distorted, or no longer identity-consistent.
+          1: Identity correspondence is extremely weak; multiple defining landmarks and the overall person impression are
+            replaced.
+          2: Major identity drift affects several defining facial regions or the overall same-person impression.
+          3: Substantial facial-identity, landmark, gaze, expression, or age-character drift is visible.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression at normal viewing
+            size.
+          5: The person remains recognizable, but multiple landmarks, proportions, expression details, age cues, or characteristic
+            features visibly drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity, landmarks, gaze, and expression are strongly preserved, with only a minor visible drift.
+          8: The face is nearly source-identical outside the intended skin-quality change, with only a tiny discrepancy.
+          9: The same person's facial identity, landmarks, feature spacing, gaze, expression, characteristic asymmetries,
+            and stable age cues remain source-consistent.
+      skin_non_target_face_hair_makeup_body_scene_preserved:
+        title: Hair, facial hair, makeup, body, clothing, framing, background, and global image state are preserved
+        definition: 'Preserve hairstyle, hair color, eyebrows, eyelashes, facial hair, makeup outside the target area, accessories,
+          neck and body geometry, pose, clothing, subject scale and placement, camera angle, crop, background geometry and
+          color, global white balance, exposure, contrast, saturation, and lighting mood. Judge these together. Before selecting
+          the integer for skin_non_target_face_hair_makeup_body_scene_preserved, silently inspect its bound requested and
+          observed state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7,
+          CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific
+          minor visible mismatch has been identified.'
+        anchors:
+          0: Non-target facial styling, body, clothing, framing, background, or global image state is severely changed, replaced,
+            or unusable.
+          1: Most non-target content is clearly inconsistent with the source.
+          2: Several major changes substantially alter hair, facial hair, makeup, body, clothing, framing, background, or
+            global color and lighting.
+          3: One major or multiple obvious non-target changes remain.
+          4: The source image is recognizable, but one clear important mismatch affects protected styling, body, clothing,
+            camera, background, or global image state.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target content is preserved, but one clear and important difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Hair, facial hair, makeup, body, clothing, framing, background, and global image state are nearly source-identical,
+            with only a tiny discrepancy.
+          9: All non-target facial styling, body geometry, clothing, accessories, camera/framing, background, global color,
+            exposure, and lighting remain source-consistent.
+  Task Realism and Image Quality:
+    Skin Rendering:
+      skin_microtexture_pores_realistic_not_plastic:
+        title: Skin microtexture and pores remain realistic rather than plastic
+        definition: 'Judge pore visibility at the appropriate scale, microtexture, fine tonal variation, tiny lines, local
+          irregularity, and natural variation across facial regions. Requested refinement may reduce defects, but skin must
+          not become waxy, airbrushed, textureless, porcelain, painted, or synthetic. Before selecting the integer for skin_microtexture_pores_realistic_not_plastic,
+          silently inspect its bound requested and observed state fields, assign one severity label, and convert it with the
+          fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score
+          of 7 is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: Realistic skin microtexture is absent; the face is severely plastic, textureless, corrupted, or unusable.
+          1: Only a negligible amount of believable pore and microtexture detail remains.
+          2: Major waxy, airbrushed, smeared, painted, or textureless regions dominate.
+          3: Skin realism is weakly attempted and contains major synthetic texture contradictions.
+          4: The skin is recognizable, but one major pore, microtexture, or plasticity failure remains.
+          5: Skin realism is moderate, with several substantial visible texture problems.
+          6: Microtexture is mostly realistic, but one clear and important issue remains.
+          7: Skin pores and microtexture are clearly realistic, with only a minor local mismatch.
+          8: The skin is highly realistic, with only a tiny local imperfection.
+          9: Pores, microtexture, fine lines, tonal variation, and natural regional irregularity are fully photorealistic
+            and appropriately preserved.
+      skin_lighting_shadow_specular_integration:
+        title: Skin lighting, shadows, highlights, and specular response integrate naturally
+        definition: 'Judge source-consistent diffuse light, eye-socket and nose shadows, cheek and jaw shading, under-eye
+          depth, forehead highlights, hydrated or matte specular behavior, neck shadows, and local skin color response. The
+          treatment must not globally relight or flatten the face. Before selecting the integer for skin_lighting_shadow_specular_integration,
+          silently inspect its bound requested and observed state fields, assign one severity label, and convert it with the
+          fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score
+          of 7 is invalid unless a facet-specific minor visible mismatch has been identified.'
+        anchors:
+          0: Skin lighting and shadow integration are absent, reversed, unrelated, or unusable.
+          1: Only a negligible source-consistent illumination relationship remains.
+          2: Major glowing skin, wrong highlights, missing shadows, face flattening, or global relighting dominates.
+          3: Integration is weakly attempted and contains major illumination contradictions.
+          4: The result is recognizable, but one major shadow, highlight, specular, or lighting mismatch remains.
+          5: Lighting integration is moderate, with several substantial visible problems.
+          6: Lighting and shadows are mostly correct, but one clear and important issue remains.
+          7: Skin lighting integration is clearly successful, with only a minor local mismatch.
+          8: Highlights, shadows, and specular response are highly accurate, with only a tiny local imperfection.
+          9: Diffuse light, geometry-defining shadows, local highlights, hydrated or matte response, and skin color perfectly
+            match the source scene.
+      skin_boundary_hair_makeup_facial_hair_contact_consistent:
+        title: Skin boundaries and contact with hair, makeup, facial hair, and features are physically consistent
+        definition: 'Judge hairline contact, brows, eyelashes, eye corners, nostrils, lips, beard and moustache edges, sideburns,
+          ears, makeup borders, glasses, jewelry contact, and neck/clothing boundaries. Retouching must not erase strands,
+          soften feature edges, recolor makeup, create halos, or leak skin texture across boundaries. Before selecting the
+          integer for skin_boundary_hair_makeup_facial_hair_contact_consistent, silently inspect its bound requested and observed
+          state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7, CLEAR=6,
+          PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific minor visible
+          mismatch has been identified.'
+        anchors:
+          0: Skin-contact boundaries are absent, severely contradictory, contaminated, or unusable.
+          1: Only a negligible physically coherent boundary remains.
+          2: Multiple major hair, makeup, facial-hair, feature, or accessory contact errors dominate.
+          3: Physical contact is weakly preserved and contains major halos, leakage, erasure, or edge distortion.
+          4: The result is recognizable, but one major boundary or contact mismatch remains.
+          5: Boundary consistency is moderate, with several substantial visible problems.
+          6: Most contacts are correct, but one clear and important issue remains.
+          7: Boundary and contact consistency are clearly successful, with only a minor local mismatch.
+          8: Contacts are highly accurate, with only a tiny local imperfection.
+          9: Hairline, features, makeup, facial hair, ears, accessories, neck, and clothing boundaries remain fully physical,
+            clean, and source-consistent.
+      skin_artifact_sharpness_no_waxy_mask:
+        title: Artifacts, blur, over-smoothing, halos, and mask-like retouching are controlled
+        definition: 'Judge blur, local smearing, duplicated texture, repeated pores, blotchy patches, hard masks, halos, sharpened
+          borders, color banding, facial-feature melting, background contamination, local resolution loss, and excessive beauty-filter
+          processing. Before selecting the integer for skin_artifact_sharpness_no_waxy_mask, silently inspect its bound requested
+          and observed state fields, assign one severity label, and convert it with the fixed mapping: EXACT=9, TINY=8, MINOR=7,
+          CLEAR=6, PARTIAL=5, MAJOR=4, SEVERE=2-3, ABSENT_OR_REVERSED=0-1. A score of 7 is invalid unless a facet-specific
+          minor visible mismatch has been identified.'
+        anchors:
+          0: Artifact control is absent; severe blur, mask-like retouching, corruption, or over-smoothing makes the result
+            unusable.
+          1: Only a negligible clean region remains; artifacts dominate the face or important non-target areas.
+          2: Multiple major blurred, melted, repeated, patchy, haloed, or mask-like structures remain.
+          3: Artifact control is weak; one major or several obvious defects substantially reduce usability.
+          4: The result remains recognizable, but one major artifact, sharpness, waxiness, or mask-like failure is present.
+          5: Artifact control is moderate, with several visible defects or one substantial local failure.
+          6: The image is mostly clean, but one clear and important artifact or sharpness issue remains.
+          7: The result is clean and natural, with only a minor local artifact.
+          8: The image is nearly artifact-free, with only a tiny local imperfection.
+          9: No meaningful blur, waxiness, hard mask, halo, repeated texture, color patch, deformation, contamination, or
+            sharpness loss is visible.
+identity_preservation_protocol:
+  purpose: Prevent attractive skin enhancement from hiding facial-identity, geometry, expression, or non-target drift. Identity
+    is judged by source-to-result correspondence, not by beauty, smoothness, brightness, or youthfulness.
+  comparison_checklist:
+  - overall face outline and width/length relationship
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, gaze, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position, lip geometry, teeth, and expression
+  - jaw, chin, cheek structure, stable age identity, and gender presentation
+  - stable facial marks and characteristic asymmetries, excluding only explicitly targeted skin conditions
+  - hairline, hairstyle, hair color, facial hair, and makeup outside target
+  - body pose, clothing, accessories, subject scale, framing, camera angle, and placement
+  - background geometry, hue, saturation, brightness, contrast, white balance, and lighting mood
+  - overall same-person and same-scene impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the skin result is attractive, smooth, bright, or instruction-compliant.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Overall rejuvenation may improve skin quality but must not replace stable age identity or facial geometry.
+  - Identity, geometry, expression, hair, facial hair, makeup, body, framing, background, and global image state are independent
+    of skin-effect correctness.
+  task_specific_exception: the exact requested facial or neck skin-surface condition and only the minimum necessary natural
+    transition

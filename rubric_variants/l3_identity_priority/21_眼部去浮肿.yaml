@@ -1,0 +1,1122 @@
+task_key: bilateral_upper_eyelid_depuffing
+task_title: Bilateral Upper-Eyelid Depuffing
+task_title_zh: 眼部去浮肿
+version: v1_fixed_22_l3_upper_lid_depuffing_evidence_matrix_all7_audit_integer_0to9_l3_identity_priority
+target_region: both visible upper-eyelid soft-tissue regions from the lash margin through the natural crease toward
+  the brow-side orbital skin, including source-relevant medial, central, and lateral fullness and only the minimum
+  adjacent makeup, lash, brow, glasses, hair, and skin blending zones required for natural depuffing
+target_action_summary: Reduce swollen, bulky, or heavy upper-eyelid fullness on both eyes according to the prompt's
+  subtle, gentle, or moderate strength while preserving natural tissue support, eyelid creases, eye aperture, gaze,
+  irises, pupils, brows, lashes, lower-eye anatomy, expression, identity, skin texture, lighting, camera state, and
+  all non-target regions.
+judge_role: You are a strict expert evaluator specializing in upper-eyelid soft-tissue contouring, orbital anatomy,
+  eye-shape and gaze preservation, identity stability, and photorealistic portrait editing.
+judge_instructions: |-
+  - Inspect both source and edited images at normal portrait size and close upper-eyelid scale before scoring.
+  - Identify both upper-lid soft-tissue volumes, medial/central/lateral fullness, creases, lash margins, brow positions,
+    eye apertures, canthi, iris and pupil positions, lower lids, makeup, glasses, hair occlusion, head pose, and lighting.
+  - The task is localized reduction of swollen or heavy upper-eyelid fullness while preserving the original eyes.
+  - Do not reinterpret it as eye enlargement, eyelid lifting, eyebrow lifting, double-eyelid creation, crease deepening,
+    inner/outer-corner surgery, ptosis correction, lower-eye editing, skin brightening, or global rejuvenation.
+  - Follow subtle, gentle, or moderate strength wording. Reduce excess fullness without hollowing the orbit or removing
+    the person's natural fold anatomy.
+  - Preserve eye shape, aperture, gaze, irises, pupils, scleral exposure, brows, lashes, creases, lower eyelids,
+    expression, identity, skin texture, makeup, lighting, camera state, background, and all non-target regions.
+  - Before scoring, inspect for unchanged puffiness, one-sided treatment, residual bulges, over-deflation, hollow sulcus,
+    erased or duplicated creases, wider eye opening, changed gaze, brow shift, lash damage, lower-eye changes, plastic skin,
+    false brightening, halos, mask seams, blur, glasses or hair warping, and background change.
+  - Do not use 7 as a default. Uncertainty requires the lower supported evidence class.
+
+  - MANDATORY PRIVATE EVIDENCE AUDIT:
+    Before selecting any score, complete a private evidence card. Do not reveal the card, observations, rationale,
+    or chain of thought in the final output.
+
+    PRIVATE_EVIDENCE_CARD:
+      prompt_strength:
+        choose exactly one of [subtle, gentle, moderate, unspecified]
+      observed_operation:
+        choose exactly one of [correct_depuffing, unchanged, increased_puffiness, hollowed, eye_opening_change, crease_redesign, brow_lift_substitution, lighting_only, mixed_or_distorted, unusable]
+      target_visibility:
+        choose exactly one of [not_visible, weak, clear, excessive, unusable]
+      failure_severity:
+        wrong_reduction_direction: choose one of [none, minor, clear, major, severe]
+        insufficient_or_excessive_reduction: choose one of [none, minor, clear, major, severe]
+        incomplete_bilateral_or_spatial_coverage: choose one of [none, minor, clear, major, severe]
+        hollowing_or_tissue_collapse: choose one of [none, minor, clear, major, severe]
+        crease_or_eye_shape_change: choose one of [none, minor, clear, major, severe]
+        gaze_brow_lash_or_lower_eye_change: choose one of [none, minor, clear, major, severe]
+        identity_expression_or_scene_drift: choose one of [none, minor, clear, major, severe]
+        skin_lighting_or_artifact_damage: choose one of [none, minor, clear, major, severe]
+      l3_evidence_class:
+        create exactly 22 entries in active_l3 order
+        each entry must be one of [no_visible_defect, tiny_defect, minor_defect, clear_defect, major_defect, severe_failure, absent_reversed_or_unusable]
+      provisional_scores:
+        create exactly 22 integers in active_l3 order using SCORE-EVIDENCE LOOKUP
+      propagation_matrix_checked:
+        verify every detected failure against the exact affected-facet matrix
+      concentration_review_triggered:
+        true_or_false
+      final_scores:
+        exactly 22 integers after all evidence audits
+
+  - SCORE-EVIDENCE LOOKUP:
+      no_visible_defect -> 9
+      tiny_defect -> 8
+      minor_defect -> 7
+      clear_defect -> 6
+      major_defect -> 4 or 5
+      severe_failure -> 2 or 3
+      absent_reversed_or_unusable -> 0 or 1
+
+  - THREE-WAY TEST FOR EVERY SCORE OF 7:
+    If no visible defect exists, use 9.
+    If only a tiny local defect exists, use 8.
+    If exactly one genuine minor-only defect exists, 7 is allowed.
+    If a clear or larger defect exists, use 6 or below.
+    Never choose 7 first and invent a defect afterward.
+
+  - EXACT FAILURE-PROPAGATION MATRIX:
+
+    primary_edit_absent_or_not_visible:
+      requested_upper_eyelid_depuffing_operation_match: maximum 4
+      requested_puffiness_reduction_direction_match: maximum 5
+      requested_depuffing_magnitude_match: maximum 4
+      requested_bilateral_upper_lid_coverage_match: maximum 5
+      requested_upper_lid_fullness_distribution_match: maximum 5
+      requested_depuffing_visibility_finish_match: maximum 4
+
+    puffiness_increased_or_direction_reversed:
+      requested_upper_eyelid_depuffing_operation_match: maximum 3
+      requested_puffiness_reduction_direction_match: maximum 2
+      requested_depuffing_magnitude_match: maximum 3
+      requested_upper_lid_fullness_distribution_match: maximum 4
+
+    clear_hollowing_or_over_deflation:
+      requested_depuffing_magnitude_match: maximum 5
+      requested_upper_lid_fullness_distribution_match: maximum 5
+      requested_no_hollowing_tissue_support_match: maximum 4
+      upper_lid_crease_lash_orbit_transition_coherent: maximum 5
+      upper_lid_identity_eye_landmark_consistency: maximum 6
+
+    clear_crease_or_fold_redesign:
+      requested_eyelid_crease_fold_preservation_match: maximum 5
+      upper_lid_crease_lash_orbit_transition_coherent: maximum 5
+      upper_lid_identity_eye_landmark_consistency: maximum 6
+      upper_lid_artifact_sharpness_no_warp_mask: maximum 6
+
+    clear_eye_aperture_shape_or_gaze_change:
+      requested_eye_aperture_shape_preservation_match: maximum 5
+      requested_gaze_iris_pupil_preservation_match: maximum 5
+      upper_lid_identity_eye_landmark_consistency: maximum 5
+      upper_lid_expression_gaze_face_scene_preserved: maximum 5
+
+    clear_brow_lash_or_lower_eye_change:
+      requested_brow_lash_lower_eye_preservation_match: maximum 5
+      upper_lid_depuffing_localized_to_upper_eyelid: maximum 5
+      upper_lid_skin_makeup_hair_glasses_occlusion_consistent: maximum 6
+      upper_lid_expression_gaze_face_scene_preserved: maximum 6
+
+    clear_lighting_only_substitution:
+      requested_upper_eyelid_depuffing_operation_match: maximum 5
+      requested_upper_lid_fullness_distribution_match: maximum 5
+      upper_lid_lighting_shadow_color_integration: maximum 5
+      requested_depuffing_visibility_finish_match: maximum 5
+
+    clear_skin_artifact_or_scene_damage:
+      upper_lid_skin_microtexture_realistic: maximum 6
+      upper_lid_lighting_shadow_color_integration: maximum 6
+      upper_lid_boundary_contact_orbital_depth_consistent: maximum 6
+      upper_lid_artifact_sharpness_no_warp_mask: maximum 6
+      upper_lid_expression_gaze_face_scene_preserved: maximum 6
+
+
+  - SEVERITY ESCALATION:
+    Matrix values describe clear visible failures.
+    A minor failure follows ordinary evidence lookup and does not automatically trigger a clear-failure maximum.
+    A major failure reduces directly affected facets to 5 or below.
+    A severe failure reduces directly affected facets to 3 or below.
+    An absent, reversed, unrelated, or unusable primary requirement reduces directly affected core facets to 1 or below where applicable.
+
+  - SCORE-INDEPENDENCE CHECK:
+    High realism must not raise Prompt Compliance.
+    High Prompt Compliance must not raise identity, preservation, anatomy, or artifact scores.
+    One error may affect several causally related facets, but unrelated facets must not be lowered merely to create diversity.
+
+  - CONCENTRATION REVIEW:
+    Re-run the evidence audit when all scores are identical, at least 14 scores are 7, at least 18 scores occupy one
+    value, or a detected clear failure is inconsistent with the affected scores.
+    Re-check every 7 using the three-way test.
+    Never invent defects and never lower unrelated facets merely to break a flat pattern.
+
+  - ALL-7 SPECIAL AUDIT:
+    Treat all 7s as suspicious, not automatically invalid.
+    Keep all 7s only when every facet independently has a genuine minor-only defect, no facet is defect-free or tiny-only,
+    no facet has a clear or larger defect, and no propagation rule requires a lower score.
+
+  - FINAL OUTPUT GATE:
+    Confirm privately that exactly 22 integer scores exist, every score matches its evidence class, all applicable
+    propagation rules were enforced, every 7 passed the three-way test, and score order exactly matches active_l3.
+    Return only the compact output required by compact_output_contract.
+internal_reasoning_protocol:
+  status: mandatory_private_prompt_level_constraint
+  visibility: private_not_returned
+  important_limit: This is a prompt-level soft constraint. It becomes externally verifiable only if the runtime requests
+    and validates the intermediate evidence card.
+  required_sequence:
+  - inspect source, prompt, and edited image before scoring
+  - classify task-specific operation and preservation failures by severity
+  - assign one evidence class to each of the 22 L3 facets
+  - map evidence classes to scores
+  - apply the exact failure-propagation matrix
+  - apply the three-way test to every score of 7
+  - run concentration and all-7 audits when triggered
+  - return only the final 22 integer scores
+score_consistency_lookup:
+  no_visible_defect:
+    score: 9
+    meaning: Essentially complete satisfaction; no visible defect.
+  tiny_defect:
+    score: 8
+    meaning: Only a tiny local imperfection.
+  minor_defect:
+    score: 7
+    meaning: Exactly one genuinely minor visible imperfection.
+  clear_defect:
+    score: 6
+    meaning: Mostly correct, but one clear visible issue.
+  major_defect:
+    score_range:
+    - 4
+    - 5
+    meaning: One major mismatch or several visible issues.
+  severe_failure:
+    score_range:
+    - 2
+    - 3
+    meaning: Weak relevant attempt with severe primary failure.
+  absent_reversed_or_unusable:
+    score_range:
+    - 0
+    - 1
+    meaning: Absent, reversed, unrelated, negligible, or unusable.
+  score_7_rule: Score 7 is allowed only for a genuine minor-only defect. No visible defect implies 9; a tiny defect
+    implies 8; a clear defect implies 6 or below.
+failure_propagation_matrix:
+  primary_edit_absent_or_not_visible:
+    requested_upper_eyelid_depuffing_operation_match: 4
+    requested_puffiness_reduction_direction_match: 5
+    requested_depuffing_magnitude_match: 4
+    requested_bilateral_upper_lid_coverage_match: 5
+    requested_upper_lid_fullness_distribution_match: 5
+    requested_depuffing_visibility_finish_match: 4
+  puffiness_increased_or_direction_reversed:
+    requested_upper_eyelid_depuffing_operation_match: 3
+    requested_puffiness_reduction_direction_match: 2
+    requested_depuffing_magnitude_match: 3
+    requested_upper_lid_fullness_distribution_match: 4
+  clear_hollowing_or_over_deflation:
+    requested_depuffing_magnitude_match: 5
+    requested_upper_lid_fullness_distribution_match: 5
+    requested_no_hollowing_tissue_support_match: 4
+    upper_lid_crease_lash_orbit_transition_coherent: 5
+    upper_lid_identity_eye_landmark_consistency: 6
+  clear_crease_or_fold_redesign:
+    requested_eyelid_crease_fold_preservation_match: 5
+    upper_lid_crease_lash_orbit_transition_coherent: 5
+    upper_lid_identity_eye_landmark_consistency: 6
+    upper_lid_artifact_sharpness_no_warp_mask: 6
+  clear_eye_aperture_shape_or_gaze_change:
+    requested_eye_aperture_shape_preservation_match: 5
+    requested_gaze_iris_pupil_preservation_match: 5
+    upper_lid_identity_eye_landmark_consistency: 5
+    upper_lid_expression_gaze_face_scene_preserved: 5
+  clear_brow_lash_or_lower_eye_change:
+    requested_brow_lash_lower_eye_preservation_match: 5
+    upper_lid_depuffing_localized_to_upper_eyelid: 5
+    upper_lid_skin_makeup_hair_glasses_occlusion_consistent: 6
+    upper_lid_expression_gaze_face_scene_preserved: 6
+  matrix_semantics: Values are maximum scores for clear visible failures; major and severe failures escalate downward.
+mandatory_review_protocol:
+  principle: Concentrated scores trigger re-evaluation, not automatic score spreading. Only visible evidence may raise
+    or lower a score.
+  triggers:
+  - all 22 provisional scores are identical
+  - at least 14 of 22 provisional scores are exactly 7
+  - at least 18 of 22 provisional scores occupy one score value
+  - a clear or larger failure is recorded while all directly affected facets remain 7 or above
+  - the primary edit is absent, reversed, or invisible while all core task facets remain 7 or above
+  score_7_three_way_test:
+  - no visible defect -> score 9
+  - tiny visible defect -> score 8
+  - exactly minor visible defect -> score 7
+  - clear or larger visible defect -> score 6 or below
+  all_7_rule: An all-7 provisional vector is structurally suspicious but not automatically invalid. It may remain
+    only when all 22 facets independently have genuine minor-only defects. Never fabricate defects to preserve all
+    7s.
+  no_forced_diversity: Do not lower unrelated facets, invent defects, or force a varied histogram merely to break
+    a flat vector.
+  final_output_rule: Return only 22 integers in active_l3 order.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets separate task compliance, anatomical integration, subject preservation,
+    and rendering quality. Evidence classes are selected before scores, and task-specific failure propagation prevents
+    contradictory high scores.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - Return exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet explanations in the training output.
+  - No external programmatic hard caps, manual reward deductions, rank bonuses, or external image metrics.
+  - The YAML uses prompt-level evidence-consistency maximums for clear, major, and severe failures.
+  - Do not score generic attractiveness in place of the requested operation.
+  - Do not force score diversity; score variation must come from visible evidence.
+  - Facial identity remains a dedicated high-impact L3 facet.
+  - Subject Preservation contributes 25% of final reward.
+evaluation_notes:
+- The uploaded file contains 150 prompts and 150 unique prompt texts.
+- All prompts target bilateral upper-eyelid puffiness reduction; no prompt requests lower-eye depuffing.
+- Every prompt preserves gaze, eyebrows, eyelashes, and all non-upper-eyelid regions; 136 prompts explicitly preserve
+  eye shape.
+- The prompt set includes subtle, gentle, and moderate reduction wording and repeatedly requires natural, photorealistic,
+  clean blending.
+- Several prompts explicitly forbid hollowing and require preservation of natural eyelid folds and skin texture.
+- The task is not eye enlargement, eyebrow lifting, eyelid lifting, double-eyelid creation, ptosis correction, corner
+  surgery, or global brightening.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to each active L3 by comparing source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible results to 7. Score 7 requires minor-only evidence; 8 requires tiny-only
+    evidence; 9 requires no visible defect; a clear defect requires 6 or below.
+  no_cross_compensation: Do not raise one facet because another is strong. Prompt compliance, identity, anatomy, localization,
+    lighting, background, and artifacts are independent.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, crop,
+    camera state, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Bilateral Upper-Eyelid Depuffing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Reduce swollen, bulky, or heavy upper-eyelid fullness on both eyes according to the prompt's
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_upper_eyelid_depuffing_operation_match
+          - requested_puffiness_reduction_direction_match
+          - requested_depuffing_magnitude_match
+          - requested_bilateral_upper_lid_coverage_match
+          - requested_medial_central_lateral_lid_coverage_match
+          - requested_upper_lid_fullness_distribution_match
+          - requested_no_hollowing_tissue_support_match
+          - requested_eyelid_crease_fold_preservation_match
+          - requested_eye_aperture_shape_preservation_match
+          - requested_gaze_iris_pupil_preservation_match
+          - requested_brow_lash_lower_eye_preservation_match
+          - requested_depuffing_visibility_finish_match
+          - upper_lid_depuffing_localized_to_upper_eyelid
+          - upper_lid_crease_lash_orbit_transition_coherent
+          - upper_lid_pose_aware_bilateral_perspective_balance
+          - upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+          - upper_lid_identity_eye_landmark_consistency
+          - upper_lid_expression_gaze_face_scene_preserved
+          - upper_lid_skin_microtexture_realistic
+          - upper_lid_lighting_shadow_color_integration
+          - upper_lid_boundary_contact_orbital_depth_consistent
+          - upper_lid_artifact_sharpness_no_warp_mask
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Bilateral Upper-Eyelid Depuffing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on both visible upper-eyelid soft-tissue regions from the lash margin through the natural crease toward.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_upper_eyelid_depuffing_operation_match
+          - requested_puffiness_reduction_direction_match
+          - requested_depuffing_magnitude_match
+          - requested_bilateral_upper_lid_coverage_match
+          - requested_medial_central_lateral_lid_coverage_match
+          - requested_upper_lid_fullness_distribution_match
+          - requested_no_hollowing_tissue_support_match
+          - requested_eyelid_crease_fold_preservation_match
+          - requested_eye_aperture_shape_preservation_match
+          - requested_gaze_iris_pupil_preservation_match
+          - requested_brow_lash_lower_eye_preservation_match
+          - requested_depuffing_visibility_finish_match
+          - upper_lid_depuffing_localized_to_upper_eyelid
+          - upper_lid_crease_lash_orbit_transition_coherent
+          - upper_lid_pose_aware_bilateral_perspective_balance
+          - upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+          - upper_lid_identity_eye_landmark_consistency
+          - upper_lid_expression_gaze_face_scene_preserved
+          - upper_lid_artifact_sharpness_no_warp_mask
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_puffiness_reduction_direction_match
+          - requested_depuffing_magnitude_match
+          - requested_bilateral_upper_lid_coverage_match
+          - requested_medial_central_lateral_lid_coverage_match
+          - requested_upper_lid_fullness_distribution_match
+          - requested_no_hollowing_tissue_support_match
+          - requested_eyelid_crease_fold_preservation_match
+          - requested_eye_aperture_shape_preservation_match
+          - requested_gaze_iris_pupil_preservation_match
+          - requested_brow_lash_lower_eye_preservation_match
+          - requested_depuffing_visibility_finish_match
+          - upper_lid_depuffing_localized_to_upper_eyelid
+          - upper_lid_crease_lash_orbit_transition_coherent
+          - upper_lid_pose_aware_bilateral_perspective_balance
+          - upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+          - upper_lid_skin_microtexture_realistic
+          - upper_lid_lighting_shadow_color_integration
+          - upper_lid_boundary_contact_orbital_depth_consistent
+          - upper_lid_artifact_sharpness_no_warp_mask
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of both visible upper-eyelid soft-tissue regions from the lash margin through the natural crease toward, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_depuffing_magnitude_match
+          - requested_bilateral_upper_lid_coverage_match
+          - requested_medial_central_lateral_lid_coverage_match
+          - requested_upper_lid_fullness_distribution_match
+          - requested_no_hollowing_tissue_support_match
+          - requested_eyelid_crease_fold_preservation_match
+          - requested_eye_aperture_shape_preservation_match
+          - requested_gaze_iris_pupil_preservation_match
+          - requested_brow_lash_lower_eye_preservation_match
+          - requested_depuffing_visibility_finish_match
+          - upper_lid_depuffing_localized_to_upper_eyelid
+          - upper_lid_crease_lash_orbit_transition_coherent
+          - upper_lid_pose_aware_bilateral_perspective_balance
+          - upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+          - upper_lid_skin_microtexture_realistic
+          - upper_lid_lighting_shadow_color_integration
+          - upper_lid_boundary_contact_orbital_depth_consistent
+          - upper_lid_artifact_sharpness_no_warp_mask
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_upper_eyelid_depuffing_operation_match
+          - requested_puffiness_reduction_direction_match
+          - requested_depuffing_magnitude_match
+          - requested_bilateral_upper_lid_coverage_match
+          - requested_medial_central_lateral_lid_coverage_match
+          - requested_upper_lid_fullness_distribution_match
+          - requested_no_hollowing_tissue_support_match
+          - requested_eyelid_crease_fold_preservation_match
+          - requested_eye_aperture_shape_preservation_match
+          - requested_gaze_iris_pupil_preservation_match
+          - requested_brow_lash_lower_eye_preservation_match
+          - requested_depuffing_visibility_finish_match
+          - upper_lid_depuffing_localized_to_upper_eyelid
+          - upper_lid_crease_lash_orbit_transition_coherent
+          - upper_lid_pose_aware_bilateral_perspective_balance
+          - upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+          - upper_lid_identity_eye_landmark_consistency
+          - upper_lid_expression_gaze_face_scene_preserved
+          - upper_lid_skin_microtexture_realistic
+          - upper_lid_lighting_shadow_color_integration
+          - upper_lid_boundary_contact_orbital_depth_consistent
+          - upper_lid_artifact_sharpness_no_warp_mask
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - upper_lid_depuffing_localized_to_upper_eyelid
+          - upper_lid_crease_lash_orbit_transition_coherent
+          - upper_lid_pose_aware_bilateral_perspective_balance
+          - upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+          - upper_lid_skin_microtexture_realistic
+          - upper_lid_lighting_shadow_color_integration
+          - upper_lid_boundary_contact_orbital_depth_consistent
+          - upper_lid_artifact_sharpness_no_warp_mask
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimals.
+active_l3:
+- requested_upper_eyelid_depuffing_operation_match
+- requested_puffiness_reduction_direction_match
+- requested_depuffing_magnitude_match
+- requested_bilateral_upper_lid_coverage_match
+- requested_medial_central_lateral_lid_coverage_match
+- requested_upper_lid_fullness_distribution_match
+- requested_no_hollowing_tissue_support_match
+- requested_eyelid_crease_fold_preservation_match
+- requested_eye_aperture_shape_preservation_match
+- requested_gaze_iris_pupil_preservation_match
+- requested_brow_lash_lower_eye_preservation_match
+- requested_depuffing_visibility_finish_match
+- upper_lid_depuffing_localized_to_upper_eyelid
+- upper_lid_crease_lash_orbit_transition_coherent
+- upper_lid_pose_aware_bilateral_perspective_balance
+- upper_lid_skin_makeup_hair_glasses_occlusion_consistent
+- upper_lid_identity_eye_landmark_consistency
+- upper_lid_expression_gaze_face_scene_preserved
+- upper_lid_skin_microtexture_realistic
+- upper_lid_lighting_shadow_color_integration
+- upper_lid_boundary_contact_orbital_depth_consistent
+- upper_lid_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 9
+    - 8
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 8
+    - 8
+    - 9
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_upper_eyelid_depuffing_operation_match: 0.18
+    requested_puffiness_reduction_direction_match: 0.09
+    requested_depuffing_magnitude_match: 0.08
+    requested_bilateral_upper_lid_coverage_match: 0.08
+    requested_medial_central_lateral_lid_coverage_match: 0.08
+    requested_upper_lid_fullness_distribution_match: 0.09
+    requested_no_hollowing_tissue_support_match: 0.09
+    requested_eyelid_crease_fold_preservation_match: 0.08
+    requested_eye_aperture_shape_preservation_match: 0.07
+    requested_gaze_iris_pupil_preservation_match: 0.06
+    requested_brow_lash_lower_eye_preservation_match: 0.05
+    requested_depuffing_visibility_finish_match: 0.05
+  Localization and Anatomical Integration:
+    upper_lid_depuffing_localized_to_upper_eyelid: 0.29
+    upper_lid_crease_lash_orbit_transition_coherent: 0.27
+    upper_lid_pose_aware_bilateral_perspective_balance: 0.23
+    upper_lid_skin_makeup_hair_glasses_occlusion_consistent: 0.21
+  Subject Preservation:
+    upper_lid_identity_eye_landmark_consistency: 0.8
+    upper_lid_expression_gaze_face_scene_preserved: 0.2
+  Task Realism and Image Quality:
+    upper_lid_skin_microtexture_realistic: 0.27
+    upper_lid_lighting_shadow_color_integration: 0.27
+    upper_lid_boundary_contact_orbital_depth_consistent: 0.24
+    upper_lid_artifact_sharpness_no_warp_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimals.
+taxonomy:
+  Prompt Compliance:
+    Requested Depuffing Operation and Distribution:
+      requested_upper_eyelid_depuffing_operation_match:
+        title: Requested upper-eyelid depuffing operation match
+        definition: Judge whether excess fullness and swollen heaviness are reduced on both upper eyelids without
+          eyebrow lifting, eye enlargement, crease redesign, or global face editing.
+        anchors:
+          0: Requested upper-eyelid depuffing operation match is absent, reversed, unrelated, or unusable; the requested
+            reduction is absent, reversed, or achieved by changing brows, eye shape, folds, pose, or lighting.
+          1: Only a negligible trace of requested upper-eyelid depuffing operation match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the requested reduction is absent, reversed, or achieved by changing
+            brows, eye shape, folds, pose, or lighting remains severe and dominates the result.
+          3: Requested upper-eyelid depuffing operation match is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested upper-eyelid depuffing operation match
+            remains.
+          5: Requested upper-eyelid depuffing operation match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested upper-eyelid depuffing operation match is mostly correct, but one clear visible issue remains.
+          7: Requested upper-eyelid depuffing operation match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested upper-eyelid depuffing operation match is near-perfect, with only a tiny local imperfection.
+          9: Both upper eyelids are precisely and naturally depuffed with no substitute operation.
+      requested_puffiness_reduction_direction_match:
+        title: Requested puffiness-reduction direction match
+        definition: Judge whether upper-lid volume and heaviness decrease rather than increase, shift elsewhere, or
+          merely appear lighter through exposure.
+        anchors:
+          0: Requested puffiness-reduction direction match is absent, reversed, unrelated, or unusable; puffiness
+            is unchanged, increased, displaced, or only cosmetically hidden.
+          1: Only a negligible trace of requested puffiness-reduction direction match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but puffiness is unchanged, increased, displaced, or only cosmetically
+            hidden remains severe and dominates the result.
+          3: Requested puffiness-reduction direction match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested puffiness-reduction direction match
+            remains.
+          5: Requested puffiness-reduction direction match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested puffiness-reduction direction match is mostly correct, but one clear visible issue remains.
+          7: Requested puffiness-reduction direction match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested puffiness-reduction direction match is near-perfect, with only a tiny local imperfection.
+          9: Upper-lid puffiness decreases unmistakably and coherently on both sides.
+      requested_depuffing_magnitude_match:
+        title: Requested depuffing magnitude match
+        definition: Judge subtle, gentle, or moderate reduction according to the current prompt, with visible improvement
+          but no over-removal.
+        anchors:
+          0: Requested depuffing magnitude match is absent, reversed, unrelated, or unusable; the change is imperceptible,
+            substantially underdone, overdone, or inconsistent with prompt strength.
+          1: Only a negligible trace of requested depuffing magnitude match is visible; the result remains effectively
+            failed.
+          2: A small relevant trace exists, but the change is imperceptible, substantially underdone, overdone, or
+            inconsistent with prompt strength remains severe and dominates the result.
+          3: Requested depuffing magnitude match is weakly attempted, but the primary requirement is still substantially
+            wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested depuffing magnitude match remains.
+          5: Requested depuffing magnitude match is partially satisfied, with one major or several visible problems.
+          6: Requested depuffing magnitude match is mostly correct, but one clear visible issue remains.
+          7: Requested depuffing magnitude match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested depuffing magnitude match is near-perfect, with only a tiny local imperfection.
+          9: The requested reduction strength is exactly matched and remains anatomically believable.
+      requested_bilateral_upper_lid_coverage_match:
+        title: Requested bilateral upper-lid coverage match
+        definition: Judge whether both assessable upper eyelids are coherently treated without missing one side or
+          editing unrelated eye regions.
+        anchors:
+          0: Requested bilateral upper-lid coverage match is absent, reversed, unrelated, or unusable; one eye or
+            a major upper-lid region is missed, overtreated, or inconsistently edited.
+          1: Only a negligible trace of requested bilateral upper-lid coverage match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but one eye or a major upper-lid region is missed, overtreated, or inconsistently
+            edited remains severe and dominates the result.
+          3: Requested bilateral upper-lid coverage match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested bilateral upper-lid coverage match
+            remains.
+          5: Requested bilateral upper-lid coverage match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested bilateral upper-lid coverage match is mostly correct, but one clear visible issue remains.
+          7: Requested bilateral upper-lid coverage match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested bilateral upper-lid coverage match is near-perfect, with only a tiny local imperfection.
+          9: Every assessable target region on both upper eyelids is completely and coherently treated.
+      requested_medial_central_lateral_lid_coverage_match:
+        title: Requested medial-central-lateral lid coverage match
+        definition: Judge whether puffiness reduction covers the source-relevant medial, central, and lateral upper-lid
+          fullness without leaving bulky islands or flattening unaffected areas.
+        anchors:
+          0: Requested medial-central-lateral lid coverage match is absent, reversed, unrelated, or unusable; a major
+            medial, central, or lateral fullness region remains or an unaffected zone is unnecessarily altered.
+          1: Only a negligible trace of requested medial-central-lateral lid coverage match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but a major medial, central, or lateral fullness region remains or an
+            unaffected zone is unnecessarily altered remains severe and dominates the result.
+          3: Requested medial-central-lateral lid coverage match is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested medial-central-lateral lid coverage
+            match remains.
+          5: Requested medial-central-lateral lid coverage match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested medial-central-lateral lid coverage match is mostly correct, but one clear visible issue remains.
+          7: Requested medial-central-lateral lid coverage match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested medial-central-lateral lid coverage match is near-perfect, with only a tiny local imperfection.
+          9: All source-relevant upper-lid zones are precisely addressed with no omission or unnecessary removal.
+      requested_upper_lid_fullness_distribution_match:
+        title: Requested upper-lid fullness-distribution match
+        definition: Judge smooth redistribution of upper-lid volume along the orbital contour without dents, shelves,
+          ridges, or residual bulges.
+        anchors:
+          0: Requested upper-lid fullness-distribution match is absent, reversed, unrelated, or unusable; residual
+            bulges, dents, stepped tissue, ridges, or patchy flattening remains.
+          1: Only a negligible trace of requested upper-lid fullness-distribution match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but residual bulges, dents, stepped tissue, ridges, or patchy flattening
+            remains remains severe and dominates the result.
+          3: Requested upper-lid fullness-distribution match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested upper-lid fullness-distribution match
+            remains.
+          5: Requested upper-lid fullness-distribution match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested upper-lid fullness-distribution match is mostly correct, but one clear visible issue remains.
+          7: Requested upper-lid fullness-distribution match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested upper-lid fullness-distribution match is near-perfect, with only a tiny local imperfection.
+          9: Upper-lid volume is redistributed perfectly with smooth and natural contour flow.
+    Preserved Eye Anatomy and Finish:
+      requested_no_hollowing_tissue_support_match:
+        title: Requested no-hollowing and tissue-support match
+        definition: Judge preservation of natural upper-lid soft tissue, avoiding skeletal orbit exposure, sunken
+          sulcus, excessive crease depth, or aged hollowing.
+        anchors:
+          0: Requested no-hollowing and tissue-support match is absent, reversed, unrelated, or unusable; the lid
+            becomes hollow, skeletal, sunken, over-deflated, or unnaturally thin.
+          1: Only a negligible trace of requested no-hollowing and tissue-support match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the lid becomes hollow, skeletal, sunken, over-deflated, or unnaturally
+            thin remains severe and dominates the result.
+          3: Requested no-hollowing and tissue-support match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested no-hollowing and tissue-support match
+            remains.
+          5: Requested no-hollowing and tissue-support match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested no-hollowing and tissue-support match is mostly correct, but one clear visible issue remains.
+          7: Requested no-hollowing and tissue-support match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested no-hollowing and tissue-support match is near-perfect, with only a tiny local imperfection.
+          9: Puffiness is reduced while natural tissue support and youthful orbital fullness remain exactly intact.
+      requested_eyelid_crease_fold_preservation_match:
+        title: Requested eyelid crease and fold preservation match
+        definition: Preserve the source crease count, height, curvature, continuity, fold type, and inner/outer fold
+          relationships unless tiny blending adjustment is unavoidable.
+        anchors:
+          0: Requested eyelid crease and fold preservation match is absent, reversed, unrelated, or unusable; the
+            crease is erased, deepened, duplicated, moved, straightened, or converted into a different fold type.
+          1: Only a negligible trace of requested eyelid crease and fold preservation match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but the crease is erased, deepened, duplicated, moved, straightened, or
+            converted into a different fold type remains severe and dominates the result.
+          3: Requested eyelid crease and fold preservation match is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested eyelid crease and fold preservation
+            match remains.
+          5: Requested eyelid crease and fold preservation match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested eyelid crease and fold preservation match is mostly correct, but one clear visible issue remains.
+          7: Requested eyelid crease and fold preservation match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested eyelid crease and fold preservation match is near-perfect, with only a tiny local imperfection.
+          9: All eyelid creases and fold characteristics remain source-identical after depuffing.
+      requested_eye_aperture_shape_preservation_match:
+        title: Requested eye-aperture and shape preservation match
+        definition: Preserve eye opening height and width, canthi, lid margins, upper-lid contour over the globe,
+          and source eye-shape family.
+        anchors:
+          0: Requested eye-aperture and shape preservation match is absent, reversed, unrelated, or unusable; the
+            eyes open wider or narrower, change shape, shift corners, or acquire altered lid margins.
+          1: Only a negligible trace of requested eye-aperture and shape preservation match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but the eyes open wider or narrower, change shape, shift corners, or acquire
+            altered lid margins remains severe and dominates the result.
+          3: Requested eye-aperture and shape preservation match is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested eye-aperture and shape preservation
+            match remains.
+          5: Requested eye-aperture and shape preservation match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested eye-aperture and shape preservation match is mostly correct, but one clear visible issue remains.
+          7: Requested eye-aperture and shape preservation match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested eye-aperture and shape preservation match is near-perfect, with only a tiny local imperfection.
+          9: Eye aperture, canthi, lid margins, and eye shape remain exactly source-consistent.
+      requested_gaze_iris_pupil_preservation_match:
+        title: Requested gaze, iris, and pupil preservation match
+        definition: Preserve gaze direction, iris and pupil position, scleral exposure, catchlights, eye alignment,
+          and binocular coordination.
+        anchors:
+          0: Requested gaze, iris, and pupil preservation match is absent, reversed, unrelated, or unusable; gaze,
+            pupils, irises, catchlights, alignment, or scleral exposure visibly changes.
+          1: Only a negligible trace of requested gaze, iris, and pupil preservation match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but gaze, pupils, irises, catchlights, alignment, or scleral exposure
+            visibly changes remains severe and dominates the result.
+          3: Requested gaze, iris, and pupil preservation match is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested gaze, iris, and pupil preservation
+            match remains.
+          5: Requested gaze, iris, and pupil preservation match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested gaze, iris, and pupil preservation match is mostly correct, but one clear visible issue remains.
+          7: Requested gaze, iris, and pupil preservation match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested gaze, iris, and pupil preservation match is near-perfect, with only a tiny local imperfection.
+          9: Gaze, iris, pupils, scleral exposure, and eye alignment remain exactly source-consistent.
+      requested_brow_lash_lower_eye_preservation_match:
+        title: Requested brow, lash, and lower-eye preservation match
+        definition: Preserve eyebrow position and shape, eyelashes, lower eyelids, aegyo-sal, tear troughs, dark circles,
+          and lower-eye contour.
+        anchors:
+          0: Requested brow, lash, and lower-eye preservation match is absent, reversed, unrelated, or unusable; brows
+            move, lashes change, or lower-eye anatomy, aegyo-sal, tear troughs, or dark circles are altered.
+          1: Only a negligible trace of requested brow, lash, and lower-eye preservation match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but brows move, lashes change, or lower-eye anatomy, aegyo-sal, tear troughs,
+            or dark circles are altered remains severe and dominates the result.
+          3: Requested brow, lash, and lower-eye preservation match is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested brow, lash, and lower-eye preservation
+            match remains.
+          5: Requested brow, lash, and lower-eye preservation match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested brow, lash, and lower-eye preservation match is mostly correct, but one clear visible issue
+            remains.
+          7: Requested brow, lash, and lower-eye preservation match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested brow, lash, and lower-eye preservation match is near-perfect, with only a tiny local imperfection.
+          9: Brows, lashes, and every non-upper-lid eye-area property remain exactly source-consistent.
+      requested_depuffing_visibility_finish_match:
+        title: Requested normal-view visibility and finish match
+        definition: Judge whether the eyes look visibly lighter, less heavy, and more refreshed at normal size while
+          remaining natural, photorealistic, and cleanly blended.
+        anchors:
+          0: Requested normal-view visibility and finish match is absent, reversed, unrelated, or unusable; the effect
+            is invisible, excessive, artificial, poorly blended, or fails to create a refreshed appearance.
+          1: Only a negligible trace of requested normal-view visibility and finish match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the effect is invisible, excessive, artificial, poorly blended, or
+            fails to create a refreshed appearance remains severe and dominates the result.
+          3: Requested normal-view visibility and finish match is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested normal-view visibility and finish
+            match remains.
+          5: Requested normal-view visibility and finish match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested normal-view visibility and finish match is mostly correct, but one clear visible issue remains.
+          7: Requested normal-view visibility and finish match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested normal-view visibility and finish match is near-perfect, with only a tiny local imperfection.
+          9: The depuffing is clearly visible, fully natural, photorealistic, and seamlessly finished.
+  Localization and Anatomical Integration:
+    Upper-Lid Placement and Integration:
+      upper_lid_depuffing_localized_to_upper_eyelid:
+        title: Depuffing is localized to the upper eyelid
+        definition: Confine structural and tonal changes to swollen upper-lid tissue and minimum blending skin, excluding
+          brows, eyes, lower lids, nose, temples, forehead, and cheeks.
+        anchors:
+          0: Depuffing is localized to the upper eyelid is absent, reversed, unrelated, or unusable; changes spill
+            into brows, eyes, lower lids, forehead, temples, nose, cheeks, or wider facial skin.
+          1: Only a negligible trace of depuffing is localized to the upper eyelid is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but changes spill into brows, eyes, lower lids, forehead, temples, nose,
+            cheeks, or wider facial skin remains severe and dominates the result.
+          3: Depuffing is localized to the upper eyelid is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in depuffing is localized to the upper eyelid remains.
+          5: Depuffing is localized to the upper eyelid is partially satisfied, with one major or several visible
+            problems.
+          6: Depuffing is localized to the upper eyelid is mostly correct, but one clear visible issue remains.
+          7: Depuffing is localized to the upper eyelid is strong, with exactly one genuinely minor visible imperfection.
+          8: Depuffing is localized to the upper eyelid is near-perfect, with only a tiny local imperfection.
+          9: All editing is precisely confined to upper-lid tissue and minimum blending zones.
+      upper_lid_crease_lash_orbit_transition_coherent:
+        title: Crease, lash-line, and orbital transition coherence
+        definition: Judge anatomical flow from brow-side orbital skin through the crease to the lash margin, preserving
+          globe curvature and lid attachment.
+        anchors:
+          0: Crease, lash-line, and orbital transition coherence is absent, reversed, unrelated, or unusable; the
+            eyelid floats, collapses, detaches, intersects lashes, or breaks orbital anatomy.
+          1: Only a negligible trace of crease, lash-line, and orbital transition coherence is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but the eyelid floats, collapses, detaches, intersects lashes, or breaks
+            orbital anatomy remains severe and dominates the result.
+          3: Crease, lash-line, and orbital transition coherence is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in crease, lash-line, and orbital transition coherence
+            remains.
+          5: Crease, lash-line, and orbital transition coherence is partially satisfied, with one major or several
+            visible problems.
+          6: Crease, lash-line, and orbital transition coherence is mostly correct, but one clear visible issue remains.
+          7: Crease, lash-line, and orbital transition coherence is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Crease, lash-line, and orbital transition coherence is near-perfect, with only a tiny local imperfection.
+          9: Crease, lash line, orbital contour, and lid attachment remain perfectly coherent.
+      upper_lid_pose_aware_bilateral_perspective_balance:
+        title: Pose-aware bilateral and perspective balance
+        definition: Judge near/far eye scale, head rotation, tilt, foreshortening, source asymmetry, and expression
+          without forcing mirror symmetry.
+        anchors:
+          0: Pose-aware bilateral and perspective balance is absent, reversed, unrelated, or unusable; one side is
+            mismatched, mechanically mirrored, off-axis, or inconsistent with perspective.
+          1: Only a negligible trace of pose-aware bilateral and perspective balance is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but one side is mismatched, mechanically mirrored, off-axis, or inconsistent
+            with perspective remains severe and dominates the result.
+          3: Pose-aware bilateral and perspective balance is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in pose-aware bilateral and perspective balance
+            remains.
+          5: Pose-aware bilateral and perspective balance is partially satisfied, with one major or several visible
+            problems.
+          6: Pose-aware bilateral and perspective balance is mostly correct, but one clear visible issue remains.
+          7: Pose-aware bilateral and perspective balance is strong, with exactly one genuinely minor visible imperfection.
+          8: Pose-aware bilateral and perspective balance is near-perfect, with only a tiny local imperfection.
+          9: Both upper lids are perfectly balanced for pose, perspective, visibility, and source asymmetry.
+      upper_lid_skin_makeup_hair_glasses_occlusion_consistent:
+        title: Skin, makeup, hair, glasses, and occlusion consistency
+        definition: Judge preservation and layering of eyelid makeup, eyeliner, lashes, brows, glasses, hair, shadows,
+          and local skin overlaps.
+        anchors:
+          0: Skin, makeup, hair, glasses, and occlusion consistency is absent, reversed, unrelated, or unusable; makeup
+            is erased, glasses or hair are warped, lashes are displaced, or local layering is wrong.
+          1: Only a negligible trace of skin, makeup, hair, glasses, and occlusion consistency is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but makeup is erased, glasses or hair are warped, lashes are displaced,
+            or local layering is wrong remains severe and dominates the result.
+          3: Skin, makeup, hair, glasses, and occlusion consistency is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in skin, makeup, hair, glasses, and occlusion consistency
+            remains.
+          5: Skin, makeup, hair, glasses, and occlusion consistency is partially satisfied, with one major or several
+            visible problems.
+          6: Skin, makeup, hair, glasses, and occlusion consistency is mostly correct, but one clear visible issue
+            remains.
+          7: Skin, makeup, hair, glasses, and occlusion consistency is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Skin, makeup, hair, glasses, and occlusion consistency is near-perfect, with only a tiny local imperfection.
+          9: All skin, makeup, hair, glasses, lashes, and local occlusions remain physically coherent.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      upper_lid_identity_eye_landmark_consistency:
+        title: Facial identity and eye-landmark consistency
+        definition: Preserve same-person impression, eye spacing, aperture, canthi, lid geometry, crease character,
+          irises, pupils, brows, nose, age cues, and characteristic asymmetry.
+        anchors:
+          0: Facial identity and eye-landmark consistency is absent, reversed, unrelated, or unusable; the person,
+            eye geometry, landmarks, age impression, or characteristic eye cues visibly drift.
+          1: Only a negligible trace of facial identity and eye-landmark consistency is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the person, eye geometry, landmarks, age impression, or characteristic
+            eye cues visibly drift remains severe and dominates the result.
+          3: Facial identity and eye-landmark consistency is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in facial identity and eye-landmark consistency
+            remains.
+          5: Facial identity and eye-landmark consistency is partially satisfied, with one major or several visible
+            problems.
+          6: Facial identity and eye-landmark consistency is mostly correct, but one clear visible issue remains.
+          7: Facial identity and eye-landmark consistency is strong, with exactly one genuinely minor visible imperfection.
+          8: Facial identity and eye-landmark consistency is near-perfect, with only a tiny local imperfection.
+          9: Identity and all defining eye and facial landmarks remain source-identical apart from puffiness reduction.
+      upper_lid_expression_gaze_face_scene_preserved:
+        title: Expression, gaze, face, scene, camera, and global state are preserved
+        definition: Preserve expression, gaze, eyes, brows, lashes, lower lids, nose, mouth, skin tone, hair, clothing,
+          background, lighting, crop, camera, composition, and resolution.
+        anchors:
+          0: Expression, gaze, face, scene, camera, and global state are preserved is absent, reversed, unrelated,
+            or unusable; expression, gaze, facial features, hair, scene, camera, lighting, or global color changes.
+          1: Only a negligible trace of expression, gaze, face, scene, camera, and global state are preserved is visible;
+            the result remains effectively failed.
+          2: A small relevant trace exists, but expression, gaze, facial features, hair, scene, camera, lighting,
+            or global color changes remains severe and dominates the result.
+          3: Expression, gaze, face, scene, camera, and global state are preserved is weakly attempted, but the primary
+            requirement is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in expression, gaze, face, scene, camera, and global
+            state are preserved remains.
+          5: Expression, gaze, face, scene, camera, and global state are preserved is partially satisfied, with one
+            major or several visible problems.
+          6: Expression, gaze, face, scene, camera, and global state are preserved is mostly correct, but one clear
+            visible issue remains.
+          7: Expression, gaze, face, scene, camera, and global state are preserved is strong, with exactly one genuinely
+            minor visible imperfection.
+          8: Expression, gaze, face, scene, camera, and global state are preserved is near-perfect, with only a tiny
+            local imperfection.
+          9: All non-target subject, scene, camera, lighting, and global image properties remain source-consistent.
+  Task Realism and Image Quality:
+    Upper-Lid Rendering Quality:
+      upper_lid_skin_microtexture_realistic:
+        title: Upper-eyelid skin microtexture realism
+        definition: Judge pores, fine lines, crease texture, makeup, natural lid softness, focus, grain, and source-level
+          sharpness after volume reduction.
+        anchors:
+          0: Upper-eyelid skin microtexture realism is absent, reversed, unrelated, or unusable; the skin becomes
+            plastic, blurred, over-smoothed, repeated, waxy, or inconsistent with source detail.
+          1: Only a negligible trace of upper-eyelid skin microtexture realism is visible; the result remains effectively
+            failed.
+          2: A small relevant trace exists, but the skin becomes plastic, blurred, over-smoothed, repeated, waxy,
+            or inconsistent with source detail remains severe and dominates the result.
+          3: Upper-eyelid skin microtexture realism is weakly attempted, but the primary requirement is still substantially
+            wrong.
+          4: A recognizable attempt exists, but one major mismatch in upper-eyelid skin microtexture realism remains.
+          5: Upper-eyelid skin microtexture realism is partially satisfied, with one major or several visible problems.
+          6: Upper-eyelid skin microtexture realism is mostly correct, but one clear visible issue remains.
+          7: Upper-eyelid skin microtexture realism is strong, with exactly one genuinely minor visible imperfection.
+          8: Upper-eyelid skin microtexture realism is near-perfect, with only a tiny local imperfection.
+          9: Upper-lid skin texture, crease detail, makeup, focus, and source sharpness remain fully photorealistic.
+      upper_lid_lighting_shadow_color_integration:
+        title: Upper-eyelid lighting, shadow, and color integration
+        definition: Judge orbital shadow, crease shadow, lid highlight, skin tone, makeup color, white balance, and
+          source illumination without fake brightening.
+        anchors:
+          0: Upper-eyelid lighting, shadow, and color integration is absent, reversed, unrelated, or unusable; false
+            brightening, flattened depth, harsh crease shadow, halo, color shift, or global relighting appears.
+          1: Only a negligible trace of upper-eyelid lighting, shadow, and color integration is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but false brightening, flattened depth, harsh crease shadow, halo, color
+            shift, or global relighting appears remains severe and dominates the result.
+          3: Upper-eyelid lighting, shadow, and color integration is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in upper-eyelid lighting, shadow, and color integration
+            remains.
+          5: Upper-eyelid lighting, shadow, and color integration is partially satisfied, with one major or several
+            visible problems.
+          6: Upper-eyelid lighting, shadow, and color integration is mostly correct, but one clear visible issue remains.
+          7: Upper-eyelid lighting, shadow, and color integration is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Upper-eyelid lighting, shadow, and color integration is near-perfect, with only a tiny local imperfection.
+          9: All eyelid highlights, shadows, skin color, makeup, and source illumination integrate perfectly.
+      upper_lid_boundary_contact_orbital_depth_consistent:
+        title: Boundary, contact, and orbital-depth consistency
+        definition: Judge brow-side transition, crease boundaries, lash margin, inner and outer corners, globe contact,
+          and orbital depth after depuffing.
+        anchors:
+          0: Boundary, contact, and orbital-depth consistency is absent, reversed, unrelated, or unusable; hard seams,
+            floating tissue, collapsed depth, broken corners, or impossible lid-globe contact is visible.
+          1: Only a negligible trace of boundary, contact, and orbital-depth consistency is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but hard seams, floating tissue, collapsed depth, broken corners, or impossible
+            lid-globe contact is visible remains severe and dominates the result.
+          3: Boundary, contact, and orbital-depth consistency is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in boundary, contact, and orbital-depth consistency
+            remains.
+          5: Boundary, contact, and orbital-depth consistency is partially satisfied, with one major or several visible
+            problems.
+          6: Boundary, contact, and orbital-depth consistency is mostly correct, but one clear visible issue remains.
+          7: Boundary, contact, and orbital-depth consistency is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Boundary, contact, and orbital-depth consistency is near-perfect, with only a tiny local imperfection.
+          9: All boundaries, lid contacts, corners, and orbital depth relationships are seamless and physically coherent.
+      upper_lid_artifact_sharpness_no_warp_mask:
+        title: Artifact control, source sharpness, and absence of warp or mask
+        definition: Judge halos, blur, over-sharpening, duplicate creases, mask edges, warped eyes or brows, repeated
+          skin, and background deformation.
+        anchors:
+          0: Artifact control, source sharpness, and absence of warp or mask is absent, reversed, unrelated, or unusable;
+            masking, halos, blur, duplicate folds, eye or brow warping, repeated texture, or scene deformation dominates.
+          1: Only a negligible trace of artifact control, source sharpness, and absence of warp or mask is visible;
+            the result remains effectively failed.
+          2: A small relevant trace exists, but masking, halos, blur, duplicate folds, eye or brow warping, repeated
+            texture, or scene deformation dominates remains severe and dominates the result.
+          3: Artifact control, source sharpness, and absence of warp or mask is weakly attempted, but the primary
+            requirement is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in artifact control, source sharpness, and absence
+            of warp or mask remains.
+          5: Artifact control, source sharpness, and absence of warp or mask is partially satisfied, with one major
+            or several visible problems.
+          6: Artifact control, source sharpness, and absence of warp or mask is mostly correct, but one clear visible
+            issue remains.
+          7: Artifact control, source sharpness, and absence of warp or mask is strong, with exactly one genuinely
+            minor visible imperfection.
+          8: Artifact control, source sharpness, and absence of warp or mask is near-perfect, with only a tiny local
+            imperfection.
+          9: The edit is source-sharp, seamless, and free of masking, duplication, warping, or non-target deformation.
+identity_preservation_protocol:
+  purpose: Prevent task success from hiding identity, expression, gaze, eye geometry, camera, lighting, or scene drift.
+  comparison_checklist:
+  - eye shape, aperture, spacing, canthi, iris and pupil position, gaze, and scleral exposure
+  - upper-eyelid crease count, fold type, lid margin, lash line, and orbital contour
+  - brow position and shape, eyelashes, lower eyelids, aegyo-sal, tear troughs, and dark circles
+  - nose, cheeks, mouth, expression, age impression, and characteristic asymmetry
+  - skin tone, makeup, pores, fine lines, stable marks, and facial texture
+  - hair, glasses, accessories, clothing, background, camera, lighting, crop, and resolution
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the requested local edit is attractive or realistic.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 requires a strong same-person match with only a genuine minor defect.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Prompt compliance, identity, expression, eye geometry, background, and rendering quality are independent.
+  task_specific_exception: only source-relevant bilateral upper-eyelid puffiness reduction and minimum adjacent upper-lid
+    blending skin

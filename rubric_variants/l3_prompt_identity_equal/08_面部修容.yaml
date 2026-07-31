@@ -1,0 +1,894 @@
+task_key: face_contour_makeup_edit
+task_title: Face Contour Makeup Editing
+task_title_zh: 面部修容编辑
+version: v35_fixed_22_l3_face_contour_makeup_identity_bg_antilazy_flash_integer_0to9_l3_pi_equal
+target_region: face-contour shadow and highlight makeup on forehead, temples, cheekbones, cheeks, jawline, chin, and mid-face
+target_action_summary: Apply the requested contour style, placement, color, finish, and optical face-balancing effect without
+  changing facial anatomy.
+supported_controls_or_styles:
+- long-face contour
+- round-face contour
+- square-face contour
+- diamond-face contour
+- pear-face contour
+- inverted-triangle contour
+- cheekbone contour
+- jawline contour
+- temple balancing
+- mid-face highlight
+- double-chin contour
+- forehead shortening/lengthening
+- face slimming
+- dimensional contour
+design_principle:
+  summary: Use exactly 22 non-redundant L3 facets. Instruction execution receives the dominant weight. Related details are
+    merged inside facet definitions rather than expanded into additional L3 items. Facial identity is evaluated by a dedicated
+    strict facet.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score is an integer from 0 to 9.
+  - No N/A values and no dynamic L3 count.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+  - Do not split clothing, background, accessories, or camera framing into multiple easy preservation facets.
+  - A photorealistic but instruction-inaccurate or identity-drifting result must not receive a high score.
+  - Public floating-point values use at most 3 decimal places.
+  - Subject Preservation contributes 42% of the final reward; successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, contour makeup is not anatomical face reshaping; jaw contour is
+  not changing the actual jaw; nose contour is not nose surgery.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+- Face contour is a makeup task, not a face-geometry task.
+- Do not reward actual facial reshaping as successful contouring.
+identity_preservation_protocol:
+  weight_share: 0.15
+  strict_rules:
+  - Identity is judged against the source, not against generic attractiveness or realism.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - A score of 7 requires a strong same-person match with only minor drift.
+  - Target success, background preservation, or image realism cannot compensate for facial identity drift.
+  - 'Allowed identity exception: the requested contour pigment and highlight placement only.'
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Compare source image, prompt, and edited image. Return exactly one integer score for each active_l3 item in
+    the listed order. Judge every facet by visual evidence, then apply failure_propagation caps before returning the final vector.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. contour
+    shading, highlight, cheekbone contour, jawline contour, nose contour, forehead contour, soft sculpting, stronger sculpting,
+    or contour removal must not substitute for each other when the prompt specifies one.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason for that exact
+    L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet, or any visible defect
+    remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Face Contour Makeup Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Apply the requested contour style, placement, color, finish, and optical face-balancing effect without
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - face_contour_style_target_match
+          - face_contour_optical_goal_match
+          - face_contour_target_regions_match
+          - face_contour_shadow_placement_match
+          - face_contour_highlight_placement_match
+          - face_contour_application_shape_direction_match
+          - face_contour_color_undertone_match
+          - face_contour_finish_texture_match
+          - face_contour_intensity_coverage_match
+          - face_contour_blending_edge_match
+          - face_contour_face_shape_adaptation_match
+          - face_contour_unrequested_makeup_preserved
+          - face_contour_localization_no_spill
+          - face_contour_landmark_alignment
+          - face_contour_bilateral_balance
+          - face_contour_no_geometry_change
+          - face_contour_makeup_edit_facial_identity_landmark_consistency
+          - face_contour_expression_features_preserved
+          - face_contour_skin_texture_realism
+          - face_contour_lighting_form_consistency
+          - face_contour_material_color_realism
+          - face_contour_artifact_sharpness_control
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Face Contour Makeup Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on face-contour shadow and highlight makeup on forehead, temples, cheekbones, cheeks, jawline, chin, and mid-face.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - face_contour_style_target_match
+          - face_contour_optical_goal_match
+          - face_contour_target_regions_match
+          - face_contour_shadow_placement_match
+          - face_contour_highlight_placement_match
+          - face_contour_application_shape_direction_match
+          - face_contour_color_undertone_match
+          - face_contour_finish_texture_match
+          - face_contour_intensity_coverage_match
+          - face_contour_blending_edge_match
+          - face_contour_face_shape_adaptation_match
+          - face_contour_unrequested_makeup_preserved
+          - face_contour_localization_no_spill
+          - face_contour_landmark_alignment
+          - face_contour_bilateral_balance
+          - face_contour_no_geometry_change
+          - face_contour_makeup_edit_facial_identity_landmark_consistency
+          - face_contour_expression_features_preserved
+          - face_contour_artifact_sharpness_control
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - face_contour_optical_goal_match
+          - face_contour_target_regions_match
+          - face_contour_shadow_placement_match
+          - face_contour_highlight_placement_match
+          - face_contour_application_shape_direction_match
+          - face_contour_color_undertone_match
+          - face_contour_finish_texture_match
+          - face_contour_intensity_coverage_match
+          - face_contour_blending_edge_match
+          - face_contour_face_shape_adaptation_match
+          - face_contour_unrequested_makeup_preserved
+          - face_contour_localization_no_spill
+          - face_contour_landmark_alignment
+          - face_contour_bilateral_balance
+          - face_contour_no_geometry_change
+          - face_contour_skin_texture_realism
+          - face_contour_lighting_form_consistency
+          - face_contour_material_color_realism
+          - face_contour_artifact_sharpness_control
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of face-contour shadow and highlight makeup on forehead, temples, cheekbones, cheeks, jawline, chin, and mid-face, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - face_contour_target_regions_match
+          - face_contour_shadow_placement_match
+          - face_contour_highlight_placement_match
+          - face_contour_application_shape_direction_match
+          - face_contour_color_undertone_match
+          - face_contour_finish_texture_match
+          - face_contour_intensity_coverage_match
+          - face_contour_blending_edge_match
+          - face_contour_face_shape_adaptation_match
+          - face_contour_unrequested_makeup_preserved
+          - face_contour_localization_no_spill
+          - face_contour_landmark_alignment
+          - face_contour_bilateral_balance
+          - face_contour_no_geometry_change
+          - face_contour_skin_texture_realism
+          - face_contour_lighting_form_consistency
+          - face_contour_material_color_realism
+          - face_contour_artifact_sharpness_control
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - face_contour_style_target_match
+          - face_contour_optical_goal_match
+          - face_contour_target_regions_match
+          - face_contour_shadow_placement_match
+          - face_contour_highlight_placement_match
+          - face_contour_application_shape_direction_match
+          - face_contour_color_undertone_match
+          - face_contour_finish_texture_match
+          - face_contour_intensity_coverage_match
+          - face_contour_blending_edge_match
+          - face_contour_face_shape_adaptation_match
+          - face_contour_unrequested_makeup_preserved
+          - face_contour_localization_no_spill
+          - face_contour_landmark_alignment
+          - face_contour_bilateral_balance
+          - face_contour_no_geometry_change
+          - face_contour_makeup_edit_facial_identity_landmark_consistency
+          - face_contour_expression_features_preserved
+          - face_contour_skin_texture_realism
+          - face_contour_lighting_form_consistency
+          - face_contour_material_color_realism
+          - face_contour_artifact_sharpness_control
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - face_contour_localization_no_spill
+          - face_contour_landmark_alignment
+          - face_contour_bilateral_balance
+          - face_contour_no_geometry_change
+          - face_contour_skin_texture_realism
+          - face_contour_lighting_form_consistency
+          - face_contour_material_color_realism
+          - face_contour_artifact_sharpness_control
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally and return public values with at most 3 decimal places.
+active_l3:
+- face_contour_style_target_match
+- face_contour_optical_goal_match
+- face_contour_target_regions_match
+- face_contour_shadow_placement_match
+- face_contour_highlight_placement_match
+- face_contour_application_shape_direction_match
+- face_contour_color_undertone_match
+- face_contour_finish_texture_match
+- face_contour_intensity_coverage_match
+- face_contour_blending_edge_match
+- face_contour_face_shape_adaptation_match
+- face_contour_unrequested_makeup_preserved
+- face_contour_localization_no_spill
+- face_contour_landmark_alignment
+- face_contour_bilateral_balance
+- face_contour_no_geometry_change
+- face_contour_makeup_edit_facial_identity_landmark_consistency
+- face_contour_expression_features_preserved
+- face_contour_skin_texture_realism
+- face_contour_lighting_form_consistency
+- face_contour_material_color_realism
+- face_contour_artifact_sharpness_control
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output evidence, facet names, explanations, or failure tags in the training path.
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    face_contour_style_target_match: 0.14
+    face_contour_optical_goal_match: 0.07
+    face_contour_target_regions_match: 0.08
+    face_contour_shadow_placement_match: 0.09
+    face_contour_highlight_placement_match: 0.08
+    face_contour_application_shape_direction_match: 0.08
+    face_contour_color_undertone_match: 0.08
+    face_contour_finish_texture_match: 0.07
+    face_contour_intensity_coverage_match: 0.07
+    face_contour_blending_edge_match: 0.08
+    face_contour_face_shape_adaptation_match: 0.08
+    face_contour_unrequested_makeup_preserved: 0.08
+  Localization and Anatomical Integration:
+    face_contour_localization_no_spill: 0.28
+    face_contour_landmark_alignment: 0.28
+    face_contour_bilateral_balance: 0.22
+    face_contour_no_geometry_change: 0.22
+  Subject Preservation:
+    face_contour_makeup_edit_facial_identity_landmark_consistency: 0.7
+    face_contour_expression_features_preserved: 0.3
+  Task Realism and Image Quality:
+    face_contour_skin_texture_realism: 0.28
+    face_contour_lighting_form_consistency: 0.26
+    face_contour_material_color_realism: 0.24
+    face_contour_artifact_sharpness_control: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Edit Execution:
+      face_contour_style_target_match:
+        title: Requested contour style is correct
+        definition: Judge the exact requested style, including long-face, round-face, square-face, diamond-face, pear-face,
+          inverted-triangle, cheekbone, jawline, temple, mid-face, double-chin, forehead, face-slimming, or everyday contour.
+        anchors:
+          0: 'requested contour style is correct completely fails: the contour style is absent or replaced by a different
+            contour design'
+          1: Only a negligible trace of requested contour style is correct is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested contour style is correct is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested contour style is correct is partially attempted, but one or more primary requirements are missing or
+            contradictory.
+          4: requested contour style is correct is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: requested contour style is correct is moderately achieved, with several substantial visible problems.
+          6: requested contour style is correct is mostly correct, but one clear and important issue remains.
+          7: requested contour style is correct is clearly successful, with only a minor visible mismatch.
+          8: requested contour style is correct is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact requested contour style and its defining visual identity are fully realized.
+      face_contour_optical_goal_match:
+        title: Requested optical face-balancing goal is achieved
+        definition: Judge the requested visual effect such as shortening, lengthening, slimming, softening jaw corners, balancing
+          cheekbone width, reducing lower-face width, or adding dimensionality through makeup only.
+        anchors:
+          0: 'requested optical face-balancing goal is achieved completely fails: the requested visual goal is absent, opposite,
+            or created by geometric face reshaping'
+          1: Only a negligible trace of requested optical face-balancing goal is achieved is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested optical face-balancing goal is achieved is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested optical face-balancing goal is achieved is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested optical face-balancing goal is achieved is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested optical face-balancing goal is achieved is moderately achieved, with several substantial visible problems.
+          6: requested optical face-balancing goal is achieved is mostly correct, but one clear and important issue remains.
+          7: requested optical face-balancing goal is achieved is clearly successful, with only a minor visible mismatch.
+          8: requested optical face-balancing goal is achieved is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested optical face-balancing effect is clear, accurate, and achieved entirely through contour makeup.
+      face_contour_target_regions_match:
+        title: Requested facial regions are targeted
+        definition: Check all specified forehead, temple, cheekbone, cheek, jawline, chin, mouth-corner, nasolabial, or mid-face
+          regions.
+        anchors:
+          0: 'requested facial regions are targeted completely fails: contour is placed on wrong or unrelated facial regions'
+          1: Only a negligible trace of requested facial regions are targeted is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested facial regions are targeted is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested facial regions are targeted is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: requested facial regions are targeted is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: requested facial regions are targeted is moderately achieved, with several substantial visible problems.
+          6: requested facial regions are targeted is mostly correct, but one clear and important issue remains.
+          7: requested facial regions are targeted is clearly successful, with only a minor visible mismatch.
+          8: requested facial regions are targeted is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested facial region is covered precisely and no required region is omitted.
+      face_contour_shadow_placement_match:
+        title: Contour shadow placement is correct
+        definition: Judge shadow height, depth, start/end position, under-cheekbone line, jaw shadow, temple shadow, forehead
+          shadow, and lower-face placement.
+        anchors:
+          0: 'contour shadow placement is correct completely fails: shadow placement is absent or fundamentally misplaced'
+          1: Only a negligible trace of contour shadow placement is correct is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but contour shadow placement is correct is severely incorrect, incomplete,
+            or directionally wrong.
+          3: contour shadow placement is correct is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: contour shadow placement is correct is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: contour shadow placement is correct is moderately achieved, with several substantial visible problems.
+          6: contour shadow placement is correct is mostly correct, but one clear and important issue remains.
+          7: contour shadow placement is correct is clearly successful, with only a minor visible mismatch.
+          8: contour shadow placement is correct is highly accurate and complete, with only a tiny local imperfection.
+          9: All contour shadows are placed exactly where requested with correct regional depth and direction.
+      face_contour_highlight_placement_match:
+        title: Highlight placement is correct
+        definition: Judge forehead, central face, apple cheek, mouth corner, chin, or other requested brightening zones and
+          their relationship to contour shadows.
+        anchors:
+          0: 'highlight placement is correct completely fails: highlights are missing, misplaced, or contradict the requested
+            effect'
+          1: Only a negligible trace of highlight placement is correct is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but highlight placement is correct is severely incorrect, incomplete, or directionally
+            wrong.
+          3: highlight placement is correct is partially attempted, but one or more primary requirements are missing or contradictory.
+          4: highlight placement is correct is recognizable, but a major mismatch, omission, excessive change, or wrong regional
+            behavior remains.
+          5: highlight placement is correct is moderately achieved, with several substantial visible problems.
+          6: highlight placement is correct is mostly correct, but one clear and important issue remains.
+          7: highlight placement is correct is clearly successful, with only a minor visible mismatch.
+          8: highlight placement is correct is highly accurate and complete, with only a tiny local imperfection.
+          9: All requested highlights are correctly positioned and balanced with the shadow design.
+      face_contour_application_shape_direction_match:
+        title: Application shape and direction match
+        definition: Judge horizontal, diagonal, vertical, curved, angular, lifted, or soft placement geometry and the width
+          and direction of each application zone.
+        anchors:
+          0: 'application shape and direction match completely fails: application direction or shape is opposite or unrelated'
+          1: Only a negligible trace of application shape and direction match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but application shape and direction match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: application shape and direction match is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: application shape and direction match is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: application shape and direction match is moderately achieved, with several substantial visible problems.
+          6: application shape and direction match is mostly correct, but one clear and important issue remains.
+          7: application shape and direction match is clearly successful, with only a minor visible mismatch.
+          8: application shape and direction match is highly accurate and complete, with only a tiny local imperfection.
+          9: The contour application geometry, direction, width, and orientation exactly match the prompt.
+    Requested Attribute Precision:
+      face_contour_color_undertone_match:
+        title: Requested contour color and undertone match
+        definition: Judge warm brown, cool brown, peach, coral, nude pink, dusty mauve, low-saturation nude, and specified
+          warmth, depth, and saturation.
+        anchors:
+          0: 'requested contour color and undertone match completely fails: the dominant color family or undertone is wrong'
+          1: Only a negligible trace of requested contour color and undertone match is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but requested contour color and undertone match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested contour color and undertone match is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: requested contour color and undertone match is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: requested contour color and undertone match is moderately achieved, with several substantial visible problems.
+          6: requested contour color and undertone match is mostly correct, but one clear and important issue remains.
+          7: requested contour color and undertone match is clearly successful, with only a minor visible mismatch.
+          8: requested contour color and undertone match is highly accurate and complete, with only a tiny local imperfection.
+          9: Hue, undertone, depth, and saturation exactly match the requested contour color.
+      face_contour_finish_texture_match:
+        title: Requested contour finish and texture match
+        definition: Judge soft matte, powder matte, soft-focus, satin, dewy, or shimmer finish while retaining realistic skin
+          texture.
+        anchors:
+          0: 'requested contour finish and texture match completely fails: the finish is absent or replaced by an incompatible
+            material'
+          1: Only a negligible trace of requested contour finish and texture match is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but requested contour finish and texture match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested contour finish and texture match is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: requested contour finish and texture match is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: requested contour finish and texture match is moderately achieved, with several substantial visible problems.
+          6: requested contour finish and texture match is mostly correct, but one clear and important issue remains.
+          7: requested contour finish and texture match is clearly successful, with only a minor visible mismatch.
+          8: requested contour finish and texture match is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested finish and optical material response are exact and naturally rendered.
+      face_contour_intensity_coverage_match:
+        title: Requested contour intensity and coverage match
+        definition: Judge subtle, clear, refined, moderate, or intense strength, pigment opacity, area coverage, and visibility
+          at normal viewing size.
+        anchors:
+          0: 'requested contour intensity and coverage match completely fails: the contour is invisible, far too weak, or
+            grossly excessive'
+          1: Only a negligible trace of requested contour intensity and coverage match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested contour intensity and coverage match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested contour intensity and coverage match is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: requested contour intensity and coverage match is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: requested contour intensity and coverage match is moderately achieved, with several substantial visible problems.
+          6: requested contour intensity and coverage match is mostly correct, but one clear and important issue remains.
+          7: requested contour intensity and coverage match is clearly successful, with only a minor visible mismatch.
+          8: requested contour intensity and coverage match is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested strength, pigment amount, and coverage are exact, visible, and controlled.
+      face_contour_blending_edge_match:
+        title: Contour blending and edge behavior match
+        definition: Judge soft diffusion, clean masking, transition width, absence of stripes, muddy patches, harsh bands,
+          or uncontrolled spill.
+        anchors:
+          0: 'contour blending and edge behavior match completely fails: edges are severely harsh, muddy, leaking, or missing'
+          1: Only a negligible trace of contour blending and edge behavior match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but contour blending and edge behavior match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: contour blending and edge behavior match is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: contour blending and edge behavior match is recognizable, but a major mismatch, omission, excessive change, or
+            wrong regional behavior remains.
+          5: contour blending and edge behavior match is moderately achieved, with several substantial visible problems.
+          6: contour blending and edge behavior match is mostly correct, but one clear and important issue remains.
+          7: contour blending and edge behavior match is clearly successful, with only a minor visible mismatch.
+          8: contour blending and edge behavior match is highly accurate and complete, with only a tiny local imperfection.
+          9: All contour edges and transitions are clean, smooth, controlled, and appropriate to the requested finish.
+      face_contour_face_shape_adaptation_match:
+        title: Contour placement is adapted to the source face
+        definition: Judge whether placement follows the subject's real cheekbones, jaw, temples, forehead, and portrait angle
+          rather than using a generic mask.
+        anchors:
+          0: 'contour placement is adapted to the source face completely fails: the contour ignores source anatomy or uses
+            a mismatched generic pattern'
+          1: Only a negligible trace of contour placement is adapted to the source face is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but contour placement is adapted to the source face is severely incorrect,
+            incomplete, or directionally wrong.
+          3: contour placement is adapted to the source face is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: contour placement is adapted to the source face is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: contour placement is adapted to the source face is moderately achieved, with several substantial visible problems.
+          6: contour placement is adapted to the source face is mostly correct, but one clear and important issue remains.
+          7: contour placement is adapted to the source face is clearly successful, with only a minor visible mismatch.
+          8: contour placement is adapted to the source face is highly accurate and complete, with only a tiny local imperfection.
+          9: The entire contour design is ideally adapted to the subject's actual facial landmarks and camera perspective.
+      face_contour_unrequested_makeup_preserved:
+        title: Unrequested makeup and skin color are preserved
+        definition: Preserve lipstick, blush, eye makeup, brows, natural complexion, and all non-target skin regions.
+        anchors:
+          0: 'unrequested makeup and skin color are preserved completely fails: multiple non-target makeup or skin regions
+            are changed'
+          1: Only a negligible trace of unrequested makeup and skin color are preserved is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but unrequested makeup and skin color are preserved is severely incorrect,
+            incomplete, or directionally wrong.
+          3: unrequested makeup and skin color are preserved is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: unrequested makeup and skin color are preserved is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: unrequested makeup and skin color are preserved is moderately achieved, with several substantial visible problems.
+          6: unrequested makeup and skin color are preserved is mostly correct, but one clear and important issue remains.
+          7: unrequested makeup and skin color are preserved is clearly successful, with only a minor visible mismatch.
+          8: unrequested makeup and skin color are preserved is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested makeup and non-target skin color remain source-consistent.
+  Localization and Anatomical Integration:
+    Target Localization and Structural Integration:
+      face_contour_localization_no_spill:
+        title: Contour remains localized without spill
+        definition: Pigment must remain inside requested contour zones and must not contaminate eyes, lips, hairline, neck,
+          or unrelated skin.
+        anchors:
+          0: 'contour remains localized without spill completely fails: large pigment spill or masking failure affects non-target
+            areas'
+          1: Only a negligible trace of contour remains localized without spill is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but contour remains localized without spill is severely incorrect, incomplete,
+            or directionally wrong.
+          3: contour remains localized without spill is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: contour remains localized without spill is recognizable, but a major mismatch, omission, excessive change, or
+            wrong regional behavior remains.
+          5: contour remains localized without spill is moderately achieved, with several substantial visible problems.
+          6: contour remains localized without spill is mostly correct, but one clear and important issue remains.
+          7: contour remains localized without spill is clearly successful, with only a minor visible mismatch.
+          8: contour remains localized without spill is highly accurate and complete, with only a tiny local imperfection.
+          9: Contour and highlight are perfectly localized with no visible contamination.
+      face_contour_landmark_alignment:
+        title: Contour aligns with facial landmarks
+        definition: Shadow and highlight must follow cheekbone, jaw, temple, forehead, chin, and mouth-corner anatomy.
+        anchors:
+          0: 'contour aligns with facial landmarks completely fails: contour floats away from or crosses major landmarks unnaturally'
+          1: Only a negligible trace of contour aligns with facial landmarks is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but contour aligns with facial landmarks is severely incorrect, incomplete,
+            or directionally wrong.
+          3: contour aligns with facial landmarks is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: contour aligns with facial landmarks is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: contour aligns with facial landmarks is moderately achieved, with several substantial visible problems.
+          6: contour aligns with facial landmarks is mostly correct, but one clear and important issue remains.
+          7: contour aligns with facial landmarks is clearly successful, with only a minor visible mismatch.
+          8: contour aligns with facial landmarks is highly accurate and complete, with only a tiny local imperfection.
+          9: Every contour zone aligns precisely with the underlying facial anatomy.
+      face_contour_bilateral_balance:
+        title: Bilateral balance is natural
+        definition: Judge left-right placement, intensity, height, width, and pose-aware symmetry.
+        anchors:
+          0: 'bilateral balance is natural completely fails: the two sides are severely inconsistent without an intentional
+            reason'
+          1: Only a negligible trace of bilateral balance is natural is visible; the central requirement is essentially unmet.
+          2: A weak related attempt is present, but bilateral balance is natural is severely incorrect, incomplete, or directionally
+            wrong.
+          3: bilateral balance is natural is partially attempted, but one or more primary requirements are missing or contradictory.
+          4: bilateral balance is natural is recognizable, but a major mismatch, omission, excessive change, or wrong regional
+            behavior remains.
+          5: bilateral balance is natural is moderately achieved, with several substantial visible problems.
+          6: bilateral balance is natural is mostly correct, but one clear and important issue remains.
+          7: bilateral balance is natural is clearly successful, with only a minor visible mismatch.
+          8: bilateral balance is natural is highly accurate and complete, with only a tiny local imperfection.
+          9: Both sides are perfectly balanced for the subject's pose and lighting.
+      face_contour_no_geometry_change:
+        title: Optical effect occurs without geometric face change
+        definition: The face may look slimmer, shorter, or more dimensional through makeup, but actual face shape, feature
+          spacing, and anatomy must remain unchanged.
+        anchors:
+          0: 'optical effect occurs without geometric face change completely fails: the edit reshapes or warps facial geometry
+            instead of applying makeup'
+          1: Only a negligible trace of optical effect occurs without geometric face change is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but optical effect occurs without geometric face change is severely incorrect,
+            incomplete, or directionally wrong.
+          3: optical effect occurs without geometric face change is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: optical effect occurs without geometric face change is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: optical effect occurs without geometric face change is moderately achieved, with several substantial visible
+            problems.
+          6: optical effect occurs without geometric face change is mostly correct, but one clear and important issue remains.
+          7: optical effect occurs without geometric face change is clearly successful, with only a minor visible mismatch.
+          8: optical effect occurs without geometric face change is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested optical effect is fully achieved with no unintended anatomical reshaping.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      face_contour_makeup_edit_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: 'Compare the source and edited face as the same individual. Judge face outline, forehead, eyebrow position,
+          eye shape and spacing, nose placement, mouth position, cheek structure, jaw, chin, age impression, gender presentation,
+          skin tone, characteristic asymmetries, and overall same-person impression. Allow only the intended target change:
+          the requested contour pigment and highlight placement only.'
+        anchors:
+          0: 'facial identity and defining landmark geometry are preserved completely fails: the edited subject looks like
+            a different person or defining facial landmarks are severely replaced'
+          1: Only a negligible trace of facial identity and defining landmark geometry are preserved is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but facial identity and defining landmark geometry are preserved is severely
+            incorrect, incomplete, or directionally wrong.
+          3: facial identity and defining landmark geometry are preserved is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: facial identity and defining landmark geometry are preserved is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: facial identity and defining landmark geometry are preserved is moderately achieved, with several substantial
+            visible problems.
+          6: facial identity and defining landmark geometry are preserved is mostly correct, but one clear and important issue
+            remains.
+          7: facial identity and defining landmark geometry are preserved is clearly successful, with only a minor visible
+            mismatch.
+          8: facial identity and defining landmark geometry are preserved is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: The same person's facial identity and all non-target landmark relationships are source-identical, allowing only
+            the requested contour pigment and highlight placement only.
+      face_contour_expression_features_preserved:
+        title: Expression and non-target facial features are preserved
+        definition: Preserve expression, gaze, eyes, brows, nose, mouth, lips, jaw anatomy, and characteristic facial details
+          outside the contour pigment.
+        anchors:
+          0: 'expression and non-target facial features are preserved completely fails: expression or multiple non-target
+            facial features are changed'
+          1: Only a negligible trace of expression and non-target facial features are preserved is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but expression and non-target facial features are preserved is severely incorrect,
+            incomplete, or directionally wrong.
+          3: expression and non-target facial features are preserved is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: expression and non-target facial features are preserved is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: expression and non-target facial features are preserved is moderately achieved, with several substantial visible
+            problems.
+          6: expression and non-target facial features are preserved is mostly correct, but one clear and important issue
+            remains.
+          7: expression and non-target facial features are preserved is clearly successful, with only a minor visible mismatch.
+          8: expression and non-target facial features are preserved is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Expression, gaze, and all non-target facial features remain source-identical.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      face_contour_skin_texture_realism:
+        title: Skin texture remains realistic through the makeup
+        definition: Preserve pores, fine texture, wrinkles, and natural variation beneath contour and highlight.
+        anchors:
+          0: 'skin texture remains realistic through the makeup completely fails: skin becomes plastic, blurred, painted,
+            or textureless'
+          1: Only a negligible trace of skin texture remains realistic through the makeup is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but skin texture remains realistic through the makeup is severely incorrect,
+            incomplete, or directionally wrong.
+          3: skin texture remains realistic through the makeup is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: skin texture remains realistic through the makeup is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: skin texture remains realistic through the makeup is moderately achieved, with several substantial visible problems.
+          6: skin texture remains realistic through the makeup is mostly correct, but one clear and important issue remains.
+          7: skin texture remains realistic through the makeup is clearly successful, with only a minor visible mismatch.
+          8: skin texture remains realistic through the makeup is highly accurate and complete, with only a tiny local imperfection.
+          9: Skin texture remains photorealistic and naturally visible through the product.
+      face_contour_lighting_form_consistency:
+        title: Contour lighting is consistent with source illumination
+        definition: Product highlights and shadows must coexist naturally with the original light direction and facial form.
+        anchors:
+          0: 'contour lighting is consistent with source illumination completely fails: makeup lighting contradicts the source
+            or flattens facial form'
+          1: Only a negligible trace of contour lighting is consistent with source illumination is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but contour lighting is consistent with source illumination is severely incorrect,
+            incomplete, or directionally wrong.
+          3: contour lighting is consistent with source illumination is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: contour lighting is consistent with source illumination is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: contour lighting is consistent with source illumination is moderately achieved, with several substantial visible
+            problems.
+          6: contour lighting is consistent with source illumination is mostly correct, but one clear and important issue
+            remains.
+          7: contour lighting is consistent with source illumination is clearly successful, with only a minor visible mismatch.
+          8: contour lighting is consistent with source illumination is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Contour, highlight, and source illumination are fully coherent.
+      face_contour_material_color_realism:
+        title: Product material and color transitions are realistic
+        definition: Judge powder, cream, satin, shimmer, and dewy behavior, pigment variation, and realistic skin-product
+          interaction.
+        anchors:
+          0: 'product material and color transitions are realistic completely fails: the product appears painted, chalky,
+            metallic in error, or chemically unnatural'
+          1: Only a negligible trace of product material and color transitions are realistic is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but product material and color transitions are realistic is severely incorrect,
+            incomplete, or directionally wrong.
+          3: product material and color transitions are realistic is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: product material and color transitions are realistic is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: product material and color transitions are realistic is moderately achieved, with several substantial visible
+            problems.
+          6: product material and color transitions are realistic is mostly correct, but one clear and important issue remains.
+          7: product material and color transitions are realistic is clearly successful, with only a minor visible mismatch.
+          8: product material and color transitions are realistic is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Product material, pigment, and transitions are fully convincing and photorealistic.
+      face_contour_artifact_sharpness_control:
+        title: Artifacts and sharpness loss are controlled
+        definition: Penalize halos, duplicated edges, smearing, blocky masks, color banding, posterization, blur, or generation
+          artifacts.
+        anchors:
+          0: 'artifacts and sharpness loss are controlled completely fails: severe artifacts or blur dominate the edited face'
+          1: Only a negligible trace of artifacts and sharpness loss are controlled is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but artifacts and sharpness loss are controlled is severely incorrect, incomplete,
+            or directionally wrong.
+          3: artifacts and sharpness loss are controlled is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: artifacts and sharpness loss are controlled is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: artifacts and sharpness loss are controlled is moderately achieved, with several substantial visible problems.
+          6: artifacts and sharpness loss are controlled is mostly correct, but one clear and important issue remains.
+          7: artifacts and sharpness loss are controlled is clearly successful, with only a minor visible mismatch.
+          8: artifacts and sharpness loss are controlled is highly accurate and complete, with only a tiny local imperfection.
+          9: The edit is sharp, clean, artifact-free, and visually coherent.
+judge_role: You are a strict expert evaluator specializing in face contour makeup editing and non-anatomical shading preservation.
+  Judge the edited image against the exact requested edit family, direction, target region, strength, component details, preservation
+  constraints, and realism, not against generic attractiveness or plausibility.
+judge_instructions: |-
+  - First infer the exact requested edit family from the prompt, such as contour shading, highlight, cheekbone contour, jawline contour, nose contour, forehead contour, soft sculpting, stronger sculpting, or contour removal.
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+  - Target regions for this task include cheekbones, jawline, chin, nose sides, forehead edge, temples, highlight zones, shadow zones, skin texture, and facial landmarks. Judge the requested target area and the preservation of all non-target regions independently.
+
+  - Common non-equivalent substitutions: contour makeup is not anatomical face reshaping; jaw contour is not changing the actual jaw; nose contour is not nose surgery. These should be penalized even if the image looks plausible.
+
+  - Contour/highlight must look like makeup or lighting-consistent shading, not warped facial anatomy or global recoloring.
+
+  - A more sculpted face cannot compensate for changed identity, changed skin tone, or broad background/lighting drift.
+
+  - Preserve the source person's identity, face/body proportions not requested to change, expression when not targeted, skin texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target regions independently from target edit quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change, background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning; output only the JSON score vector.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should be 0-6.
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond the request, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.

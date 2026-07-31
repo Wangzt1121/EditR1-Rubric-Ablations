@@ -1,0 +1,944 @@
+task_key: natural_v_line_face_sculpting
+task_title: Natural V-Line Lower-Face Sculpting
+task_title_zh: V字脸
+version: v48_fixed_integer_22_l3_natural_v_line_face_sculpting_compact_failurefix_deep_review_compact_l3_pi_equal
+target_region: the lower cheeks below the stable cheekbone area, bilateral mandibular corners and jawline sides, jaw-to-chin
+  transitions, chin contour and apex, and only the minimum adjacent skin, facial-hair, neck, hair, accessory, clothing, and
+  background blending zones required for a natural V-line
+target_action_summary: Tighten and narrow the lower half of the original face so the lower cheeks and jaw sides move inward
+  toward the original chin, forming a natural source-preserving V-shaped lower-face tendency. The target is lower-face tightening,
+  not a new pointed chin, younger/smoother beauty-filtered face, global face compression, or identity replacement. Preserve
+  eyes, nose, mouth, beard/stubble, skin tone, skin texture, age impression, expression, head pose, neck, lighting, camera
+  state, and background.
+judge_role: You are a strict expert evaluator specializing in source-preserving V-shaped lower-face tightening. Judge whether
+  the original person's lower cheeks and jaw sides are naturally tightened inward into a V-shaped tendency while identity,
+  beard/stubble, skin texture, age impression, facial features, pose, lighting, and background remain source-consistent. Do
+  not reward generic beauty filters, younger-face replacement, global slimming, or pointed-chin substitution.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source-state audit first. Before scoring, compare the source person''s lower-face shape, jaw-side width, mandibular corners,
+  lower cheeks, original chin length/projection/centerline, beard or stubble, skin tone, skin texture, age impression, eyes,
+  nose, mouth, expression, head pose, neck, clothing, background, lighting, and camera state.
+
+
+  2) Target definition. The requested edit is source-preserving lower-face tightening: both lower jaw sides/lower cheeks move
+  inward naturally so the same lower half of the face trends toward a V shape. A newly sharp chin is not required and should
+  not be rewarded by itself.
+
+
+  3) Reject substitutes. Pointed-chin editing, chin lengthening, global face slimming, whole-face compression, head shrinking,
+  beauty-filter smoothing, younger-face replacement, beard/stubble replacement, skin recoloring, skin texture replacement,
+  pose/camera/crop change, or jaw-only shadow painting are not successful V-line edits.
+
+
+  4) Primary gates. If there is no clear lower jaw-side/lower-cheek tightening, activate target_absent_or_too_weak. If the
+  result looks prettier, younger, smoother, more generic, different-looking, or changes beard/skin/face/background/camera
+  state, activate source_state_not_preserved_or_beautified. These failures must reduce the affected Prompt Compliance, Localization,
+  Subject Preservation, and Quality L3 scores together.
+
+
+  5) High-score evidence. A 7/8/9 on any core Prompt facet requires visible lower-face tightening plus source-consistent identity,
+  beard/stubble, skin tone, skin texture, age impression, eyes, nose, mouth, expression, lighting, and background. A clean
+  but unchanged source-like image is low for this editing task; good preservation cannot compensate for missing edit.
+
+
+  6) Failure propagation. Before outputting the final score_vector, detect the failures in global_scoring_policy.failure_propagation,
+  estimate severity 0-5, apply cap_by_severity to every affected L3, and output the adjusted scores rather than raw independent
+  scores.
+
+
+  7) Score calibration and anti-template. 9 is rare and essentially perfect; 8 is near-perfect; 7 is strong with only a minor
+  flaw; 6 has one clear issue; 5 is partial/mediocre; 4 is a major mismatch; 3 is weak; 2 is a small trace; 1 is negligible;
+  0 is absent, reversed, unrelated, or unusable. Do not use 7 as a default. If 14+ facets are 7 or most scores are identical,
+  re-check failure propagation.
+
+
+  Task-specific focus: natural V-line lower-face sculpting. Do not reward skin beautification, whitening, smoothing, younger-face
+  effect, global face compression, pointed-chin substitution, identity drift, or lower-face collapse.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Lower-face width reduction, mandibular-corner softening, lower-cheek
+    taper, jaw-to-chin convergence, chin-apex quality, proportion, anatomical integration, identity, and rendering are separated
+    without repeatedly scoring the same requirement.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+  - V-line success requires coordinated lower-cheek, jaw, and chin shaping rather than one isolated contour change.
+  - Mandibular-corner softening, lower-cheek taper, jaw-to-chin convergence, and chin-apex quality are evaluated separately.
+  - Chin taper must be distinguished from chin length, projection, and centerline changes.
+  - Upper-face structure, cheekbone position, neck, body, camera, and background checks are merged rather than expanded into
+    many easy L3 facets.
+  - Facial identity remains one dedicated, high-impact L3 facet and cannot be compensated by an attractive V-line.
+  - Subject Preservation is high-impact and contributes 42% of the final reward.
+  - Public floating-point values use at most three decimal places.
+evaluation_notes:
+- 'The uploaded file contains 1348 prompts and 1258 unique text strings. The prompts use many action descriptions and retouching-strength
+  phrases but share one target: a natural, visible lower-face V-line.'
+- The prompt set repeatedly requires narrowing the lower facial width, reducing or softening mandibular corners, tapering
+  the lower cheeks, and forming a centered softly pointed chin.
+- The target is not ordinary overall-face narrowing. The upper face and cheekbone position should remain stable while the
+  lower cheeks, jawline, mandibular corners, and chin create the V silhouette.
+- The target is not isolated pointed-chin editing. A narrow chin without coherent jaw-side convergence is incomplete.
+- Natural face length, chin projection, mouth shape, mouth corners, expression, and neck anatomy must remain stable. A longer
+  chin or thinner neck must not be used to exaggerate the V effect.
+- For three-quarter or tilted views, the near and far jaw sides should follow source perspective and visible anatomy rather
+  than move by equal raw pixel amounts.
+- Newly exposed background, hair-side gaps, collar boundaries, earrings, glasses, and facial-hair edges must be reconstructed
+  without liquify waves, repeated texture, halos, or dragged content.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible V-line results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial
+    or mediocre satisfaction; 6 means mostly correct with one clear issue; 7 means strong but visibly imperfect after failure
+    propagation; 8 requires near-exact source-preserving success; 9 requires essentially complete satisfaction and concrete
+    visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. A narrower or prettier lower face cannot
+    compensate for changed identity, beard/stubble drift, skin smoothing, wrong target region, global face compression, or
+    lack of lower jaw-side tightening.
+  v_line_disambiguation_rule: 'V-line means source-preserving lower-half face tightening: lower cheeks and jaw sides move
+    inward toward the original chin. It is not pointed-chin editing, chin lengthening, global slimming, beauty filtering,
+    younger-face replacement, or generic face beautification.'
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited result as the same individual. The lower-face outline may become V-shaped, but internal
+    landmark geometry, upper-face structure, characteristic jaw and chin cues, age impression, expression, skin tone, and
+    same-person impression must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the result is attractive, symmetrical, realistic,
+    or strongly V-shaped.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent despite lower-face contour reconstruction.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence
+      score. Do not reveal the propagation reasoning; return only the final adjusted vector. Include detected failure names
+      and severity in failure_tags when possible, e.g. source_state_not_preserved_or_beautified:3.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: There is no clear visible inward tightening of the lower jaw sides/lower cheeks, or the image is mostly
+          unchanged with respect to source-preserving V-shaped lower-face tightening.
+        severity_guidance: Barely visible but directionally correct and source-preserving tightening may be severity 1-2.
+          Mostly unchanged lower face must be at least severity 3. Completely absent or reversed edit must be severity 4-5.
+          Do not classify absence as minor because identity/background are preserved.
+        affected_l3:
+        - requested_v_line_face_operation_match
+        - requested_lower_face_width_reduction_match
+        - requested_v_line_edit_magnitude_match
+        - requested_lower_cheek_jaw_chin_coverage_match
+        - requested_mandibular_corner_softening_match
+        - requested_lower_cheek_taper_without_collapse_match
+        - requested_jaw_to_chin_convergence_match
+        - requested_chin_apex_soft_point_match
+        - requested_lower_face_proportion_character_match
+        - requested_pose_aware_bilateral_v_line_balance_match
+        - requested_v_line_visibility_finish_match
+        - v_line_edit_localized_to_lower_face_outline
+        - v_line_lower_cheek_jaw_chin_anatomical_continuity
+        - v_line_identity_landmark_consistency
+        - v_line_expression_gaze_upper_face_scene_preserved
+        - v_line_artifact_sharpness_no_warp_mask
+        - requested_chin_length_projection_centerline_match
+      source_state_not_preserved_or_beautified:
+        detect_when: The result obtains a V-shaped or prettier look by changing the original source state instead of locally
+          tightening the same lower face. This includes changed same-person impression, age impression, beard/stubble, skin
+          tone, skin texture, eyes, nose, mouth, expression, pose, camera/framing, lighting, clothing, background, or generic
+          beauty-filter smoothing.
+        severity_guidance: Minor local non-face drift may be severity 1. Clear background, clothing, lighting, skin, or beard/stubble
+          drift must be at least severity 2. Clear age, expression, facial-feature, or same-person drift must be at least
+          severity 3. Different-person, beauty-filter replacement, or broad source-state replacement must be severity 4-5.
+        affected_l3:
+        - requested_v_line_face_operation_match
+        - requested_lower_face_width_reduction_match
+        - requested_v_line_edit_magnitude_match
+        - requested_lower_cheek_jaw_chin_coverage_match
+        - requested_mandibular_corner_softening_match
+        - requested_lower_cheek_taper_without_collapse_match
+        - requested_jaw_to_chin_convergence_match
+        - requested_chin_apex_soft_point_match
+        - requested_chin_length_projection_centerline_match
+        - requested_lower_face_proportion_character_match
+        - requested_pose_aware_bilateral_v_line_balance_match
+        - requested_v_line_visibility_finish_match
+        - v_line_edit_localized_to_lower_face_outline
+        - v_line_lower_cheek_jaw_chin_anatomical_continuity
+        - v_line_neck_mouth_cheekbone_transition_consistent
+        - v_line_hair_ear_skin_background_occlusion_consistent
+        - v_line_identity_landmark_consistency
+        - v_line_expression_gaze_upper_face_scene_preserved
+        - v_line_skin_facial_hair_detail_realistic
+        - v_line_lighting_shadow_color_integration
+        - v_line_boundary_background_reconstruction_consistent
+        - v_line_artifact_sharpness_no_warp_mask
+      pointed_chin_substitution:
+        detect_when: The visible effect is mainly a new sharper/longer/shifted chin rather than inward tightening of both
+          lower jaw sides and lower cheeks.
+        severity_guidance: If lower jaw-side tightening is weak and chin redesign dominates, severity must be at least 2.
+          If the chin appears replaced, lengthened, shifted, or becomes the main visible edit, severity must be at least 3.
+          If it changes same-person impression or lower-face identity, severity must be 4-5.
+        affected_l3:
+        - requested_v_line_face_operation_match
+        - requested_lower_face_width_reduction_match
+        - requested_v_line_edit_magnitude_match
+        - requested_lower_cheek_jaw_chin_coverage_match
+        - requested_lower_cheek_taper_without_collapse_match
+        - requested_jaw_to_chin_convergence_match
+        - requested_chin_apex_soft_point_match
+        - requested_chin_length_projection_centerline_match
+        - requested_lower_face_proportion_character_match
+        - requested_pose_aware_bilateral_v_line_balance_match
+        - v_line_lower_cheek_jaw_chin_anatomical_continuity
+        - v_line_identity_landmark_consistency
+        - v_line_artifact_sharpness_no_warp_mask
+        - v_line_neck_mouth_cheekbone_transition_consistent
+      whole_face_compression_or_global_slimming:
+        detect_when: The face appears narrowed by global image/face compression, head shrinking, camera/crop change, or broad
+          beauty slimming rather than localized lower-half tightening.
+        severity_guidance: Minor non-target slimming with real V-line tightening may be severity 1-2. If global slimming is
+          the main visible cause of the narrower face, severity must be 3-4. Head/camera/crop change or identity-changing
+          compression must be severity 4-5.
+        affected_l3:
+        - requested_v_line_face_operation_match
+        - requested_lower_face_width_reduction_match
+        - requested_v_line_edit_magnitude_match
+        - requested_lower_cheek_jaw_chin_coverage_match
+        - requested_mandibular_corner_softening_match
+        - requested_lower_face_proportion_character_match
+        - requested_v_line_visibility_finish_match
+        - v_line_edit_localized_to_lower_face_outline
+        - v_line_neck_mouth_cheekbone_transition_consistent
+        - v_line_identity_landmark_consistency
+        - v_line_expression_gaze_upper_face_scene_preserved
+        - v_line_boundary_background_reconstruction_consistent
+        - v_line_artifact_sharpness_no_warp_mask
+        - requested_lower_cheek_taper_without_collapse_match
+        - requested_jaw_to_chin_convergence_match
+        - requested_chin_apex_soft_point_match
+        - requested_chin_length_projection_centerline_match
+        - v_line_lower_cheek_jaw_chin_anatomical_continuity
+      over_tightened_or_anatomy_broken:
+        detect_when: The lower face is over-narrow, collapsed, hollow, pinched, asymmetric, surgically sharp, doll-like, or
+          anatomically impossible.
+        severity_guidance: Slight over-tightening with source identity preserved may be severity 1-2. Clear collapse, hollowing,
+          pinching, surgical sharpness, or asymmetric deformation must be severity 3. Anatomically impossible or identity-breaking
+          lower-face reconstruction must be severity 4-5.
+        affected_l3:
+        - requested_v_line_face_operation_match
+        - requested_v_line_edit_magnitude_match
+        - requested_lower_cheek_taper_without_collapse_match
+        - requested_jaw_to_chin_convergence_match
+        - requested_chin_apex_soft_point_match
+        - requested_lower_face_proportion_character_match
+        - requested_v_line_visibility_finish_match
+        - v_line_lower_cheek_jaw_chin_anatomical_continuity
+        - v_line_neck_mouth_cheekbone_transition_consistent
+        - v_line_identity_landmark_consistency
+        - v_line_lighting_shadow_color_integration
+        - v_line_artifact_sharpness_no_warp_mask
+        - v_line_artifact_sharpness_no_warp_mask
+        - requested_lower_face_width_reduction_match
+        - requested_lower_cheek_jaw_chin_coverage_match
+        - requested_mandibular_corner_softening_match
+        - requested_pose_aware_bilateral_v_line_balance_match
+        - v_line_edit_localized_to_lower_face_outline
+        - v_line_hair_ear_skin_background_occlusion_consistent
+        - v_line_skin_facial_hair_detail_realistic
+        - v_line_boundary_background_reconstruction_consistent
+  vline_source_preservation_rule: V-line success requires visible lower jaw-side/lower-cheek tightening on the same source
+    person. A prettier, younger, smoother, more pointed, or different-looking face is not a high-quality V-line edit.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_compensation_rule: If lower-face tightening is absent, do not let identity/background/photorealism raise edit-dependent
+    facets; if source state changes, do not let a narrower or prettier lower face raise source-preserving V-line facets.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive V-line sample visibly tightens the same person's lower jaw sides and lower cheeks toward
+    the original chin, creating a natural V-shaped lower-face tendency while preserving skin texture, beard/stubble, age impression,
+    mouth, expression, upper face, lighting, background, camera/framing, and identity. Positive does not mean generically
+    prettier.
+  success_gate_conditions:
+  - Lower jaw sides and lower cheeks visibly move inward toward the original chin in a balanced, pose-aware way.
+  - The chin supports the V tendency without becoming a new long/sharp/replaced chin or shifting the centerline.
+  - Skin texture, skin color, pores/wrinkles, age impression, beard/stubble, mouth, expression, eyes/nose, lighting, background,
+    and camera state remain unchanged.
+  - Lower-cheek, jaw, chin, neck, hair/ear/skin boundaries, shadows, and background are anatomically continuous and locally
+    blended.
+  - No skin beautification, whitening, smoothing, younger-face effect, global face compression, identity drift, or lower-face
+    collapse is present.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  task_disambiguation_rule: V-line editing means localized lower jaw-side and lower-cheek contour tightening toward the original
+    chin. Even if the prompt says beauty retouch, polished V-line, or face_slimming, do not interpret that as permission for
+    skin beautification, younger-face filtering, identity replacement, full-face compression, or camera/crop changes.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_v_line_face_operation_match
+- requested_lower_face_width_reduction_match
+- requested_v_line_edit_magnitude_match
+- requested_lower_cheek_jaw_chin_coverage_match
+- requested_mandibular_corner_softening_match
+- requested_lower_cheek_taper_without_collapse_match
+- requested_jaw_to_chin_convergence_match
+- requested_chin_apex_soft_point_match
+- requested_chin_length_projection_centerline_match
+- requested_lower_face_proportion_character_match
+- requested_pose_aware_bilateral_v_line_balance_match
+- requested_v_line_visibility_finish_match
+- v_line_edit_localized_to_lower_face_outline
+- v_line_lower_cheek_jaw_chin_anatomical_continuity
+- v_line_neck_mouth_cheekbone_transition_consistent
+- v_line_hair_ear_skin_background_occlusion_consistent
+- v_line_identity_landmark_consistency
+- v_line_expression_gaze_upper_face_scene_preserved
+- v_line_skin_facial_hair_detail_realistic
+- v_line_lighting_shadow_color_integration
+- v_line_boundary_background_reconstruction_consistent
+- v_line_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_v_line_face_operation_match: 0.15
+    requested_lower_face_width_reduction_match: 0.14
+    requested_v_line_edit_magnitude_match: 0.08
+    requested_lower_cheek_jaw_chin_coverage_match: 0.12
+    requested_mandibular_corner_softening_match: 0.1
+    requested_lower_cheek_taper_without_collapse_match: 0.12
+    requested_jaw_to_chin_convergence_match: 0.09
+    requested_chin_apex_soft_point_match: 0.03
+    requested_chin_length_projection_centerline_match: 0.06
+    requested_lower_face_proportion_character_match: 0.07
+    requested_pose_aware_bilateral_v_line_balance_match: 0.03
+    requested_v_line_visibility_finish_match: 0.01
+  Localization and Anatomical Integration:
+    v_line_edit_localized_to_lower_face_outline: 0.27
+    v_line_lower_cheek_jaw_chin_anatomical_continuity: 0.28
+    v_line_neck_mouth_cheekbone_transition_consistent: 0.24
+    v_line_hair_ear_skin_background_occlusion_consistent: 0.21
+  Subject Preservation:
+    v_line_identity_landmark_consistency: 0.7
+    v_line_expression_gaze_upper_face_scene_preserved: 0.3
+  Task Realism and Image Quality:
+    v_line_skin_facial_hair_detail_realistic: 0.27
+    v_line_lighting_shadow_color_integration: 0.27
+    v_line_boundary_background_reconstruction_consistent: 0.24
+    v_line_artifact_sharpness_no_warp_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested V-Line Operation:
+      requested_v_line_face_operation_match:
+        title: Requested source-preserving V-shaped lower-face tightening match
+        definition: Judge whether the lower half of the original face is tightened into a natural V-shaped tendency, where
+          lower cheeks, mandibular corners, and jaw sides move inward while the original chin identity, beard/stubble, skin
+          texture, age impression, eyes, nose, mouth, expression, and head pose remain source-like. Do not require a newly
+          sharp chin. Do not credit generic beautification, younger-face replacement, skin smoothing, whole-face compression,
+          jaw-only slimming, pointed-chin editing, chin lengthening, or image compression as successful V-shaped tightening.
+        anchors:
+          0: The requested V-line operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of a V-line operation is visible.
+          2: A small relevant attempt exists, but the result is dominated by a substitute operation or identity-changing beauty
+            filter.
+          3: The lower face is weakly edited, but source-preserving lower-face tightening is mostly wrong.
+          4: A recognizable attempt exists, yet a major lower-face tightening component is absent, substituted, or identity-damaging.
+          5: The operation is partially correct, with several substantial tightening, preservation, or method errors.
+          6: The lower-face tightening is mostly correct, but one clear operation or preservation error remains.
+          7: Source-preserving lower-face tightening is clearly achieved, with only a minor visible mismatch.
+          8: The operation is highly accurate and source-preserving, with only a tiny local imperfection.
+          9: Both lower jaw sides and lower cheeks naturally tighten into a source-preserving V-shaped lower face with no
+            substitute operations.
+        rubric: Judge whether the lower half of the original face is tightened into a natural V-shaped tendency, where lower
+          cheeks, mandibular corners, and jaw sides move inward while the original chin identity, beard/stubble, skin texture,
+          age impression, eyes, nose, mouth, expression, and head pose remain source-like. Do not require a newly sharp chin.
+          Do not credit generic beautification, younger-face replacement, skin smoothing, whole-face compression, jaw-only
+          slimming, pointed-chin editing, chin lengthening, or image compression as successful V-shaped tightening. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_lower_face_width_reduction_match:
+        title: Requested lower-face width reduction match
+        definition: Judge whether visible width decreases across the lower cheeks and jaw sides while the upper face, head,
+          neck, beard/stubble, skin tone, and internal facial features remain stable. Reward natural inward tightening of
+          the lower half of the face, not global face compression or a different-looking slimmer person.
+        anchors:
+          0: Lower-face width is unchanged, wider, reversed, unrelated, or unusable.
+          1: Only a negligible inward change is visible.
+          2: A small reduction exists, but the lower face remains essentially broad.
+          3: The direction is weakly attempted and largely ineffective.
+          4: Width reduction is recognizable, but a major lower-face region remains broad or contradictory.
+          5: Reduction is partial, with several substantial regional inconsistencies.
+          6: The lower face is mostly narrower, but one clear width issue remains.
+          7: Lower-face width is clearly reduced in a source-preserving way, with only a minor mismatch.
+          8: Reduction is highly accurate, coherent, and identity-preserving, with only a tiny local issue.
+          9: The lower-face width is precisely and naturally reduced across all assessable target regions while the same person
+            is preserved.
+        rubric: Judge whether visible width decreases across the lower cheeks and jaw sides while the upper face, head, neck,
+          beard/stubble, skin tone, and internal facial features remain stable. Reward natural inward tightening of the lower
+          half of the face, not global face compression or a different-looking slimmer person. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_v_line_edit_magnitude_match:
+        title: Requested V-line edit magnitude match
+        definition: Judge whether lower-face tightening is visible at normal viewing size but remains within believable portrait-retouching
+          limits. A modest but real, source-preserving tightening can score well. Do not reward excessive smoothing, younger-face
+          replacement, over-narrowing, skeletal cheeks, or an extreme chin point.
+        anchors:
+          0: The magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible V-line change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The magnitude is weakly attempted but clearly mismatched.
+          4: The effect is recognizable, but the amount has a major mismatch.
+          5: The magnitude is partially appropriate, with several visible intensity problems.
+          6: The amount is mostly correct, but one clear under-editing, over-editing, or preservation issue remains.
+          7: The requested lower-face tightening magnitude is clearly achieved and source-preserving, with only a minor mismatch.
+          8: The magnitude is highly accurate and natural, with only a tiny excess or residual.
+          9: The lower-face tightening is exactly visible enough, balanced, believable, and source-preserving.
+        rubric: Judge whether lower-face tightening is visible at normal viewing size but remains within believable portrait-retouching
+          limits. A modest but real, source-preserving tightening can score well. Do not reward excessive smoothing, younger-face
+          replacement, over-narrowing, skeletal cheeks, or an extreme chin point. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_lower_cheek_jaw_chin_coverage_match:
+        title: Requested lower-cheek, jaw, and chin coverage match
+        definition: 'Judge whether the intended lower-half face regions participate coherently: lower cheek sides, mandibular
+          corners, jawline sides, and jaw-to-chin transitions should tighten inward. The chin contour should remain source-like
+          and only support the V-shaped tendency; do not require a newly pointed chin.'
+        anchors:
+          0: Target-region coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible target segment is treated.
+          2: A small region changes, but most lower-cheek or jaw-side tightening is missed.
+          3: Coverage is weak and major lower-face tightening regions remain untreated.
+          4: The target is recognizable, but one major lower-face component is missing, substituted, or identity-damaging.
+          5: Coverage is partial, with several visible omissions, inconsistencies, or preservation problems.
+          6: Coverage is mostly complete, but one clear target region or side remains inconsistent.
+          7: The lower-face tightening target is well covered in a source-preserving way, with only a minor local miss.
+          8: Coverage is highly complete and coherent while preserving the original person, with only a tiny imperfection.
+          9: Every assessable lower-cheek, jaw-side, transition, and supporting chin region is treated precisely without identity
+            drift.
+        rubric: 'Judge whether the intended lower-half face regions participate coherently: lower cheek sides, mandibular
+          corners, jawline sides, and jaw-to-chin transitions should tighten inward. The chin contour should remain source-like
+          and only support the V-shaped tendency; do not require a newly pointed chin. Apply this facet''s 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.'
+      requested_mandibular_corner_softening_match:
+        title: Requested mandibular-corner softening match
+        definition: Judge whether broad or square mandibular corners are reduced or softened into a narrower lower-jaw contour
+          without erasing anatomy, moving the ears, or producing a sudden cut-in.
+        anchors:
+          0: Mandibular corners are unchanged, broader, reversed, unrelated, or unusable.
+          1: Only a negligible corner refinement is visible.
+          2: A small attempt exists, but the jaw corners remain dominant or severely distorted.
+          3: Corner softening is weak and largely ineffective.
+          4: The change is recognizable, but a major residual corner, notch, or over-removal remains.
+          5: Softening is partial, with several substantial corner-shape problems.
+          6: The corners are mostly refined, but one clear residual or anatomical error remains.
+          7: Mandibular corners are naturally softened, with only a minor mismatch.
+          8: Corner refinement is highly accurate, with only a tiny local imperfection.
+          9: Both mandibular corners are precisely softened into a natural V-line foundation.
+        rubric: Judge whether broad or square mandibular corners are reduced or softened into a narrower lower-jaw contour
+          without erasing anatomy, moving the ears, or producing a sudden cut-in. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_lower_cheek_taper_without_collapse_match:
+        title: Requested lower-cheek taper without collapse match
+        definition: Judge whether the lower cheek sides and jaw sides tighten inward toward the lower face while preserving
+          cheekbone position, natural volume, skin support, beard/stubble boundary, age impression, and absence of hollow
+          dents, skeletal collapse, beauty-filter smoothing, or changed facial identity.
+        anchors:
+          0: Lower-cheek/jaw-side tightening is absent, reversed, collapsed, unrelated, or unusable.
+          1: Only a negligible correct tightening is visible.
+          2: A small attempt exists, but the lower cheeks remain broad, become severely hollow, or identity changes dominate.
+          3: Tightening is weakly attempted and major contour or preservation problems remain.
+          4: The direction is recognizable, but a major bulge, dent, collapse, cheekbone shift, smoothing, or identity drift
+            remains.
+          5: Tightening is partial, with several substantial volume-distribution or source-preservation problems.
+          6: The lower cheeks mostly tighten correctly, but one clear contour or preservation issue remains.
+          7: Lower-cheek and jaw-side tightening is natural and source-preserving, with only a minor mismatch.
+          8: The taper is highly accurate and identity-preserving, with only a tiny local imperfection.
+          9: Both lower cheeks and jaw sides tighten smoothly without collapse, cheekbone movement, beard/skin drift, or beauty-filter
+            replacement.
+        rubric: Judge whether the lower cheek sides and jaw sides tighten inward toward the lower face while preserving cheekbone
+          position, natural volume, skin support, beard/stubble boundary, age impression, and absence of hollow dents, skeletal
+          collapse, beauty-filter smoothing, or changed facial identity. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+    Jaw-to-Chin Geometry and Finish:
+      requested_jaw_to_chin_convergence_match:
+        title: Requested jaw-to-chin convergence match
+        definition: Judge whether both lower jaw sides form a natural inward trend toward the original chin rather than remaining
+          broad, U-shaped, abruptly pinched, disconnected, or redesigned into a new sharp chin. The best result is a source-preserving
+          lower-face V tendency, not maximum pointiness.
+        anchors:
+          0: Jaw-to-chin inward trend is absent, reversed, unrelated, or unusable.
+          1: Only a negligible inward trend is visible.
+          2: A small relevant attempt exists, but the contour remains severely square, U-shaped, broken, or identity-changing.
+          3: Convergence is weakly attempted and largely incorrect.
+          4: The V tendency is recognizable, but a major abrupt taper, shelf, disconnection, or substitute chin redesign remains.
+          5: Convergence is partial, with several substantial contour or preservation conflicts.
+          6: The jaw-to-chin trend is mostly correct, but one clear transition or preservation issue remains.
+          7: Both lower jaw sides show a natural source-preserving inward trend, with only a minor mismatch.
+          8: Convergence is highly accurate and still source-like, with only a tiny local imperfection.
+          9: Both jaw contours tighten smoothly and continuously toward the original chin, forming a natural V-shaped tendency.
+        rubric: Judge whether both lower jaw sides form a natural inward trend toward the original chin rather than remaining
+          broad, U-shaped, abruptly pinched, disconnected, or redesigned into a new sharp chin. The best result is a source-preserving
+          lower-face V tendency, not maximum pointiness. Apply this facet's 0-9 anchors directly. If a task-specific failure
+          affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_chin_apex_soft_point_match:
+        title: Original chin preservation with natural V support
+        definition: Judge whether the original chin remains centered, natural, and source-identical while supporting the lower-face
+          V-shaped tendency. This task should not create a new pointed chin, lengthen the chin, feminize the chin, or replace
+          the lower face. A result can score high here when the chin stays original and the V effect comes mainly from lower
+          jaw-side tightening.
+        anchors:
+          0: The chin is severely changed, reversed, replaced, distorted, or unusable.
+          1: Only a negligible amount of source chin identity remains.
+          2: Major chin lengthening, sharpening, off-centering, feminization, or replacement is visible.
+          3: Chin preservation is weak and clear redesign remains.
+          4: The chin is recognizable, but a major shape, length, width, sharpness, or centering mismatch remains.
+          5: Chin preservation is partial, with several visible contour or identity problems.
+          6: The original chin is mostly preserved, but one clear shape or projection change remains.
+          7: The chin remains source-like and naturally supports the V tendency, with only a minor discrepancy.
+          8: The chin is nearly source-identical except for necessary lower-face tightening, with only a tiny difference.
+          9: The chin length, projection, centerline, texture, and identity are source-identical while the jaw sides tighten
+            naturally.
+        rubric: Judge whether the original chin remains centered, natural, and source-identical while supporting the lower-face
+          V-shaped tendency. This task should not create a new pointed chin, lengthen the chin, feminize the chin, or replace
+          the lower face. A result can score high here when the chin stays original and the V effect comes mainly from lower
+          jaw-side tightening. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_chin_length_projection_centerline_match:
+        title: Requested chin length, projection, and centerline match
+        definition: Preserve natural chin length and forward projection while keeping the chin centered on the source lower-face
+          axis. Only taper and local contour refinement are intended.
+        anchors:
+          0: Chin length, projection, or centerline is severely changed, reversed, or unusable.
+          1: Only a negligible amount of source chin geometry remains.
+          2: Major lengthening, shortening, projection shift, or off-centering is visible.
+          3: Preservation is weak and clear chin-geometry distortion remains.
+          4: The chin is recognizable, but a major length, projection, or centerline mismatch remains.
+          5: Preservation is partial, with several visible chin-geometry differences.
+          6: Chin geometry is mostly preserved, but one clear change remains.
+          7: Length, projection, and centerline are strong, with only a minor discrepancy.
+          8: The chin is nearly source-consistent except for intended taper, with only a tiny difference.
+          9: Natural chin length, projection, and centerline remain exactly source-consistent while taper improves.
+        rubric: Preserve natural chin length and forward projection while keeping the chin centered on the source lower-face
+          axis. Only taper and local contour refinement are intended. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_lower_face_proportion_character_match:
+        title: Requested lower-face proportion and source-character match
+        definition: Judge whether jaw width, lower-face tightening, chin form, lower-face length, mouth-to-chin relationship,
+          beard/stubble, skin tone/texture, age impression, and source-specific facial character remain harmonious. A prettier,
+          younger, smoother, generic, childlike, skeletal, or surgically extreme face is a failure even if it looks more V-shaped.
+        anchors:
+          0: Lower-face proportion and character are severely replaced, reversed, or unusable.
+          1: Only a negligible trace of the original lower-face character remains.
+          2: The lower face is converted into a substantially implausible, generic, younger, smoother, or different design.
+          3: Source character is weakly preserved and major proportion, age, skin, beard, or identity errors remain.
+          4: The person is recognizable, but a major jaw, chin, length, mouth-to-chin, beard, skin, or age mismatch remains.
+          5: Proportion preservation is partial, with several visible character changes.
+          6: The lower-face character is mostly preserved, but one clear redesign, smoothing, age, or beard/skin change remains.
+          7: Proportion and source character are strong, with only a minor discrepancy.
+          8: The lower-face tightening is nearly ideal and source-consistent, with only a tiny difference.
+          9: The V-shaped lower-face tightening is fully harmonious while preserving the person's characteristic proportions,
+            beard, skin, and age impression.
+        rubric: Judge whether jaw width, lower-face tightening, chin form, lower-face length, mouth-to-chin relationship,
+          beard/stubble, skin tone/texture, age impression, and source-specific facial character remain harmonious. A prettier,
+          younger, smoother, generic, childlike, skeletal, or surgically extreme face is a failure even if it looks more V-shaped.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_pose_aware_bilateral_v_line_balance_match:
+        title: Requested pose-aware bilateral V-line balance match
+        definition: Judge near-side and far-side jaw refinement, chin centering, foreshortening, head rotation, tilt, lens
+          perspective, and source asymmetry rather than raw mirror symmetry.
+        anchors:
+          0: Bilateral balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct pose-aware balance is visible.
+          2: One side is missed or severe asymmetric pulling dominates.
+          3: Balance is weakly attempted and major perspective errors remain.
+          4: The V-line is recognizable, but a major side-to-side, chin-axis, or foreshortening mismatch remains.
+          5: Balance is partial, with several substantial perspective or asymmetry problems.
+          6: Balance is mostly correct, but one clear side or centerline issue remains.
+          7: Pose-aware V-line balance is strong, with only a minor mismatch.
+          8: Balance is highly accurate, with only a tiny local imperfection.
+          9: Both jaw sides and the chin form a fully pose-consistent, naturally balanced V-line.
+        rubric: Judge near-side and far-side jaw refinement, chin centering, foreshortening, head rotation, tilt, lens perspective,
+          and source asymmetry rather than raw mirror symmetry. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_v_line_visibility_finish_match:
+        title: Requested normal-view visibility and V-line finish match
+        definition: Judge whether lower-face tightening is visible enough at normal portrait viewing size while remaining
+          natural and source-preserving. Do not reward beauty-app, younger-face, smoother-skin, or generic polished replacement
+          as correct finish.
+        anchors:
+          0: The requested visibility and finish are absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible V-line improvement is present.
+          2: A small relevant trace exists, but the result is severely too weak, excessive, or artificial.
+          3: The requested finish is weakly attempted and remains clearly mismatched.
+          4: The V-line is recognizable, but a major visibility or naturalness problem remains.
+          5: Visibility and finish are partially achieved, with several substantial issues.
+          6: The result is mostly correct, but one clear visibility or finish issue remains.
+          7: The source-preserving lower-face tightening is clearly visible and natural, with only a minor finish mismatch.
+          8: Visibility and naturalness are highly accurate while identity, beard/stubble, and skin texture remain source-like.
+          9: The lower-face tightening is clearly visible, natural, and fully source-preserving with no beauty-filter or replacement
+            effect.
+        rubric: Judge whether lower-face tightening is visible enough at normal portrait viewing size while remaining natural
+          and source-preserving. Do not reward beauty-app, younger-face, smoother-skin, or generic polished replacement as
+          correct finish. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Lower-Face Placement and Transitions:
+      v_line_edit_localized_to_lower_face_outline:
+        title: V-line editing is localized to the lower-face outline
+        definition: Keep geometric changes within lower cheeks, mandibular corners, jawline sides, jaw-to-chin transitions,
+          chin contour, and minimum blending zones. Avoid altering upper face, internal features, ears, hair, neck, body,
+          clothing, and scene.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: A small relevant attempt exists, but large non-target areas are altered.
+          3: Localization is weak and major spill remains.
+          4: The target is recognizable, but one major upper-face, feature, neck, body, clothing, or scene region is changed.
+          5: Localization is partial, with several substantial spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed lower-face region remains.
+          7: The edit is well localized, with only a minor local spill.
+          8: Localization is highly accurate, with only a tiny imperfection.
+          9: Geometric editing is precisely confined to the lower-face V-line and minimum blending zones.
+        rubric: Keep geometric changes within lower cheeks, mandibular corners, jawline sides, jaw-to-chin transitions, chin
+          contour, and minimum blending zones. Avoid altering upper face, internal features, ears, hair, neck, body, clothing,
+          and scene. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      v_line_lower_cheek_jaw_chin_anatomical_continuity:
+        title: Lower-cheek, jaw, and chin anatomical continuity is coherent
+        definition: Judge continuous soft-tissue and contour flow from lower cheek through mandibular corner and jaw side
+          into the chin, without dents, shelves, cutouts, detached tips, sudden triangular transitions, or implausible tissue
+          thickness.
+        anchors:
+          0: Anatomical continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of coherent lower-face anatomy remains.
+          2: The lower-cheek, jaw, or chin structure is severely broken or impossible.
+          3: Continuity is weakly attempted and major contradictions remain.
+          4: The anatomy is recognizable, but a major dent, shelf, gap, cutout, or detached transition remains.
+          5: Continuity is partial, with several substantial structural problems.
+          6: The anatomy is mostly coherent, but one clear transition error remains.
+          7: Lower-cheek, jaw, and chin continuity is strong, with only a minor mismatch.
+          8: Continuity is highly accurate, with only a tiny local imperfection.
+          9: The entire lower-cheek-to-jaw-to-chin contour is anatomically continuous and natural.
+        rubric: Judge continuous soft-tissue and contour flow from lower cheek through mandibular corner and jaw side into
+          the chin, without dents, shelves, cutouts, detached tips, sudden triangular transitions, or implausible tissue thickness.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      v_line_neck_mouth_cheekbone_transition_consistent:
+        title: Neck, mouth, and cheekbone relationships remain consistent
+        definition: Judge preservation of cheekbone position, mouth corners, lower lip and mentolabial relation, chin-neck
+          angle, neck width, submental contour, and collar contact while the lower-face outline changes.
+        anchors:
+          0: Adjacent anatomical relationships are absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of source-consistent relationships remains.
+          2: Cheekbones, mouth, chin-neck relation, or neck are severely displaced or distorted.
+          3: Consistency is weakly attempted and major adjacent-region errors remain.
+          4: The result is recognizable, but a major cheekbone, mouth-corner, neck-width, or chin-neck mismatch remains.
+          5: Consistency is partial, with several substantial adjacent-region problems.
+          6: Relationships are mostly correct, but one clear anatomical issue remains.
+          7: Neck, mouth, and cheekbone consistency is strong, with only a minor mismatch.
+          8: Relationships are highly accurate, with only a tiny local imperfection.
+          9: Cheekbones, mouth, chin-neck anatomy, neck width, and collar contact remain fully source-consistent.
+        rubric: Judge preservation of cheekbone position, mouth corners, lower lip and mentolabial relation, chin-neck angle,
+          neck width, submental contour, and collar contact while the lower-face outline changes. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      v_line_hair_ear_skin_background_occlusion_consistent:
+        title: Hair, ear, skin, and background occlusion integration is consistent
+        definition: Judge hair strands, sideburns, facial hair, ears, earrings, glasses, hands, skin boundaries, clothing,
+          and newly exposed background for correct attachment, stretching, layering, and reconstruction.
+        anchors:
+          0: Local occlusion integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct layering remains.
+          2: Hair, ears, skin, accessories, clothing, or background are severely distorted or wrongly layered.
+          3: Integration is weakly attempted and major overlap errors remain.
+          4: The relationships are recognizable, but a major penetration, gap, stretch, repeated background, or boundary error
+            remains.
+          5: Integration is partial, with several substantial occlusion or reconstruction problems.
+          6: Integration is mostly correct, but one clear boundary or layering issue remains.
+          7: Hair, ears, skin, clothing, and background integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All local hair, ear, skin, accessory, clothing, and background relationships remain physically coherent.
+        rubric: Judge hair strands, sideburns, facial hair, ears, earrings, glasses, hands, skin boundaries, clothing, and
+          newly exposed background for correct attachment, stretching, layering, and reconstruction. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      v_line_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare source and result as the same individual, not merely as a plausible similar person. Judge eyes,
+          brows, nose, mouth, ears, cheekbones, facial height, beard/stubble pattern, skin tone, skin texture, age impression,
+          gender presentation, stable marks, asymmetry, and same-person impression. Only source-preserving lower-face tightening
+          may change.
+        anchors:
+          0: The edited subject is effectively a different person, severely distorted, or unusable.
+          1: Identity correspondence is extremely weak; defining landmarks and person impression are replaced.
+          2: Major identity drift affects several defining facial regions, beard/skin cues, or age impression.
+          3: Substantial identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person, younger, smoother, or generic
+            impression.
+          5: The person remains recognizable, but multiple landmarks, beard/stubble, skin tone/texture, age cues, or details
+            drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity preservation is strong, with only a minor visible drift.
+          8: The face is nearly source-identical apart from source-preserving lower-face tightening, with only a tiny discrepancy.
+          9: The same identity, facial landmarks, beard/stubble, age impression, skin tone, and characteristic details are
+            source-identical apart from intended lower-face tightening.
+        rubric: Compare source and result as the same individual, not merely as a plausible similar person. Judge eyes, brows,
+          nose, mouth, ears, cheekbones, facial height, beard/stubble pattern, skin tone, skin texture, age impression, gender
+          presentation, stable marks, asymmetry, and same-person impression. Only source-preserving lower-face tightening
+          may change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      v_line_expression_gaze_upper_face_scene_preserved:
+        title: Expression, gaze, upper face, hair, scene, camera, and global state are preserved
+        definition: Preserve gaze, expression, eyes, eyelids, brows, nose, lips, teeth, mouth corners, upper-face structure,
+          ears, hair, facial hair, neck, clothing, accessories, background hue and texture, white balance, brightness, contrast,
+          saturation, lighting, crop, camera angle, composition, aspect ratio, and resolution. Beauty-filter smoothing, skin-tone
+          shift, beard/stubble drift, or younger-face replacement are non-target changes.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are clearly inconsistent with the source.
+          2: Several major changes affect expression, gaze, upper face, facial hair, skin tone, neck, scene, camera, or global
+            state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image remains recognizable, but a clear important non-target mismatch remains.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Expression, gaze, upper face, hair, neck, scene, camera, global color, beard/stubble, and skin texture are nearly
+            source-identical, with only a tiny discrepancy.
+          9: All non-target subject, scene, camera, lighting, color, composition, facial hair, skin texture, and resolution
+            properties remain source-consistent.
+        rubric: Preserve gaze, expression, eyes, eyelids, brows, nose, lips, teeth, mouth corners, upper-face structure, ears,
+          hair, facial hair, neck, clothing, accessories, background hue and texture, white balance, brightness, contrast,
+          saturation, lighting, crop, camera angle, composition, aspect ratio, and resolution. Beauty-filter smoothing, skin-tone
+          shift, beard/stubble drift, or younger-face replacement are non-target changes. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    V-Line Rendering Quality:
+      v_line_skin_facial_hair_detail_realistic:
+        title: Skin, facial-hair, and hair detail are realistic
+        definition: Judge pores, fine lines, makeup, beard or stubble, sideburns, scalp hair, hair strands, skin microtexture,
+          and source-level sharpness after lower-face contour reconstruction.
+        anchors:
+          0: Detail realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic source detail remains.
+          2: A small relevant attempt exists, but the lower face is severely blurred, plastic, repeated, or synthetic.
+          3: Realism is weakly attempted and major detail damage remains.
+          4: The face is recognizable, but a major blur, smoothing, texture, facial-hair, or hair-detail error remains.
+          5: Realism is partial, with several substantial visible problems.
+          6: Detail is mostly realistic, but one clear texture or hair issue remains.
+          7: Skin, facial-hair, and hair detail are strong, with only a minor mismatch.
+          8: Detail is highly realistic, with only a tiny local imperfection.
+          9: All skin, facial-hair, hair, and fine-detail structure are fully photorealistic and source-consistent.
+        rubric: Judge pores, fine lines, makeup, beard or stubble, sideburns, scalp hair, hair strands, skin microtexture,
+          and source-level sharpness after lower-face contour reconstruction. Apply this facet's 0-9 anchors directly. If
+          a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      v_line_lighting_shadow_color_integration:
+        title: Lighting, shadows, and color integrate with the source
+        definition: Judge lower-cheek and jaw shading, chin highlights, mentolabial and submental shadows, skin tone, facial
+          depth, contact shadows, white balance, and global illumination without false contour painting.
+        anchors:
+          0: Lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct illumination remains.
+          2: A small relevant attempt exists, but shadows or color are severely false or inconsistent.
+          3: Integration is weakly attempted and major lighting errors remain.
+          4: The lighting is recognizable, but a major halo, false shadow, flat patch, or color mismatch remains.
+          5: Integration is partial, with several substantial shadow or color problems.
+          6: Lighting is mostly correct, but one clear local issue remains.
+          7: Shadow, lighting, and color integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All lower-face, chin, neck, hair, skin, and background illumination perfectly match the source.
+        rubric: Judge lower-cheek and jaw shading, chin highlights, mentolabial and submental shadows, skin tone, facial depth,
+          contact shadows, white balance, and global illumination without false contour painting. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      v_line_boundary_background_reconstruction_consistent:
+        title: V-line boundaries and background reconstruction are consistent
+        definition: Judge lower-cheek, jaw, chin, hair, ear, accessory, collar, neck, and clothing boundaries together with
+          newly exposed background for clean but natural physical relationships.
+        anchors:
+          0: Boundary and reconstruction consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or reconstruction remains.
+          2: A small relevant attempt exists, but major leakage, gaps, repeated background, or impossible overlap is visible.
+          3: Consistency is weakly attempted and major boundary errors remain.
+          4: The relationships are recognizable, but a major seam, cutout, overlap, collar, neck, or reconstruction error
+            remains.
+          5: Consistency is partial, with several substantial visible problems.
+          6: Boundaries are mostly correct, but one clear contact or reconstruction issue remains.
+          7: Boundary and reconstruction consistency are strong, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All lower-face, hair, ear, accessory, collar, neck, clothing, and background boundaries are seamless and physically
+            coherent.
+        rubric: Judge lower-cheek, jaw, chin, hair, ear, accessory, collar, neck, and clothing boundaries together with newly
+          exposed background for clean but natural physical relationships. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      v_line_artifact_sharpness_no_warp_mask:
+        title: Artifact control, source sharpness, and absence of warp or mask
+        definition: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched hair,
+          warped ears, bent background, thin neck, distorted collar, liquify waves, mask-like transitions, and source-resolution
+          consistency.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: A small relevant attempt exists, but severe warping, masking, blur, duplication, or liquify distortion dominates.
+          3: Artifact control is weakly achieved and major defects remain.
+          4: The result is recognizable, but a major seam, warp, duplicate edge, mask, liquify wave, or sharpness mismatch
+            remains.
+          5: Quality is partial, with several substantial visible artifacts.
+          6: The result is mostly clean, but one clear artifact or sharpness issue remains.
+          7: Artifact control is strong, with only a minor visible defect.
+          8: The result is nearly artifact-free, with only a tiny local imperfection.
+          9: The edited image is fully stable, source-sharp, seamless, and free of warping, masking, duplication, or background
+            deformation.
+        rubric: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched hair, warped
+          ears, bent background, thin neck, distorted collar, liquify waves, mask-like transitions, and source-resolution
+          consistency. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful V-line sculpting from hiding identity, internal facial geometry, upper-face, mouth, neck, camera,
+    or background drift. Identity is judged by source-to-result correspondence, not by attractiveness or V-line strength.
+  comparison_checklist:
+  - eye shape, spacing, aperture, gaze, eyelids, and eyelashes
+  - eyebrow position and shape
+  - nose width, length, geometry, and placement
+  - mouth width, lip geometry, mouth corners, teeth visibility, and expression
+  - cheekbone position, upper-face width, forehead, and ears
+  - facial height, mouth-to-chin distance, chin length and projection
+  - source-specific jaw and chin character after accounting for the intended V-line
+  - hairline, hairstyle, facial hair, neck width, head pose, and head-neck relation
+  - age impression, gender presentation, skin tone, stable marks, and facial texture
+  - clothing, accessories, background hue, texture, brightness, contrast, and white balance
+  - camera angle, crop, framing, lighting, composition, aspect ratio, and resolution
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the result is attractive, slim, symmetrical, or prompt-compliant.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Only the lower-face V-line contour may change; internal features, upper face, mouth state, neck, and global image remain
+    constrained.
+  - V-line correctness, identity, expression, mouth, neck, background, camera state, and rendering quality are independent.
+  task_specific_exception: only lower-cheek taper, mandibular-corner and jawline narrowing, jaw-to-chin convergence, chin-apex
+    refinement, and the minimum adjacent skin, hair, ear, facial-hair, neck, clothing, accessory, and background reconstruction
+    zones

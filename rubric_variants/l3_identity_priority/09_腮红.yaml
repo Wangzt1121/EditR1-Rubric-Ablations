@@ -1,0 +1,875 @@
+task_key: blush_edit
+task_title: Blush Editing
+task_title_zh: 腮红编辑
+version: v35_fixed_22_l3_blush_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority
+target_region: blush pigment on apple cheeks, upper cheeks, under-eye, outer-eye, cheekbones, temples, and nose bridge
+target_action_summary: Apply the requested blush style, placement, shape, color, finish, and intensity while preserving facial
+  identity and anatomy.
+supported_controls_or_styles:
+- outer-eye blush
+- under-eye blush
+- youthful round blush
+- hangover blush
+- contour blush
+- office-friendly blush
+- apple-cheek blush
+- horizontal/diagonal sweep
+- temple blush
+- nose-bridge blush
+- cheekbone blush
+- sunburn blush
+design_principle:
+  summary: Use exactly 22 non-redundant L3 facets. Instruction execution receives the dominant weight. Related details are
+    merged inside facet definitions rather than expanded into additional L3 items. Facial identity is evaluated by a dedicated
+    strict facet.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score is an integer from 0 to 9.
+  - No N/A values and no dynamic L3 count.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+  - Do not split clothing, background, accessories, or camera framing into multiple easy preservation facets.
+  - A photorealistic but instruction-inaccurate or identity-drifting result must not receive a high score.
+  - Public floating-point values use at most 3 decimal places.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, blush is not lipstick, contour, full-face recoloring, skin whitening,
+  or heavy makeup unless requested.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+- Blush is a localized makeup task and must not alter facial geometry.
+identity_preservation_protocol:
+  weight_share: 0.15
+  strict_rules:
+  - Identity is judged against the source, not against generic attractiveness or realism.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - A score of 7 requires a strong same-person match with only minor drift.
+  - Target success, background preservation, or image realism cannot compensate for facial identity drift.
+  - 'Allowed identity exception: the requested blush pigment, placement, and optical finish only.'
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Compare source image, prompt, and edited image. Return exactly one integer score for each active_l3 item in
+    the listed order. Judge every facet by visual evidence, then apply failure_propagation caps before returning the final vector.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. natural
+    blush, round blush, diagonal blush, under-eye blush, sun-kissed blush, nose blush, high-cheek blush, soft blush, strong
+    blush, matte blush, dewy blush, or blush removal must not substitute for each other when the prompt specifies one.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason for that exact
+    L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet, or any visible defect
+    remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Blush Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Apply the requested blush style, placement, shape, color, finish, and intensity while preserving facial
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - blush_style_match
+          - blush_visual_goal_match
+          - blush_target_regions_match
+          - blush_placement_height_match
+          - blush_shape_orientation_match
+          - blush_spread_coverage_match
+          - blush_color_family_match
+          - blush_undertone_saturation_match
+          - blush_finish_texture_match
+          - blush_intensity_opacity_match
+          - blush_edge_diffusion_match
+          - blush_unrequested_makeup_preserved
+          - blush_localization_no_spill
+          - blush_anatomical_alignment
+          - blush_bilateral_balance
+          - blush_face_adaptation
+          - blush_edit_facial_identity_landmark_consistency
+          - blush_expression_features_preserved
+          - blush_skin_texture_realism
+          - blush_lighting_consistency
+          - blush_product_material_realism
+          - blush_artifact_sharpness_control
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Blush Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on blush pigment on apple cheeks, upper cheeks, under-eye, outer-eye, cheekbones, temples, and nose bridge.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - blush_style_match
+          - blush_visual_goal_match
+          - blush_target_regions_match
+          - blush_placement_height_match
+          - blush_shape_orientation_match
+          - blush_spread_coverage_match
+          - blush_color_family_match
+          - blush_undertone_saturation_match
+          - blush_finish_texture_match
+          - blush_intensity_opacity_match
+          - blush_edge_diffusion_match
+          - blush_unrequested_makeup_preserved
+          - blush_localization_no_spill
+          - blush_anatomical_alignment
+          - blush_bilateral_balance
+          - blush_face_adaptation
+          - blush_edit_facial_identity_landmark_consistency
+          - blush_expression_features_preserved
+          - blush_artifact_sharpness_control
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - blush_visual_goal_match
+          - blush_target_regions_match
+          - blush_placement_height_match
+          - blush_shape_orientation_match
+          - blush_spread_coverage_match
+          - blush_color_family_match
+          - blush_undertone_saturation_match
+          - blush_finish_texture_match
+          - blush_intensity_opacity_match
+          - blush_edge_diffusion_match
+          - blush_unrequested_makeup_preserved
+          - blush_localization_no_spill
+          - blush_anatomical_alignment
+          - blush_bilateral_balance
+          - blush_face_adaptation
+          - blush_skin_texture_realism
+          - blush_lighting_consistency
+          - blush_product_material_realism
+          - blush_artifact_sharpness_control
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of blush pigment on apple cheeks, upper cheeks, under-eye, outer-eye, cheekbones, temples, and nose bridge, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - blush_target_regions_match
+          - blush_placement_height_match
+          - blush_shape_orientation_match
+          - blush_spread_coverage_match
+          - blush_color_family_match
+          - blush_undertone_saturation_match
+          - blush_finish_texture_match
+          - blush_intensity_opacity_match
+          - blush_edge_diffusion_match
+          - blush_unrequested_makeup_preserved
+          - blush_localization_no_spill
+          - blush_anatomical_alignment
+          - blush_bilateral_balance
+          - blush_face_adaptation
+          - blush_skin_texture_realism
+          - blush_lighting_consistency
+          - blush_product_material_realism
+          - blush_artifact_sharpness_control
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - blush_style_match
+          - blush_visual_goal_match
+          - blush_target_regions_match
+          - blush_placement_height_match
+          - blush_shape_orientation_match
+          - blush_spread_coverage_match
+          - blush_color_family_match
+          - blush_undertone_saturation_match
+          - blush_finish_texture_match
+          - blush_intensity_opacity_match
+          - blush_edge_diffusion_match
+          - blush_unrequested_makeup_preserved
+          - blush_localization_no_spill
+          - blush_anatomical_alignment
+          - blush_bilateral_balance
+          - blush_face_adaptation
+          - blush_edit_facial_identity_landmark_consistency
+          - blush_expression_features_preserved
+          - blush_skin_texture_realism
+          - blush_lighting_consistency
+          - blush_product_material_realism
+          - blush_artifact_sharpness_control
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - blush_localization_no_spill
+          - blush_anatomical_alignment
+          - blush_bilateral_balance
+          - blush_face_adaptation
+          - blush_skin_texture_realism
+          - blush_lighting_consistency
+          - blush_product_material_realism
+          - blush_artifact_sharpness_control
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally and return public values with at most 3 decimal places.
+active_l3:
+- blush_style_match
+- blush_visual_goal_match
+- blush_target_regions_match
+- blush_placement_height_match
+- blush_shape_orientation_match
+- blush_spread_coverage_match
+- blush_color_family_match
+- blush_undertone_saturation_match
+- blush_finish_texture_match
+- blush_intensity_opacity_match
+- blush_edge_diffusion_match
+- blush_unrequested_makeup_preserved
+- blush_localization_no_spill
+- blush_anatomical_alignment
+- blush_bilateral_balance
+- blush_face_adaptation
+- blush_edit_facial_identity_landmark_consistency
+- blush_expression_features_preserved
+- blush_skin_texture_realism
+- blush_lighting_consistency
+- blush_product_material_realism
+- blush_artifact_sharpness_control
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output evidence, facet names, explanations, or failure tags in the training path.
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    blush_style_match: 0.14
+    blush_visual_goal_match: 0.07
+    blush_target_regions_match: 0.08
+    blush_placement_height_match: 0.09
+    blush_shape_orientation_match: 0.08
+    blush_spread_coverage_match: 0.08
+    blush_color_family_match: 0.08
+    blush_undertone_saturation_match: 0.07
+    blush_finish_texture_match: 0.07
+    blush_intensity_opacity_match: 0.08
+    blush_edge_diffusion_match: 0.08
+    blush_unrequested_makeup_preserved: 0.08
+  Localization and Anatomical Integration:
+    blush_localization_no_spill: 0.28
+    blush_anatomical_alignment: 0.28
+    blush_bilateral_balance: 0.22
+    blush_face_adaptation: 0.22
+  Subject Preservation:
+    blush_edit_facial_identity_landmark_consistency: 0.7
+    blush_expression_features_preserved: 0.3
+  Task Realism and Image Quality:
+    blush_skin_texture_realism: 0.28
+    blush_lighting_consistency: 0.26
+    blush_product_material_realism: 0.24
+    blush_artifact_sharpness_control: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Edit Execution:
+      blush_style_match:
+        title: Requested blush style is correct
+        definition: Judge outer-eye, under-eye, youthful round, hangover, contour, office-friendly, apple-cheek, horizontal,
+          diagonal, temple, nose-bridge, cheekbone, sunburn, and other requested blush styles.
+        anchors:
+          0: 'requested blush style is correct completely fails: the requested blush style is absent or replaced by a different
+            style'
+          1: Only a negligible trace of requested blush style is correct is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested blush style is correct is severely incorrect, incomplete, or
+            directionally wrong.
+          3: requested blush style is correct is partially attempted, but one or more primary requirements are missing or
+            contradictory.
+          4: requested blush style is correct is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: requested blush style is correct is moderately achieved, with several substantial visible problems.
+          6: requested blush style is correct is mostly correct, but one clear and important issue remains.
+          7: requested blush style is correct is clearly successful, with only a minor visible mismatch.
+          8: requested blush style is correct is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact requested blush style and its defining visual identity are fully realized.
+      blush_visual_goal_match:
+        title: Requested blush visual goal is achieved
+        definition: Judge youthful, fresh, sculpted, sun-kissed, office-friendly, flushed, lifted, innocent, or other specified
+          aesthetic impression.
+        anchors:
+          0: 'requested blush visual goal is achieved completely fails: the requested aesthetic goal is absent or opposite'
+          1: Only a negligible trace of requested blush visual goal is achieved is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested blush visual goal is achieved is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested blush visual goal is achieved is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: requested blush visual goal is achieved is recognizable, but a major mismatch, omission, excessive change, or
+            wrong regional behavior remains.
+          5: requested blush visual goal is achieved is moderately achieved, with several substantial visible problems.
+          6: requested blush visual goal is achieved is mostly correct, but one clear and important issue remains.
+          7: requested blush visual goal is achieved is clearly successful, with only a minor visible mismatch.
+          8: requested blush visual goal is achieved is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested blush impression is clear, accurate, and visually convincing.
+      blush_target_regions_match:
+        title: Requested blush regions are correct
+        definition: Check apples, under-eye, outer-eye, upper cheek, cheekbone, temple, nose bridge, or cross-cheek coverage.
+        anchors:
+          0: 'requested blush regions are correct completely fails: blush is placed on wrong or unrelated regions'
+          1: Only a negligible trace of requested blush regions are correct is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested blush regions are correct is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested blush regions are correct is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: requested blush regions are correct is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: requested blush regions are correct is moderately achieved, with several substantial visible problems.
+          6: requested blush regions are correct is mostly correct, but one clear and important issue remains.
+          7: requested blush regions are correct is clearly successful, with only a minor visible mismatch.
+          8: requested blush regions are correct is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested region is correctly covered and no required region is omitted.
+      blush_placement_height_match:
+        title: Blush placement height and start/end positions match
+        definition: Judge high, low, under-eye, upper-cheek, apple-centered, temple-connected, or nose-crossing placement.
+        anchors:
+          0: 'blush placement height and start/end positions match completely fails: the placement height or endpoints are
+            fundamentally wrong'
+          1: Only a negligible trace of blush placement height and start/end positions match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but blush placement height and start/end positions match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: blush placement height and start/end positions match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: blush placement height and start/end positions match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: blush placement height and start/end positions match is moderately achieved, with several substantial visible
+            problems.
+          6: blush placement height and start/end positions match is mostly correct, but one clear and important issue remains.
+          7: blush placement height and start/end positions match is clearly successful, with only a minor visible mismatch.
+          8: blush placement height and start/end positions match is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Placement height, start/end positions, and distance from eyes and nose exactly match the instruction.
+      blush_shape_orientation_match:
+        title: Blush shape and orientation match
+        definition: Judge round, horizontal, diagonal, elongated, lifted, concentrated, diffused, or sculpting shapes.
+        anchors:
+          0: 'blush shape and orientation match completely fails: the application shape or orientation is absent or opposite'
+          1: Only a negligible trace of blush shape and orientation match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush shape and orientation match is severely incorrect, incomplete, or
+            directionally wrong.
+          3: blush shape and orientation match is partially attempted, but one or more primary requirements are missing or
+            contradictory.
+          4: blush shape and orientation match is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: blush shape and orientation match is moderately achieved, with several substantial visible problems.
+          6: blush shape and orientation match is mostly correct, but one clear and important issue remains.
+          7: blush shape and orientation match is clearly successful, with only a minor visible mismatch.
+          8: blush shape and orientation match is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested blush shape, angle, and orientation are exact.
+      blush_spread_coverage_match:
+        title: Blush spread and coverage match
+        definition: Judge coverage width, density, regional continuity, center concentration, and whether the spread crosses
+          the nose when requested.
+        anchors:
+          0: 'blush spread and coverage match completely fails: coverage is missing, patchy, or distributed across wrong areas'
+          1: Only a negligible trace of blush spread and coverage match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush spread and coverage match is severely incorrect, incomplete, or
+            directionally wrong.
+          3: blush spread and coverage match is partially attempted, but one or more primary requirements are missing or contradictory.
+          4: blush spread and coverage match is recognizable, but a major mismatch, omission, excessive change, or wrong regional
+            behavior remains.
+          5: blush spread and coverage match is moderately achieved, with several substantial visible problems.
+          6: blush spread and coverage match is mostly correct, but one clear and important issue remains.
+          7: blush spread and coverage match is clearly successful, with only a minor visible mismatch.
+          8: blush spread and coverage match is highly accurate and complete, with only a tiny local imperfection.
+          9: Blush coverage, width, concentration, and continuity are exact.
+    Requested Attribute Precision:
+      blush_color_family_match:
+        title: Requested blush color family matches
+        definition: Judge warm brown, peach, nude pink, coral, dusty mauve, rose, cool pink, milky apricot, and named color
+          families.
+        anchors:
+          0: 'requested blush color family matches completely fails: the dominant blush color is wrong'
+          1: Only a negligible trace of requested blush color family matches is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested blush color family matches is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested blush color family matches is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: requested blush color family matches is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: requested blush color family matches is moderately achieved, with several substantial visible problems.
+          6: requested blush color family matches is mostly correct, but one clear and important issue remains.
+          7: requested blush color family matches is clearly successful, with only a minor visible mismatch.
+          8: requested blush color family matches is highly accurate and complete, with only a tiny local imperfection.
+          9: The requested blush hue family is exact and consistent.
+      blush_undertone_saturation_match:
+        title: Blush undertone and saturation match
+        definition: Judge warm/cool/neutral direction, muted versus vivid character, brightness, depth, and low-saturation
+          requirements.
+        anchors:
+          0: 'blush undertone and saturation match completely fails: undertone or saturation strongly conflicts with the prompt'
+          1: Only a negligible trace of blush undertone and saturation match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush undertone and saturation match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush undertone and saturation match is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: blush undertone and saturation match is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: blush undertone and saturation match is moderately achieved, with several substantial visible problems.
+          6: blush undertone and saturation match is mostly correct, but one clear and important issue remains.
+          7: blush undertone and saturation match is clearly successful, with only a minor visible mismatch.
+          8: blush undertone and saturation match is highly accurate and complete, with only a tiny local imperfection.
+          9: Undertone, saturation, depth, and brightness exactly match the prompt.
+      blush_finish_texture_match:
+        title: Requested blush finish and texture match
+        definition: Judge matte, powder matte, soft-focus, satin, shimmer, and dewy finishes while preserving skin detail.
+        anchors:
+          0: 'requested blush finish and texture match completely fails: the finish is absent or replaced by an incompatible
+            material'
+          1: Only a negligible trace of requested blush finish and texture match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but requested blush finish and texture match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested blush finish and texture match is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: requested blush finish and texture match is recognizable, but a major mismatch, omission, excessive change, or
+            wrong regional behavior remains.
+          5: requested blush finish and texture match is moderately achieved, with several substantial visible problems.
+          6: requested blush finish and texture match is mostly correct, but one clear and important issue remains.
+          7: requested blush finish and texture match is clearly successful, with only a minor visible mismatch.
+          8: requested blush finish and texture match is highly accurate and complete, with only a tiny local imperfection.
+          9: The blush finish and optical response are exact and naturally rendered.
+      blush_intensity_opacity_match:
+        title: Requested blush intensity and opacity match
+        definition: Judge subtle, clear, refined, moderate, intense, sheer, or strongly pigmented application.
+        anchors:
+          0: 'requested blush intensity and opacity match completely fails: the blush is invisible, grossly weak, or excessive'
+          1: Only a negligible trace of requested blush intensity and opacity match is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but requested blush intensity and opacity match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: requested blush intensity and opacity match is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: requested blush intensity and opacity match is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: requested blush intensity and opacity match is moderately achieved, with several substantial visible problems.
+          6: requested blush intensity and opacity match is mostly correct, but one clear and important issue remains.
+          7: requested blush intensity and opacity match is clearly successful, with only a minor visible mismatch.
+          8: requested blush intensity and opacity match is highly accurate and complete, with only a tiny local imperfection.
+          9: Pigment strength, opacity, and visual presence exactly match the instruction.
+      blush_edge_diffusion_match:
+        title: Blush edge diffusion and transition match
+        definition: Judge soft feathering, transition width, clean masking, and absence of hard circles, stripes, patchiness,
+          or muddy spread.
+        anchors:
+          0: 'blush edge diffusion and transition match completely fails: edges are severely harsh, patchy, or leaking'
+          1: Only a negligible trace of blush edge diffusion and transition match is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush edge diffusion and transition match is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush edge diffusion and transition match is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: blush edge diffusion and transition match is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: blush edge diffusion and transition match is moderately achieved, with several substantial visible problems.
+          6: blush edge diffusion and transition match is mostly correct, but one clear and important issue remains.
+          7: blush edge diffusion and transition match is clearly successful, with only a minor visible mismatch.
+          8: blush edge diffusion and transition match is highly accurate and complete, with only a tiny local imperfection.
+          9: All blush edges are smoothly diffused and controlled.
+      blush_unrequested_makeup_preserved:
+        title: Unrequested makeup and complexion are preserved
+        definition: Preserve contour, eye makeup, lipstick, brows, natural complexion, and all non-target skin.
+        anchors:
+          0: 'unrequested makeup and complexion are preserved completely fails: multiple non-target makeup or complexion regions
+            change'
+          1: Only a negligible trace of unrequested makeup and complexion are preserved is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but unrequested makeup and complexion are preserved is severely incorrect,
+            incomplete, or directionally wrong.
+          3: unrequested makeup and complexion are preserved is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: unrequested makeup and complexion are preserved is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: unrequested makeup and complexion are preserved is moderately achieved, with several substantial visible problems.
+          6: unrequested makeup and complexion are preserved is mostly correct, but one clear and important issue remains.
+          7: unrequested makeup and complexion are preserved is clearly successful, with only a minor visible mismatch.
+          8: unrequested makeup and complexion are preserved is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested makeup and non-target complexion remain source-consistent.
+  Localization and Anatomical Integration:
+    Target Localization and Structural Integration:
+      blush_localization_no_spill:
+        title: Blush remains localized without spill
+        definition: Pigment must not contaminate eyes, lips, hairline, neck, or unrelated facial regions.
+        anchors:
+          0: 'blush remains localized without spill completely fails: large spill or masking failure affects non-target regions'
+          1: Only a negligible trace of blush remains localized without spill is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush remains localized without spill is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush remains localized without spill is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: blush remains localized without spill is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: blush remains localized without spill is moderately achieved, with several substantial visible problems.
+          6: blush remains localized without spill is mostly correct, but one clear and important issue remains.
+          7: blush remains localized without spill is clearly successful, with only a minor visible mismatch.
+          8: blush remains localized without spill is highly accurate and complete, with only a tiny local imperfection.
+          9: Blush is perfectly localized with no contamination.
+      blush_anatomical_alignment:
+        title: Blush aligns with cheek and eye anatomy
+        definition: Placement must follow apple cheeks, cheekbones, orbital boundaries, temples, and source face perspective.
+        anchors:
+          0: 'blush aligns with cheek and eye anatomy completely fails: blush floats away from or crosses facial anatomy unnaturally'
+          1: Only a negligible trace of blush aligns with cheek and eye anatomy is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush aligns with cheek and eye anatomy is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush aligns with cheek and eye anatomy is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: blush aligns with cheek and eye anatomy is recognizable, but a major mismatch, omission, excessive change, or
+            wrong regional behavior remains.
+          5: blush aligns with cheek and eye anatomy is moderately achieved, with several substantial visible problems.
+          6: blush aligns with cheek and eye anatomy is mostly correct, but one clear and important issue remains.
+          7: blush aligns with cheek and eye anatomy is clearly successful, with only a minor visible mismatch.
+          8: blush aligns with cheek and eye anatomy is highly accurate and complete, with only a tiny local imperfection.
+          9: All blush regions align precisely with the subject's anatomy.
+      blush_bilateral_balance:
+        title: Blush bilateral balance is natural
+        definition: Judge left-right position, shape, color, intensity, and pose-aware symmetry.
+        anchors:
+          0: 'blush bilateral balance is natural completely fails: the two sides are severely inconsistent'
+          1: Only a negligible trace of blush bilateral balance is natural is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush bilateral balance is natural is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush bilateral balance is natural is partially attempted, but one or more primary requirements are missing or
+            contradictory.
+          4: blush bilateral balance is natural is recognizable, but a major mismatch, omission, excessive change, or wrong
+            regional behavior remains.
+          5: blush bilateral balance is natural is moderately achieved, with several substantial visible problems.
+          6: blush bilateral balance is natural is mostly correct, but one clear and important issue remains.
+          7: blush bilateral balance is natural is clearly successful, with only a minor visible mismatch.
+          8: blush bilateral balance is natural is highly accurate and complete, with only a tiny local imperfection.
+          9: Both sides are perfectly balanced for pose and illumination.
+      blush_face_adaptation:
+        title: Blush design is adapted to the source face
+        definition: Judge whether the blush scale and placement suit the subject's actual face shape, feature spacing, and
+          camera angle.
+        anchors:
+          0: 'blush design is adapted to the source face completely fails: a generic or mismatched blush mask ignores the
+            source face'
+          1: Only a negligible trace of blush design is adapted to the source face is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but blush design is adapted to the source face is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush design is adapted to the source face is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: blush design is adapted to the source face is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: blush design is adapted to the source face is moderately achieved, with several substantial visible problems.
+          6: blush design is adapted to the source face is mostly correct, but one clear and important issue remains.
+          7: blush design is adapted to the source face is clearly successful, with only a minor visible mismatch.
+          8: blush design is adapted to the source face is highly accurate and complete, with only a tiny local imperfection.
+          9: The blush design is ideally adapted to the individual face.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      blush_edit_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: 'Compare the source and edited face as the same individual. Judge face outline, forehead, eyebrow position,
+          eye shape and spacing, nose placement, mouth position, cheek structure, jaw, chin, age impression, gender presentation,
+          skin tone, characteristic asymmetries, and overall same-person impression. Allow only the intended target change:
+          the requested blush pigment, placement, and optical finish only.'
+        anchors:
+          0: 'facial identity and defining landmark geometry are preserved completely fails: the edited subject looks like
+            a different person or defining facial landmarks are severely replaced'
+          1: Only a negligible trace of facial identity and defining landmark geometry are preserved is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but facial identity and defining landmark geometry are preserved is severely
+            incorrect, incomplete, or directionally wrong.
+          3: facial identity and defining landmark geometry are preserved is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: facial identity and defining landmark geometry are preserved is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: facial identity and defining landmark geometry are preserved is moderately achieved, with several substantial
+            visible problems.
+          6: facial identity and defining landmark geometry are preserved is mostly correct, but one clear and important issue
+            remains.
+          7: facial identity and defining landmark geometry are preserved is clearly successful, with only a minor visible
+            mismatch.
+          8: facial identity and defining landmark geometry are preserved is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: The same person's facial identity and all non-target landmark relationships are source-identical, allowing only
+            the requested blush pigment, placement, and optical finish only.
+      blush_expression_features_preserved:
+        title: Expression and non-target facial features are preserved
+        definition: Preserve expression, gaze, eyes, brows, nose, mouth, lip geometry, face shape, and all non-target facial
+          details.
+        anchors:
+          0: 'expression and non-target facial features are preserved completely fails: expression or multiple non-target
+            facial features are changed'
+          1: Only a negligible trace of expression and non-target facial features are preserved is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but expression and non-target facial features are preserved is severely incorrect,
+            incomplete, or directionally wrong.
+          3: expression and non-target facial features are preserved is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: expression and non-target facial features are preserved is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: expression and non-target facial features are preserved is moderately achieved, with several substantial visible
+            problems.
+          6: expression and non-target facial features are preserved is mostly correct, but one clear and important issue
+            remains.
+          7: expression and non-target facial features are preserved is clearly successful, with only a minor visible mismatch.
+          8: expression and non-target facial features are preserved is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Expression, gaze, face shape, and all non-target facial details remain source-identical.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      blush_skin_texture_realism:
+        title: Skin texture remains realistic beneath blush
+        definition: Preserve pores, fine skin texture, wrinkles, and natural color variation.
+        anchors:
+          0: 'skin texture remains realistic beneath blush completely fails: skin is plastic, blurred, painted, or textureless'
+          1: Only a negligible trace of skin texture remains realistic beneath blush is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but skin texture remains realistic beneath blush is severely incorrect, incomplete,
+            or directionally wrong.
+          3: skin texture remains realistic beneath blush is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: skin texture remains realistic beneath blush is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: skin texture remains realistic beneath blush is moderately achieved, with several substantial visible problems.
+          6: skin texture remains realistic beneath blush is mostly correct, but one clear and important issue remains.
+          7: skin texture remains realistic beneath blush is clearly successful, with only a minor visible mismatch.
+          8: skin texture remains realistic beneath blush is highly accurate and complete, with only a tiny local imperfection.
+          9: Skin texture remains photorealistic and naturally visible.
+      blush_lighting_consistency:
+        title: Blush interacts naturally with source lighting
+        definition: Judge shading, cheek curvature, specular response, and consistency with the original illumination.
+        anchors:
+          0: 'blush interacts naturally with source lighting completely fails: blush lighting contradicts the source or flattens
+            the cheeks'
+          1: Only a negligible trace of blush interacts naturally with source lighting is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but blush interacts naturally with source lighting is severely incorrect,
+            incomplete, or directionally wrong.
+          3: blush interacts naturally with source lighting is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: blush interacts naturally with source lighting is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: blush interacts naturally with source lighting is moderately achieved, with several substantial visible problems.
+          6: blush interacts naturally with source lighting is mostly correct, but one clear and important issue remains.
+          7: blush interacts naturally with source lighting is clearly successful, with only a minor visible mismatch.
+          8: blush interacts naturally with source lighting is highly accurate and complete, with only a tiny local imperfection.
+          9: Blush and source illumination are fully coherent.
+      blush_product_material_realism:
+        title: Blush material and pigment are realistic
+        definition: Judge powder, cream, satin, shimmer, or dewy product behavior, pigment variation, and skin-product interaction.
+        anchors:
+          0: 'blush material and pigment are realistic completely fails: the product appears chalky, painted, noisy, or materially
+            incorrect'
+          1: Only a negligible trace of blush material and pigment are realistic is visible; the central requirement is essentially
+            unmet.
+          2: A weak related attempt is present, but blush material and pigment are realistic is severely incorrect, incomplete,
+            or directionally wrong.
+          3: blush material and pigment are realistic is partially attempted, but one or more primary requirements are missing
+            or contradictory.
+          4: blush material and pigment are realistic is recognizable, but a major mismatch, omission, excessive change, or
+            wrong regional behavior remains.
+          5: blush material and pigment are realistic is moderately achieved, with several substantial visible problems.
+          6: blush material and pigment are realistic is mostly correct, but one clear and important issue remains.
+          7: blush material and pigment are realistic is clearly successful, with only a minor visible mismatch.
+          8: blush material and pigment are realistic is highly accurate and complete, with only a tiny local imperfection.
+          9: Blush product material and pigment are fully convincing.
+      blush_artifact_sharpness_control:
+        title: Artifacts and sharpness loss are controlled
+        definition: Penalize halos, blocky masks, smearing, banding, duplicated edges, blur, or generation artifacts.
+        anchors:
+          0: 'artifacts and sharpness loss are controlled completely fails: severe artifacts or blur dominate the cheek regions'
+          1: Only a negligible trace of artifacts and sharpness loss are controlled is visible; the central requirement is
+            essentially unmet.
+          2: A weak related attempt is present, but artifacts and sharpness loss are controlled is severely incorrect, incomplete,
+            or directionally wrong.
+          3: artifacts and sharpness loss are controlled is partially attempted, but one or more primary requirements are
+            missing or contradictory.
+          4: artifacts and sharpness loss are controlled is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: artifacts and sharpness loss are controlled is moderately achieved, with several substantial visible problems.
+          6: artifacts and sharpness loss are controlled is mostly correct, but one clear and important issue remains.
+          7: artifacts and sharpness loss are controlled is clearly successful, with only a minor visible mismatch.
+          8: artifacts and sharpness loss are controlled is highly accurate and complete, with only a tiny local imperfection.
+          9: The blush edit is clean, sharp, and artifact-free.
+judge_role: You are a strict expert evaluator specializing in blush editing, cheek color placement, and skin preservation.
+  Judge the edited image against the exact requested edit family, direction, target region, strength, component details, preservation
+  constraints, and realism, not against generic attractiveness or plausibility.
+judge_instructions: |-
+  - First infer the exact requested edit family from the prompt, such as natural blush, round blush, diagonal blush, under-eye blush, sun-kissed blush, nose blush, high-cheek blush, soft blush, strong blush, matte blush, dewy blush, or blush removal.
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+  - Target regions for this task include cheeks, cheekbones, under-eye cheek area, nose bridge/tip when requested, skin texture, pores, complexion, lips, eyes, hair, and background. Judge the requested target area and the preservation of all non-target regions independently.
+
+  - Common non-equivalent substitutions: blush is not lipstick, contour, full-face recoloring, skin whitening, or heavy makeup unless requested. These should be penalized even if the image looks plausible.
+
+  - Blush color, placement, opacity, edge softness, and finish are separate checks; a pretty rosy face cannot compensate for wrong placement or overdone saturation.
+
+  - Blush must preserve real skin texture and source lighting instead of becoming a flat painted patch or global color filter.
+
+  - Preserve the source person's identity, face/body proportions not requested to change, expression when not targeted, skin texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target regions independently from target edit quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change, background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning; output only the JSON score vector.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should be 0-6.
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond the request, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.

@@ -1,0 +1,845 @@
+task_key: prompt_conditioned_eyebrow_shape_adjustment
+task_title: Prompt-Conditioned Eyebrow Shape and Attribute Adjustment
+task_title_zh: 眉毛形状（多属性调整）
+version: v48_fixed_integer_22_l3_prompt_conditioned_eyebrow_shape_adjustment_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+target_region: both visible eyebrow regions, including brow heads, bodies, arches or peaks, tails, individual brow hairs,
+  and only the minimum surrounding forehead skin needed for clean geometric, color, and texture blending
+target_action_summary: Adjust the eyebrows according to the current prompt, which may specify brow family, height, spacing,
+  arch, thickness, density, length, head-body-tail profile, color, or texture. Preserve all unrequested eyebrow attributes,
+  facial identity, eyes, expression, skin, hair, lighting, camera state, and background.
+judge_role: You are a strict expert evaluator for prompt-conditioned eyebrow editing, brow geometry, brow texture/color, facial
+  identity preservation, and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare both eyebrows, brow heads/bodies/arches/tails, brow height, spacing, thickness, density, length,
+  color, hair texture, eye/eyelid relation, expression, skin, makeup, hair, lighting, background, pose, and camera state.
+
+
+  2) Task target. The current prompt is the source of truth. A successful edit changes only the requested eyebrow attributes,
+  such as shape family, arch/slope, height, spacing, thickness, density, length, head-body-tail profile, color, or texture,
+  while preserving all unrequested brow attributes and non-brow content. Generic prettier eyebrows are not enough.
+
+
+  3) Task-specific failures. Treat absent/wrong prompt attribute, generic beauty-brow substitution, overdone/unbalanced brows,
+  brow anatomy/texture/boundary breakage, and non-brow facial/source drift as failures. Before returning scores, apply global_scoring_policy.failure_propagation:
+  detect each failure, estimate severity 0-5, cap affected L3 with cap_by_severity, then output the adjusted vector.
+
+
+  4) Calibration. 9 is rare. 7 requires clear prompt-specific evidence. If the requested brow attribute is absent or wrong,
+  realistic hair texture, symmetry, or attractiveness must not lift edit-dependent facets into the successful range.
+
+
+  Task-specific focus: prompt-conditioned eyebrow attribute adjustment. Do not reward generic pretty brows, makeup change,
+  eye/expression drift, or unrequested brow-attribute changes as success.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Prompt-requested eyebrow attributes are scored for target matching,
+    while unrequested attributes are scored for source preservation. Closely related requirements are merged rather than repeatedly
+    expanded.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use YAML failure_propagation severity caps as the rubric-level instruction; do not rely on external metrics, rank bonuses,
+    or hidden program-side deductions.
+  - The same fixed L3 set supports height, spacing, thickness, density, length, arch, named shape, color, and texture prompts.
+  - A non-requested attribute is evaluated for preservation, not automatically treated as perfect or ignored.
+  - Thickness and density, height and arch, spacing and eye position, and length and tail profile are evaluated separately.
+  - Easy background and camera checks are merged rather than expanded into many L3 facets.
+  - Facial identity remains one dedicated, high-impact L3 facet and cannot be compensated by attractive eyebrows.
+  - Subject Preservation contributes 42% of the final reward.
+  - Public floating-point values use at most three decimal places.
+evaluation_notes:
+- The uploaded file contains 1970 prompts and 1563 unique text strings. It includes 1173 generated eyebrow-thickening prompts,
+  100 height prompts, 100 spacing prompts, 100 arch prompts, 99 general thickness prompts, 49 direct thickening prompts, 100
+  explicit shape prompts, 149 shape-color-texture makeup prompts, and 100 direct shape-plus-color prompts.
+- Although the task is named eyebrow shape, the actual data also contains brow position, spacing, thickness, density, length,
+  color, and texture requirements. The current prompt is the source of truth.
+- When a style name and a geometric description are both present, judge the described geometry first. For example, sword brows
+  require an angular lifted direction; drooping brows require a downward tail; straight brows require minimal arch.
+- For prompts such as adjust brow height, spacing, thickness, or arch without a fixed direction, judge whether the edit visibly
+  improves balance while remaining source-appropriate and localized.
+- Natural left-right differences may remain when supported by head pose, expression, source asymmetry, hair occlusion, or
+  perspective. Do not force artificial mirror symmetry.
+- Color changes must remain inside brow hairs and must not recolor the scalp hair, skin, eyes, lips, makeup, or global image.
+- Thicker or denser brows must be constructed with believable hairs and directional growth, not by expanding a uniform dark
+  mask.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by visual evidence, then apply task-specific failure_propagation
+    caps before returning the final score_vector.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is good. Correct thickness cannot compensate for
+    the wrong arch, realistic hairs cannot compensate for the wrong spacing, and attractive brows cannot compensate for identity
+    or background drift.
+  prompt_conditioned_attribute_rule: For each Prompt Compliance facet, score explicit target matching when the attribute is
+    requested; otherwise score preservation of that source attribute. Never assign an automatic high score merely because
+    the prompt does not mention the attribute.
+  eyebrow_operation_disambiguation_rule: Eyebrow edits must be achieved by changing the brows themselves. Moving eyes, eyelids,
+    forehead, nose, hairline, face, camera, or global color is a substitute operation.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the result as the same individual. Eyebrow changes may alter local brow appearance, but normalized
+    facial landmarks, eyes, expression, age impression, skin tone, and characteristic identity must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because eyebrow compliance, brow realism, or attractiveness
+    is strong.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence
+      score. Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_attribute_absent_wrong_or_too_weak:
+        detect_when: The prompt-requested eyebrow attribute is absent, barely changed, changed in the wrong direction, or
+          not visibly matched to the requested shape/height/spacing/arch/thickness/density/length/color/texture.
+        severity_guidance: Tiny but correct requested-attribute change may be severity 1. Correct but weak/partial change
+          should be severity 2. Mostly unchanged or wrong attribute must be severity 3. Reversed, absent, or wrong brow family
+          must be severity 4-5.
+        affected_l3:
+        - requested_eyebrow_edit_operation_match
+        - requested_eyebrow_shape_family_match
+        - requested_brow_height_eye_distance_match
+        - requested_interbrow_spacing_match
+        - requested_arch_slope_peak_match
+        - requested_brow_thickness_width_match
+        - requested_brow_density_fullness_match
+        - requested_brow_length_extent_match
+        - requested_brow_head_body_tail_profile_match
+        - requested_brow_color_tone_match
+        - requested_brow_texture_finish_match
+        - eyebrow_edit_localized_to_brow_region
+      generic_beauty_brow_or_wrong_operation_substitution:
+        detect_when: The result makes brows generically prettier, darker, thicker, cleaner, more symmetric, makeup-like, or
+          reshaped in a popular style while missing the actual prompt attribute.
+        severity_guidance: Generic beauty cleanup with partial correct attribute may be severity 2. If generic beauty/wrong
+          operation is the main visible edit, severity 3-4. If it changes expression, identity, or requested direction completely,
+          severity 4-5.
+        affected_l3:
+        - requested_eyebrow_edit_operation_match
+        - requested_eyebrow_shape_family_match
+        - requested_brow_height_eye_distance_match
+        - requested_interbrow_spacing_match
+        - requested_arch_slope_peak_match
+        - requested_brow_thickness_width_match
+        - requested_brow_density_fullness_match
+        - requested_brow_length_extent_match
+        - requested_brow_head_body_tail_profile_match
+        - requested_brow_color_tone_match
+        - requested_brow_texture_finish_match
+        - unrequested_eyebrow_attributes_preserved
+        - eyebrow_identity_landmark_consistency
+        - eyebrow_edit_localized_to_brow_region
+        - eyebrow_orbital_position_perspective_consistent
+        - eyebrow_eyes_expression_face_scene_preserved
+        - eyebrow_artifact_sharpness_no_mask_spill
+      overdone_asymmetric_or_pose_inconsistent_brows:
+        detect_when: Brows become too high/low/thick/thin/dark/light/arched/long, mutually unbalanced, inconsistent with head
+          pose, or no longer sit naturally on the brow ridge.
+        severity_guidance: Clear over-edit or imbalance must be at least severity 2. Severe asymmetry, misplaced brow, or
+          impossible orbital relation must be severity 3-5.
+        affected_l3:
+        - requested_brow_height_eye_distance_match
+        - requested_interbrow_spacing_match
+        - requested_arch_slope_peak_match
+        - requested_brow_thickness_width_match
+        - requested_brow_density_fullness_match
+        - requested_brow_length_extent_match
+        - requested_brow_head_body_tail_profile_match
+        - requested_brow_texture_finish_match
+        - eyebrow_orbital_position_perspective_consistent
+        - eyebrow_pose_aware_bilateral_balance
+        - eyebrow_identity_landmark_consistency
+        - eyebrow_artifact_sharpness_no_mask_spill
+        - requested_eyebrow_edit_operation_match
+        - requested_eyebrow_shape_family_match
+        - eyebrow_edit_localized_to_brow_region
+        - eyebrow_skin_hair_makeup_occlusion_consistent
+        - eyebrow_hair_strand_texture_realistic
+        - eyebrow_color_lighting_shadow_integration
+        - eyebrow_boundary_contact_occlusion_consistent
+      brow_texture_boundary_color_or_occlusion_broken:
+        detect_when: Eyebrows look pasted, painted, blurred, cut out, mask-like, color-spilled, textureless, or inconsistent
+          with skin contact, lighting, hair direction, makeup, glasses/hair occlusion, or local sharpness.
+        severity_guidance: Clear local realism/boundary defect must be at least severity 2. Pasted/painted brows, heavy mask
+          spill, or broken occlusion must be severity 3-5.
+        affected_l3:
+        - requested_brow_color_tone_match
+        - requested_brow_texture_finish_match
+        - eyebrow_edit_localized_to_brow_region
+        - eyebrow_skin_hair_makeup_occlusion_consistent
+        - eyebrow_hair_strand_texture_realistic
+        - eyebrow_color_lighting_shadow_integration
+        - eyebrow_boundary_contact_occlusion_consistent
+        - eyebrow_artifact_sharpness_no_mask_spill
+        - requested_eyebrow_edit_operation_match
+        - requested_eyebrow_shape_family_match
+        - requested_brow_height_eye_distance_match
+        - requested_interbrow_spacing_match
+        - requested_arch_slope_peak_match
+        - requested_brow_thickness_width_match
+        - requested_brow_density_fullness_match
+        - requested_brow_length_extent_match
+        - eyebrow_orbital_position_perspective_consistent
+        - eyebrow_pose_aware_bilateral_balance
+        - eyebrow_identity_landmark_consistency
+      eyes_expression_identity_or_scene_drift:
+        detect_when: Eyes, eyelids, eye shape, expression, facial identity, skin texture/color, makeup outside brows, hair,
+          lighting, background, crop, pose, or camera state changes beyond the requested brow edit.
+        severity_guidance: Minor local skin/makeup drift may be severity 1. Clear eye, eyelid, expression, skin, makeup, lighting,
+          or hair drift must be severity 2-3. Identity, pose/camera, or scene replacement must be severity 4-5.
+        affected_l3:
+        - unrequested_eyebrow_attributes_preserved
+        - eyebrow_edit_localized_to_brow_region
+        - eyebrow_orbital_position_perspective_consistent
+        - eyebrow_skin_hair_makeup_occlusion_consistent
+        - eyebrow_identity_landmark_consistency
+        - eyebrow_eyes_expression_face_scene_preserved
+        - eyebrow_color_lighting_shadow_integration
+        - eyebrow_artifact_sharpness_no_mask_spill
+        - requested_eyebrow_edit_operation_match
+        - eyebrow_hair_strand_texture_realistic
+        - eyebrow_boundary_contact_occlusion_consistent
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Eyebrow-shape adjustment is prompt-conditioned. Score the specific requested brow shape/height/spacing/arch/thickness/density/length/color/texture,
+    not generic beauty, symmetry, darkness, or makeup polish.
+  no_compensation_rule: If the requested brow attribute is absent or wrong, good beauty style, symmetry, preservation, or
+    photorealism must not raise edit-dependent facets. If eyes/expression/identity/skin/makeup changes, prettier brows must
+    not raise source-preserving brow facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample changes only the eyebrow attributes requested by the prompt while preserving
+    unrequested brow properties, eyes, expression, identity, skin, lighting, hair, and background.
+  success_gate_conditions:
+  - 'The prompt-requested brow attribute is visibly achieved: shape family, height, spacing, arch, thickness, density, length,
+    color, texture, or head-body-tail profile as applicable.'
+  - Unrequested brow attributes remain source-consistent rather than being generically beautified.
+  - Both brows are pose-aware and naturally placed on the orbital ridge with coherent height, balance, and perspective.
+  - Brow hair texture, color, skin contact, makeup, occlusion, lighting, and boundaries look realistic.
+  - Eyes, eyelids, expression, identity, skin, hair, background, crop, and camera state do not drift.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_eyebrow_edit_operation_match
+- requested_eyebrow_shape_family_match
+- requested_brow_height_eye_distance_match
+- requested_interbrow_spacing_match
+- requested_arch_slope_peak_match
+- requested_brow_thickness_width_match
+- requested_brow_density_fullness_match
+- requested_brow_length_extent_match
+- requested_brow_head_body_tail_profile_match
+- requested_brow_color_tone_match
+- requested_brow_texture_finish_match
+- unrequested_eyebrow_attributes_preserved
+- eyebrow_edit_localized_to_brow_region
+- eyebrow_orbital_position_perspective_consistent
+- eyebrow_pose_aware_bilateral_balance
+- eyebrow_skin_hair_makeup_occlusion_consistent
+- eyebrow_identity_landmark_consistency
+- eyebrow_eyes_expression_face_scene_preserved
+- eyebrow_hair_strand_texture_realistic
+- eyebrow_color_lighting_shadow_integration
+- eyebrow_boundary_contact_occlusion_consistent
+- eyebrow_artifact_sharpness_no_mask_spill
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_eyebrow_edit_operation_match: 0.16
+    requested_eyebrow_shape_family_match: 0.11
+    requested_brow_height_eye_distance_match: 0.08
+    requested_interbrow_spacing_match: 0.07
+    requested_arch_slope_peak_match: 0.1
+    requested_brow_thickness_width_match: 0.1
+    requested_brow_density_fullness_match: 0.08
+    requested_brow_length_extent_match: 0.07
+    requested_brow_head_body_tail_profile_match: 0.07
+    requested_brow_color_tone_match: 0.06
+    requested_brow_texture_finish_match: 0.06
+    unrequested_eyebrow_attributes_preserved: 0.04
+  Localization and Anatomical Integration:
+    eyebrow_edit_localized_to_brow_region: 0.27
+    eyebrow_orbital_position_perspective_consistent: 0.25
+    eyebrow_pose_aware_bilateral_balance: 0.24
+    eyebrow_skin_hair_makeup_occlusion_consistent: 0.24
+  Subject Preservation:
+    eyebrow_identity_landmark_consistency: 0.8
+    eyebrow_eyes_expression_face_scene_preserved: 0.2
+  Task Realism and Image Quality:
+    eyebrow_hair_strand_texture_realistic: 0.27
+    eyebrow_color_lighting_shadow_integration: 0.27
+    eyebrow_boundary_contact_occlusion_consistent: 0.24
+    eyebrow_artifact_sharpness_no_mask_spill: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Brow Geometry:
+      requested_eyebrow_edit_operation_match:
+        title: Requested eyebrow-edit operation match
+        definition: Judge whether the eyebrows themselves receive the prompt-specified edit. Do not credit changes to eyes,
+          eyelids, forehead, face, camera, lighting, or skin as substitute eyebrow operations.
+        anchors:
+          0: The requested eyebrow operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested operation is visible.
+          2: A small relevant attempt exists, but the result is dominated by a substitute operation.
+          3: The brows are weakly edited, but the primary operation is mostly wrong.
+          4: A recognizable brow edit exists, yet a major part of the requested operation is missing or substituted.
+          5: The operation is partially correct, with several substantial mismatches.
+          6: The requested operation is mostly correct, but one clear error remains.
+          7: The operation is clearly achieved, with only a minor visible mismatch.
+          8: The operation is highly accurate, with only a tiny local imperfection.
+          9: The eyebrows receive exactly the requested operation with no substitute edits.
+        rubric: Judge whether the eyebrows themselves receive the prompt-specified edit. Do not credit changes to eyes, eyelids,
+          forehead, face, camera, lighting, or skin as substitute eyebrow operations. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_eyebrow_shape_family_match:
+        title: Requested eyebrow shape-family match
+        definition: Judge the requested overall family, such as straight, arched, sword, drooping, hooked, crescent, willow-leaf,
+          Korean straight, meteor, feathery, rugged, short, long, or balanced natural.
+        anchors:
+          0: The requested family is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested family is visible.
+          2: A small relevant feature exists, but the overall family is severely wrong.
+          3: The family is weakly attempted and remains largely incorrect.
+          4: The style is recognizable, but a major defining geometric property is wrong.
+          5: The family is partially matched, with several visible shape conflicts.
+          6: The family is mostly correct, but one clear defining feature remains wrong.
+          7: The requested family is strong, with only a minor shape mismatch.
+          8: The family is highly accurate, with only a tiny local imperfection.
+          9: The requested eyebrow family and defining geometry are exactly achieved.
+        rubric: Judge the requested overall family, such as straight, arched, sword, drooping, hooked, crescent, willow-leaf,
+          Korean straight, meteor, feathery, rugged, short, long, or balanced natural. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_brow_height_eye_distance_match:
+        title: Requested brow height and brow-to-eye distance match
+        definition: When requested, judge raised, lowered, high-set, or low-set placement relative to the unchanged eyes.
+          When not requested, judge preservation of source brow height.
+        anchors:
+          0: Height is opposite, absent, replaced by eye movement, or unusable.
+          1: Only a negligible correct height relationship remains.
+          2: A small attempt exists, but brow-to-eye distance is severely wrong.
+          3: The requested placement is weakly attempted and largely incorrect.
+          4: The direction is recognizable, but a major height or eye-distance mismatch remains.
+          5: Height is partially correct, with several visible placement problems.
+          6: Placement is mostly correct, but one clear height inconsistency remains.
+          7: Brow height is strong and natural, with only a minor mismatch.
+          8: Height and eye distance are highly accurate, with only a tiny discrepancy.
+          9: The requested or preserved brow height and eye distance are exact and anatomically natural.
+        rubric: When requested, judge raised, lowered, high-set, or low-set placement relative to the unchanged eyes. When
+          not requested, judge preservation of source brow height. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_interbrow_spacing_match:
+        title: Requested interbrow spacing match
+        definition: When requested, judge the gap between the inner brow heads as closer, wider, or balanced without moving
+          the eyes or nose. When not requested, judge preservation of source spacing.
+        anchors:
+          0: Spacing is opposite, absent, created by moving other features, or unusable.
+          1: Only a negligible trace of correct spacing is visible.
+          2: A small attempt exists, but the inner-brow gap is severely wrong.
+          3: Spacing is weakly attempted and remains largely incorrect.
+          4: The direction is recognizable, but a major gap or brow-head mismatch remains.
+          5: Spacing is partially correct, with several visible placement problems.
+          6: Spacing is mostly correct, but one clear inconsistency remains.
+          7: Interbrow spacing is strong and natural, with only a minor mismatch.
+          8: Spacing is highly accurate, with only a tiny discrepancy.
+          9: The requested or preserved interbrow spacing is exact and face-appropriate.
+        rubric: When requested, judge the gap between the inner brow heads as closer, wider, or balanced without moving the
+          eyes or nose. When not requested, judge preservation of source spacing. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_arch_slope_peak_match:
+        title: Requested arch, slope, and peak match
+        definition: Judge straightness, curvature, peak height and location, upward or downward slope, bend, and tail direction.
+          When not requested, judge preservation of the source arch.
+        anchors:
+          0: Arch or slope is opposite, absent, unrelated, or unusable.
+          1: Only a negligible trace of the correct curvature is visible.
+          2: A small relevant feature exists, but arch, peak, or slope is severely wrong.
+          3: The curve is weakly attempted and largely incorrect.
+          4: The intended arch is recognizable, but a major peak, bend, or slope mismatch remains.
+          5: Arch matching is partial, with several visible geometric conflicts.
+          6: The arch is mostly correct, but one clear peak or slope issue remains.
+          7: Arch, slope, and peak are strong, with only a minor mismatch.
+          8: The geometry is highly accurate, with only a tiny local imperfection.
+          9: The requested or preserved arch, peak, slope, and tail direction are exact.
+        rubric: Judge straightness, curvature, peak height and location, upward or downward slope, bend, and tail direction.
+          When not requested, judge preservation of the source arch. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_brow_thickness_width_match:
+        title: Requested brow thickness and vertical-width match
+        definition: Judge thick, medium, thin, slim, broad, or refined brow width along the complete brow. Do not confuse
+          thickness with hair density.
+        anchors:
+          0: Thickness is opposite, absent, unrelated, or unusable.
+          1: Only a negligible trace of the requested width is visible.
+          2: A small attempt exists, but brow width is severely wrong.
+          3: Thickness is weakly attempted and remains largely incorrect.
+          4: The direction is recognizable, but a major width or regional-thickness mismatch remains.
+          5: Thickness is partially correct, with several visible inconsistencies.
+          6: Brow width is mostly correct, but one clear regional issue remains.
+          7: Thickness is strong and balanced, with only a minor mismatch.
+          8: The width profile is highly accurate, with only a tiny local imperfection.
+          9: The requested or preserved brow thickness is exact from head through tail.
+        rubric: Judge thick, medium, thin, slim, broad, or refined brow width along the complete brow. Do not confuse thickness
+          with hair density. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+    Requested Brow Attributes and Preservation:
+      requested_brow_density_fullness_match:
+        title: Requested brow density and fullness match
+        definition: Judge dense, sparse, airy, filled, fluffy, compact, or naturally separated hair coverage independent of
+          the brow's geometric width.
+        anchors:
+          0: Density is opposite, absent, unrelated, or unusable.
+          1: Only a negligible trace of the requested fullness is visible.
+          2: A small attempt exists, but hair coverage is severely wrong.
+          3: Density is weakly attempted and remains largely incorrect.
+          4: The direction is recognizable, but a major fullness, gap, or separation mismatch remains.
+          5: Density is partially correct, with several visible inconsistencies.
+          6: Fullness is mostly correct, but one clear density issue remains.
+          7: Density is strong and natural, with only a minor mismatch.
+          8: Hair coverage is highly accurate, with only a tiny local imperfection.
+          9: The requested or preserved density and fullness are exact and naturally distributed.
+        rubric: Judge dense, sparse, airy, filled, fluffy, compact, or naturally separated hair coverage independent of the
+          brow's geometric width. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      requested_brow_length_extent_match:
+        title: Requested brow length and horizontal-extent match
+        definition: Judge short, compact, long, elongated, or eye-corner-relative extent while preserving the requested brow
+          head and tail positions.
+        anchors:
+          0: Length is opposite, absent, unrelated, or unusable.
+          1: Only a negligible trace of the requested extent is visible.
+          2: A small attempt exists, but brow length is severely wrong.
+          3: Length is weakly attempted and remains largely incorrect.
+          4: The direction is recognizable, but a major inner or outer extent mismatch remains.
+          5: Length is partially correct, with several visible endpoint problems.
+          6: Extent is mostly correct, but one clear endpoint issue remains.
+          7: Brow length is strong and natural, with only a minor mismatch.
+          8: The horizontal extent is highly accurate, with only a tiny discrepancy.
+          9: The requested or preserved brow length and endpoints are exact.
+        rubric: Judge short, compact, long, elongated, or eye-corner-relative extent while preserving the requested brow head
+          and tail positions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_brow_head_body_tail_profile_match:
+        title: Requested brow head-body-tail profile match
+        definition: Judge inner-head strength, body continuity, taper, tail width, tail direction, and regional distribution,
+          including broad-head thin-tail or short-head textured-tail designs.
+        anchors:
+          0: The head-body-tail profile is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested profile is visible.
+          2: A small relevant feature exists, but regional structure is severely wrong.
+          3: The profile is weakly attempted and largely incorrect.
+          4: The design is recognizable, but a major head, body, taper, or tail mismatch remains.
+          5: The profile is partially correct, with several visible regional conflicts.
+          6: The profile is mostly correct, but one clear regional issue remains.
+          7: Head, body, and tail relationships are strong, with only a minor mismatch.
+          8: The profile is highly accurate, with only a tiny local imperfection.
+          9: The requested or preserved head-body-tail distribution is exact and coherent.
+        rubric: Judge inner-head strength, body continuity, taper, tail width, tail direction, and regional distribution,
+          including broad-head thin-tail or short-head textured-tail designs. Apply this facet's 0-9 anchors directly. If
+          a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      requested_brow_color_tone_match:
+        title: Requested eyebrow color and tone match
+        definition: When a new color is requested, judge hue, depth, undertone, saturation, and evenness. When color must
+          remain unchanged or is unrequested, judge source-color preservation and absence of spill.
+        anchors:
+          0: Color is opposite, absent, broadly spilled, unrelated, or unusable.
+          1: Only a negligible trace of the requested or preserved color remains.
+          2: A small attempt exists, but hue, depth, or containment is severely wrong.
+          3: Color is weakly matched and major tone or spill errors remain.
+          4: The target is recognizable, but a major hue, saturation, depth, or preservation mismatch remains.
+          5: Color matching is partial, with several visible tone or containment problems.
+          6: Color is mostly correct, but one clear hue, depth, evenness, or spill issue remains.
+          7: Color matching or preservation is strong, with only a minor mismatch.
+          8: The color is highly accurate and contained, with only a tiny local imperfection.
+          9: The requested or preserved eyebrow color is exact, even, and fully contained to the brow hairs.
+        rubric: When a new color is requested, judge hue, depth, undertone, saturation, and evenness. When color must remain
+          unchanged or is unrequested, judge source-color preservation and absence of spill. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_brow_texture_finish_match:
+        title: Requested brow texture and finish match
+        definition: Judge fluffy, feathery, separated, compact, matte, satin, powder-matte, soft-focus, shimmer, dewy, rugged,
+          or natural hair-like finish when requested; otherwise judge source texture preservation.
+        anchors:
+          0: Texture or finish is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested finish is visible.
+          2: A small attempt exists, but the texture is severely wrong or synthetic.
+          3: The finish is weakly attempted and major conflicts remain.
+          4: The requested texture is recognizable, but a major hair-separation or surface mismatch remains.
+          5: Texture matching is partial, with several visible inconsistencies.
+          6: The finish is mostly correct, but one clear texture issue remains.
+          7: Texture and finish are strong, with only a minor mismatch.
+          8: The finish is highly accurate, with only a tiny local imperfection.
+          9: The requested or preserved brow texture and finish are exact, natural, and coherent.
+        rubric: Judge fluffy, feathery, separated, compact, matte, satin, powder-matte, soft-focus, shimmer, dewy, rugged,
+          or natural hair-like finish when requested; otherwise judge source texture preservation. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      unrequested_eyebrow_attributes_preserved:
+        title: Unrequested eyebrow attributes are preserved
+        definition: Judge whether brow position, spacing, arch, thickness, density, length, head-body-tail profile, color,
+          and texture remain source-consistent whenever the current prompt does not request their change.
+        anchors:
+          0: Unrequested brow attributes are severely changed, replaced, or unusable.
+          1: Most unrequested brow properties visibly drift.
+          2: Several major unrequested brow attributes are altered.
+          3: One major or multiple obvious extra brow changes are present.
+          4: The result is recognizable, but a clear important unrequested attribute is changed.
+          5: Preservation is moderate, with several visible extra changes.
+          6: Most unrequested attributes are preserved, but one clear change remains.
+          7: Preservation is strong, with only a minor discrepancy.
+          8: Unrequested attributes are nearly source-identical, with only a tiny difference.
+          9: Every unrequested eyebrow attribute remains source-consistent.
+        rubric: Judge whether brow position, spacing, arch, thickness, density, length, head-body-tail profile, color, and
+          texture remain source-consistent whenever the current prompt does not request their change. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Brow Placement and Integration:
+      eyebrow_edit_localized_to_brow_region:
+        title: Eyebrow editing is localized to the brow region
+        definition: Keep changes within brow hairs and the minimum surrounding skin needed for blending. Avoid altering eyes,
+          eyelids, lashes, forehead shape, hairline, nose, temples, or broader facial skin.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: A small relevant attempt exists, but large non-target areas are altered.
+          3: Localization is weak and major spill remains.
+          4: The brow target is recognizable, but one major non-target facial region is changed.
+          5: Localization is partial, with several substantial spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed brow region remains.
+          7: The edit is well localized, with only a minor local spill.
+          8: Localization is highly accurate, with only a tiny imperfection.
+          9: The edit is precisely confined to the eyebrows and minimum blending skin.
+        rubric: Keep changes within brow hairs and the minimum surrounding skin needed for blending. Avoid altering eyes,
+          eyelids, lashes, forehead shape, hairline, nose, temples, or broader facial skin. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      eyebrow_orbital_position_perspective_consistent:
+        title: Eyebrow orbital position and perspective are consistent
+        definition: Judge brow placement relative to eyes, orbital rim, forehead curvature, head rotation, foreshortening,
+          lens perspective, and source asymmetry.
+        anchors:
+          0: Orbital placement or perspective is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct placement remains.
+          2: The brows are severely floating, misaligned, or perspective-inconsistent.
+          3: Placement is weakly attempted and major anatomical errors remain.
+          4: The result is recognizable, but a major eye-distance, orbital, or perspective mismatch remains.
+          5: Integration is partial, with several substantial spatial problems.
+          6: Placement is mostly correct, but one clear orbital or perspective issue remains.
+          7: Orbital integration is strong, with only a minor mismatch.
+          8: Placement is highly accurate, with only a tiny local imperfection.
+          9: Both brows sit naturally on the orbital anatomy with fully source-consistent perspective.
+        rubric: Judge brow placement relative to eyes, orbital rim, forehead curvature, head rotation, foreshortening, lens
+          perspective, and source asymmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      eyebrow_pose_aware_bilateral_balance:
+        title: Pose-aware bilateral eyebrow balance
+        definition: Judge left-right completeness, corresponding shape, height, density, color, and finish while preserving
+          natural asymmetry caused by expression, pose, perspective, or occlusion.
+        anchors:
+          0: Bilateral balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of matched bilateral editing is visible.
+          2: One brow is missed or severe artificial asymmetry dominates.
+          3: Balance is weakly attempted and major side-to-side conflicts remain.
+          4: Both brows are recognizable, but a major height, shape, density, or color mismatch remains.
+          5: Balance is partial, with several substantial bilateral inconsistencies.
+          6: Both brows are mostly coherent, but one clear side-to-side issue remains.
+          7: Pose-aware balance is strong, with only a minor mismatch.
+          8: Balance is highly accurate, with only a tiny local imperfection.
+          9: Both brows are completely and naturally coordinated while preserving source-supported asymmetry.
+        rubric: Judge left-right completeness, corresponding shape, height, density, color, and finish while preserving natural
+          asymmetry caused by expression, pose, perspective, or occlusion. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      eyebrow_skin_hair_makeup_occlusion_consistent:
+        title: Eyebrow skin, hair, makeup, and occlusion integration is consistent
+        definition: Judge brow hairs against skin, foundation, existing brow makeup, forehead texture, bangs, glasses, accessories,
+          and other local occlusions, including correct front-back layering.
+        anchors:
+          0: Local integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct layering remains.
+          2: Brow hair, skin, makeup, or occlusions are severely erased, duplicated, or wrongly layered.
+          3: Integration is weakly attempted and major overlap errors remain.
+          4: The relationships are recognizable, but a major penetration, gap, makeup, or occlusion error remains.
+          5: Integration is partial, with several substantial local problems.
+          6: Integration is mostly correct, but one clear layering or surface issue remains.
+          7: Skin, brow hair, makeup, and occlusion integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All brow, skin, makeup, hair, glasses, and accessory relationships are physically coherent.
+        rubric: Judge brow hairs against skin, foundation, existing brow makeup, forehead texture, bangs, glasses, accessories,
+          and other local occlusions, including correct front-back layering. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      eyebrow_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare source and result as the same individual, not merely as a plausible similar person. Judge normalized
+          face outline, forehead, eyes, nose, mouth, cheeks, chin, jaw, ears, age impression, gender presentation, characteristic
+          asymmetry, skin tone, stable marks, and same-person impression. Only the requested eyebrow attributes may change.
+        anchors:
+          0: The edited subject is effectively a different person, severely distorted, or unusable.
+          1: Identity correspondence is extremely weak; defining landmarks and the person impression are replaced.
+          2: Major identity drift affects several defining facial regions.
+          3: Substantial identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression.
+          5: The person remains recognizable, but multiple landmarks, proportions, age cues, or details drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity preservation is strong, with only a minor visible drift.
+          8: The face is nearly source-identical outside the requested brow edit, with only a tiny discrepancy.
+          9: The same identity, facial landmarks, age impression, skin tone, and characteristic details are source-identical
+            apart from the requested eyebrow attributes.
+        rubric: Compare source and result as the same individual, not merely as a plausible similar person. Judge normalized
+          face outline, forehead, eyes, nose, mouth, cheeks, chin, jaw, ears, age impression, gender presentation, characteristic
+          asymmetry, skin tone, stable marks, and same-person impression. Only the requested eyebrow attributes may change.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eyebrow_eyes_expression_face_scene_preserved:
+        title: Eyes, expression, face, hair, scene, camera, and global state are preserved
+        definition: Preserve eyes, gaze, eyelids, lashes, nose, lips, teeth, expression, face shape, skin tone, makeup outside
+          the brows, hair, hairstyle, facial hair, clothing, accessories, background, lighting, crop, camera angle, composition,
+          white balance, contrast, saturation, aspect ratio, and resolution.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are clearly inconsistent with the source.
+          2: Several major changes affect eyes, expression, face, hair, scene, camera, or global image state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image remains recognizable, but a clear important non-target mismatch remains.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Eyes, expression, face, scene, camera, and global color are nearly source-identical, with only a tiny discrepancy.
+          9: All non-target subject, scene, camera, lighting, color, composition, and resolution properties remain source-consistent.
+        rubric: Preserve eyes, gaze, eyelids, lashes, nose, lips, teeth, expression, face shape, skin tone, makeup outside
+          the brows, hair, hairstyle, facial hair, clothing, accessories, background, lighting, crop, camera angle, composition,
+          white balance, contrast, saturation, aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Eyebrow Rendering Quality:
+      eyebrow_hair_strand_texture_realistic:
+        title: Eyebrow hair-strand and texture realism
+        definition: Judge individual hair separation, growth direction, taper, overlap, density variation, root softness,
+          tail fineness, and compatibility with source focus and resolution.
+        anchors:
+          0: Hair-strand realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic brow texture remains.
+          2: A small relevant attempt exists, but the brows are severely painted, plastic, repeated, or blurred.
+          3: Realism is weakly attempted and major hair-detail damage remains.
+          4: The brows are recognizable, but a major strand, direction, repetition, or texture error remains.
+          5: Realism is partial, with several substantial visible problems.
+          6: Hair detail is mostly realistic, but one clear texture or direction issue remains.
+          7: Brow-hair realism is strong, with only a minor mismatch.
+          8: Detail is highly realistic, with only a tiny local imperfection.
+          9: Individual brow hairs, direction, taper, density variation, and source-level detail are fully photorealistic.
+        rubric: Judge individual hair separation, growth direction, taper, overlap, density variation, root softness, tail
+          fineness, and compatibility with source focus and resolution. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      eyebrow_color_lighting_shadow_integration:
+        title: Eyebrow color, lighting, and shadow integration
+        definition: Judge brow color under source illumination, hair highlights, contact shadow, skin undertone, makeup interaction,
+          white balance, and absence of artificial dark blocks or global recoloring.
+        anchors:
+          0: Color and lighting integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct illumination remains.
+          2: A small relevant attempt exists, but color or shadows are severely false or inconsistent.
+          3: Integration is weakly attempted and major lighting or tone errors remain.
+          4: The brow is recognizable, but a major flat block, halo, false shadow, or color mismatch remains.
+          5: Integration is partial, with several substantial color or shadow problems.
+          6: Lighting and color are mostly correct, but one clear local issue remains.
+          7: Color, lighting, and shadow integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: Eyebrow color, highlights, contact shadows, skin tone, and source lighting integrate perfectly.
+        rubric: Judge brow color under source illumination, hair highlights, contact shadow, skin undertone, makeup interaction,
+          white balance, and absence of artificial dark blocks or global recoloring. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      eyebrow_boundary_contact_occlusion_consistent:
+        title: Eyebrow boundaries, skin contact, and occlusions are consistent
+        definition: Judge upper and lower brow edges, brow-head softness, tail taper, hair-skin contact, glasses, bangs, and
+          makeup boundaries for clean but natural physical relationships.
+        anchors:
+          0: Boundary and contact consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or layering remains.
+          2: A small relevant attempt exists, but major leakage, gaps, hard cutouts, or impossible overlap is visible.
+          3: Consistency is weakly attempted and major boundary errors remain.
+          4: The relationships are recognizable, but a major seam, sticker edge, overlap, or contact error remains.
+          5: Consistency is partial, with several substantial visible problems.
+          6: Boundaries are mostly correct, but one clear contact or occlusion issue remains.
+          7: Boundary and contact consistency are strong, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All eyebrow, skin, makeup, hair, glasses, and accessory boundaries are seamless and physically coherent.
+        rubric: Judge upper and lower brow edges, brow-head softness, tail taper, hair-skin contact, glasses, bangs, and makeup
+          boundaries for clean but natural physical relationships. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      eyebrow_artifact_sharpness_no_mask_spill:
+        title: Artifact control, source sharpness, and absence of mask or color spill
+        definition: Judge blur, over-sharpening, halos, duplicated hairs, clone patterns, jagged edges, solid masks, skin
+          stains, color spill, warped eyes or forehead, and background deformation.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: A small relevant attempt exists, but severe masking, spill, blur, duplication, or warping dominates.
+          3: Artifact control is weakly achieved and major defects remain.
+          4: The result is recognizable, but a major seam, spill, duplicate hair, mask, warp, or sharpness mismatch remains.
+          5: Quality is partial, with several substantial visible artifacts.
+          6: The result is mostly clean, but one clear artifact or sharpness issue remains.
+          7: Artifact control is strong, with only a minor visible defect.
+          8: The result is nearly artifact-free, with only a tiny local imperfection.
+          9: The edited image is source-sharp, seamless, and free of masking, color spill, duplicated hairs, warping, or background
+            deformation.
+        rubric: Judge blur, over-sharpening, halos, duplicated hairs, clone patterns, jagged edges, solid masks, skin stains,
+          color spill, warped eyes or forehead, and background deformation. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful eyebrow editing from hiding facial-identity, eye, expression, skin, hair, camera, or background
+    drift. Identity is judged by source-to-result correspondence, not eyebrow attractiveness.
+  comparison_checklist:
+  - overall face outline and proportions
+  - forehead and hairline
+  - eye shape, spacing, aperture, gaze, eyelids, and eyelashes
+  - nose geometry and placement
+  - mouth position, lip geometry, teeth visibility, and expression
+  - cheek structure, chin, jaw, ears, and facial asymmetry
+  - age impression and gender presentation
+  - skin tone, stable marks, makeup outside the brows, and facial texture
+  - hair, hairstyle, facial hair, clothing, and accessories
+  - background hue, texture, brightness, contrast, white balance, and composition
+  - camera angle, crop, framing, lighting, aspect ratio, and resolution
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the eyebrow result is attractive, fashionable, or prompt-compliant.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Only explicitly requested eyebrow attributes may change; all other facial and image properties remain constrained.
+  - Eyebrow correctness, identity, expression, eye preservation, background, color, and rendering quality are independent.
+  task_specific_exception: only the explicitly requested eyebrow geometry, position, spacing, thickness, density, length,
+    color, texture, and the minimum surrounding skin needed for natural integration

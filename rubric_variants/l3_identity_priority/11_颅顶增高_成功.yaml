@@ -1,0 +1,773 @@
+task_key: crown_height
+task_title: Crown Height
+task_title_zh: 颅顶增高
+version: v42_fixed_22_l3_crown_height_target_absent_failureprop_flash_integer_0to9_l3_identity_priority
+target_region: only the upper crown silhouette and immediately adjacent crown-root volume above the original hairline
+target_action_summary: Increase or refine only the upper crown silhouette according to the prompt while preserving the original
+  hairline, front and side hairstyle edges, hair color, face, body, clothing, background, camera angle, and framing.
+judge_role: You are a strict expert evaluator specializing in crown-height and top-hair-volume editing. Judge the edited image
+  against the exact requested edit family, direction, target region, strength, component details, preservation constraints,
+  and realism, not against generic attractiveness or plausibility.
+judge_instructions: |-
+  - First perform a private head-shape and hairstyle-family audit before assigning any score. Identify the source person's visible hair/head silhouette family: top crown height, front hair contour, bangs/fringe direction, side hair width, hairline placement, hair color, strand direction, and overall haircut identity. Then infer the exact requested edit family from the prompt, such as local upper-crown height increase, local crown-root lift, flat-crown correction, high cranial-top illusion, or subtle upper-crown refinement.
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+  - The first Prompt Compliance decision is whether the candidate is still the same visible head-shape and hairstyle family with only a local upper-crown refinement. If the candidate changes the haircut family, front hair contour, side hair width, hairline, hair color, overall head/hair silhouette, or looks like a new hairstyle, this is a wrong family/substitute edit, not a successful crown-height edit.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+  - The editable area is narrow: only the upper crown silhouette and immediately adjacent crown-root volume above the original hairline. The hairline placement, forehead boundary, bangs/front hair, side hair, hairstyle family, hair color, face, body, clothing, background, camera angle, and framing are preservation constraints unless the prompt explicitly asks to change them.
+
+  - Common non-equivalent substitutions: crown height increase is not stretching the whole head; root lift is not adding an unrelated hairstyle; a fuller crown is not changing hair color, changing bangs, changing hairline placement, changing side hair, smoothing the face, or warping the background. These should be penalized even if the image looks plausible.
+
+  - If the result looks like a new hairstyle rather than a local upper-crown refinement, score the related Prompt Compliance facets low. A candidate with changed hair color, changed hair texture family, shifted hairline, altered front/side hairstyle edges, or changed face identity must not receive high scores just because the crown is fuller.
+
+  - If the prompt says to keep hairline placement, face shape, hairstyle edges, body pose, clothing texture, background, camera angle, or framing exactly consistent, visible drift in any of these should lower the corresponding preservation and realism facets.
+
+  - If there is no clear visible upper-crown increase or local crown refinement, do not reward the candidate for being unchanged. A clean unchanged image is still a target-edit failure. The main Prompt Compliance and localization facets, including requested_crown_operation_headshape_family_match, requested_crown_edit_strength_match, requested_crown_region_localization_match, requested_crown_component_completeness, local_crown_height_amount_match, crown_root_volume_natural, edit_confined_to_upper_crown, and boundary_blends_naturally, should normally be 0-4.
+
+  - Target absence must propagate. If the candidate preserves identity, background, color, and realism but lacks a clear local upper-crown lift, the final vector must not look high-reward. In this case, do not leave hairstyle/head-shape preservation facets at 8-9 by default; the candidate failed to execute the task, so related family, localization, component, amount, and natural-integration facets should be capped by the target_absent_or_too_weak failure.
+
+  - If the candidate achieves crown fullness by replacing the hairstyle, recoloring hair, changing bangs/front hair, shifting the hairline, or reshaping side hair, then requested_crown_operation_headshape_family_match, requested_crown_no_global_hairstyle_substitution, requested_crown_visible_headshape_preservation, no_hairstyle_replacement, visible_head_shape_preserved, front_side_hairline_preserved, hairstyle_color_texture_preserved, and related preservation facets should normally be 0-5.
+
+  - Do not give Subject Preservation high scores when hair identity, hairline placement, front/side hairstyle edges, face texture, or face outline drift changes the perceived person, even if the central facial landmarks look plausible.
+
+  - Crown-height editing is local shape refinement, not visible head-shape redesign. If the candidate changes the overall visible head/hair silhouette, side width, front hair contour, bangs, hairline, hair color, or hairstyle family, treat it as the wrong edit type. In that case requested_crown_operation_headshape_family_match, requested_crown_region_localization_match, requested_crown_no_global_hairstyle_substitution, no_hairstyle_replacement, visible_head_shape_preserved, and front_side_hairline_preserved should normally be 0-4.
+
+  - A high-score candidate should look like the same haircut and same visible head shape as the source, with only a small, realistic increase or smoothing of volume at the upper crown. It must not look like a new haircut, a fuller wig, a different head outline, or a style restyling.
+
+  - Before giving any score of 7, 8, or 9 to a Prompt Compliance facet, privately verify that the candidate passes the head-shape/hairstyle-family audit. If the audit fails, the family-related Prompt Compliance facets should normally be 0-5, and requested_crown_operation_headshape_family_match should normally be 0-3.
+
+  - Mandatory failure propagation: before outputting the final score_vector, first detect the task-specific failures listed in global_scoring_policy.failure_propagation. For each detected failure, estimate severity from 0 to 5, apply the severity-dependent score ceilings to every affected L3, and output the adjusted scores, not the raw independent scores.
+
+  - Failure propagation is not optional. If a candidate globally changes the visible head/hair silhouette, replaces the hairstyle, changes the front hair contour, widens/reshapes the side hair, shifts the hairline, changes hair color, or creates a wig-like fuller hairstyle, the corresponding failure must be activated and the affected L3 scores must be reduced according to the cap table.
+
+  - Do not output a logically contradictory vector. For example, if requested_crown_operation_headshape_family_match is low because the result is a substitute hairstyle, then requested_crown_no_global_hairstyle_substitution, no_hairstyle_replacement, visible_head_shape_preserved, front_side_hairline_preserved, hairstyle_color_texture_preserved, and edit_confined_to_upper_crown cannot remain high.
+
+  - Mandatory high-score exclusion checklist: before assigning 7, 8, or 9 to requested_crown_operation_headshape_family_match, requested_crown_no_global_hairstyle_substitution, no_hairstyle_replacement, visible_head_shape_preserved, front_side_hairline_preserved, or hairstyle_color_texture_preserved, verify that the top-hair organization, crown-to-side transition, front hair contour, side hair silhouette, hairline placement, hair color, and strand direction family visibly match the source. If any of these differ, the affected L3 scores must be capped at 6 for a minor difference, 5 for a clear difference, and 4 or lower for a major difference.
+
+  - Subtle global restyling is still a failure. If the candidate looks natural but the whole hair mass is cleaner, denser, differently combed, narrower/wider at the sides, or reorganized into a different haircut identity, treat it as subtle_global_hairstyle_restyling rather than successful crown-height refinement.
+
+  - Preserve the source person's identity, face/body proportions not requested to change, expression when not targeted, skin texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target regions independently from target edit quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change, background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning; output only the JSON score vector.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should be 0-6.
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond the request, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial/body identity must remain a dedicated, high-impact preservation signal rather than being diluted across easy preservation
+    checks.
+  - Subject Preservation contributes 44% of the final reward; target execution and strict localization must still be satisfied,
+    because an unchanged image or a broad hairstyle replacement is not a successful crown-height edit.
+  - Successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, crown height increase is not stretching the whole head; root lift
+  is not adding an unrelated hairstyle; higher hair is not changing hair color, bangs, front/side hairstyle edges, hairline
+  placement, face texture, face shape, or background.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+- If the prompt says "only the upper hairstyle silhouette" or asks to keep hairstyle edges/hairline exactly consistent, then
+  broad hairstyle replacement, hair recoloring, new bangs, front-hair reshaping, side-hair reshaping, or face/skin smoothing
+  should be treated as major preservation failures.
+- If the upper-crown silhouette is essentially unchanged, the result is a target-edit failure even if identity, background,
+  clothing, and photorealism are excellent.
+- A realistic but wrong head-shape or hairstyle family must score low. Local crown lift is not a new haircut, not wider side
+  hair, not a changed fringe, not a shifted hairline, not recolored hair, and not a globally fuller hair mass.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited subject against the source as the same individual. A plausible or attractive subject
+    is not sufficient. Visible drift in landmark geometry, feature spacing, face/body outline, age impression, gender presentation,
+    or characteristic details must lower identity-related scores.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. crown
+    height increase, top-hair volumizing, root lift, flat-crown correction, high cranial-top illusion, or subtle crown refinement
+    must not substitute for each other when the prompt specifies one.
+  crown_scope_rule: The default editable scope is only the upper crown silhouette and immediately adjacent crown-root volume.
+    Do not treat hairline placement, bangs/front hair, side hair, hairstyle family, hair color, face shape, face texture, clothing,
+    background, camera angle, or framing as editable unless the prompt explicitly requests it.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason for that exact
+    L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet, or any visible defect
+    remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  target_missing_no_compensation_rule: If the requested upper-crown change is absent or barely visible, do not let identity,
+    background preservation, or photorealism create a high overall assessment. The target-compliance facets should carry the
+    failure. A visually clean but unchanged candidate is not a strong crown-height edit and should activate target_absent_or_too_weak
+    rather than receiving high reward from preservation-only evidence.
+  no_headshape_replacement_rule: If the visible head/hair silhouette is fundamentally changed rather than locally lifted at
+    the upper crown, treat it as wrong edit type. Do not reward broad hairstyle replacement, side-hair reshaping, front-hair
+    reshaping, hair recoloring, or changed head outline as crown-height success.
+  crown_family_disambiguation_rule: Treat local upper-crown lift, global hairstyle restyling, hair recoloring, bangs/fringe
+    reshaping, side-hair widening, hairline movement, wig-like fullness, and skull/head stretching as different families.
+    Only the local upper-crown lift/refinement family should score high for this task unless the prompt explicitly requests
+    another family.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      Do not reveal the propagation reasoning; return only the final adjusted vector.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      global_hairstyle_replacement:
+        detect_when: The candidate looks like a different haircut or global restyling rather than the same haircut with only
+          local upper-crown lift. Examples include globally fuller hair mass, new fringe/bangs, changed side hair, changed
+          strand direction family, changed hair color, or wig-like replacement.
+        affected_l3:
+        - requested_crown_operation_headshape_family_match
+        - requested_crown_no_global_hairstyle_substitution
+        - requested_crown_visible_headshape_preservation
+        - no_hairstyle_replacement
+        - local_crown_height_amount_match
+        - visible_head_shape_preserved
+        - crown_root_volume_natural
+        - front_side_hairline_preserved
+        - edit_confined_to_upper_crown
+        - hairstyle_color_texture_preserved
+      subtle_global_hairstyle_restyling:
+        detect_when: The candidate remains photorealistic and may look similar at first glance, but the source haircut identity
+          is subtly reorganized across the whole hair mass rather than locally lifted at the upper crown. Examples include
+          changed top-hair combing direction, cleaner or denser global hair organization, altered crown-to-side transition,
+          slightly changed side silhouette, modified front hair contour, different strand direction family, or hair that
+          looks restyled even without an obvious new haircut.
+        severity_guidance: If this failure is visible in any front contour, side silhouette, crown-to-side transition, top-hair
+          organization, or strand-direction family, severity must be at least 2. If two or more of these properties change,
+          severity must be at least 3. Do not classify this failure as severity 1 merely because the image is photorealistic.
+        affected_l3:
+        - requested_crown_operation_headshape_family_match
+        - requested_crown_no_global_hairstyle_substitution
+        - requested_crown_visible_headshape_preservation
+        - no_hairstyle_replacement
+        - visible_head_shape_preserved
+        - front_side_hairline_preserved
+        - crown_root_volume_natural
+        - edit_confined_to_upper_crown
+        - hairstyle_color_texture_preserved
+      visible_headshape_redesign:
+        detect_when: The visible head/hair outline, side width, crown-to-side transition, or apparent skull/hair mass shape
+          changes beyond a local upper-crown lift.
+        affected_l3:
+        - requested_crown_operation_headshape_family_match
+        - requested_crown_visible_headshape_preservation
+        - visible_head_shape_preserved
+        - face_head_proportion_preserved_crown
+        - edit_confined_to_upper_crown
+        - boundary_blends_naturally
+        - hairstyle_color_texture_preserved
+      front_side_hairline_drift:
+        detect_when: The front hair contour, bangs/fringe, side hair outline, forehead boundary, or hairline placement changes
+          visibly although the prompt asks to keep hairstyle edges and hairline consistent.
+        affected_l3:
+        - requested_crown_region_localization_match
+        - requested_crown_no_global_hairstyle_substitution
+        - no_hairstyle_replacement
+        - front_side_hairline_preserved
+        - edit_confined_to_upper_crown
+        - hairstyle_color_texture_preserved
+      target_absent_or_too_weak:
+        detect_when: There is no clear visible local upper-crown lift/refinement, or the image is mostly unchanged with respect
+          to the requested crown-height operation.
+        severity_guidance: If the target effect is barely visible, severity must be at least 2. If the image is mostly unchanged
+          in the upper-crown silhouette, severity must be at least 3. If the requested crown-height change is absent or cannot
+          be distinguished from random preservation, severity must be at least 4. Do not classify target absence as minor just
+          because identity, background, color, or photorealism are well preserved.
+        affected_l3:
+        - requested_crown_operation_headshape_family_match
+        - requested_crown_edit_strength_match
+        - requested_crown_region_localization_match
+        - requested_crown_component_completeness
+        - requested_crown_no_global_hairstyle_substitution
+        - requested_crown_visible_headshape_preservation
+        - no_hairstyle_replacement
+        - local_crown_height_amount_match
+        - visible_head_shape_preserved
+        - crown_root_volume_natural
+        - edit_confined_to_upper_crown
+        - boundary_blends_naturally
+      excessive_or_inflated_crown:
+        detect_when: The crown becomes helmet-like, cone-like, inflated, wig-like, or aesthetically fuller by broad mass addition
+          rather than local realistic root lift.
+        affected_l3:
+        - requested_crown_operation_headshape_family_match
+        - requested_crown_edit_strength_match
+        - requested_crown_component_completeness
+        - requested_crown_no_global_hairstyle_substitution
+        - local_crown_height_amount_match
+        - crown_root_volume_natural
+        - boundary_blends_naturally
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_crown_operation_headshape_family_match
+- requested_crown_edit_strength_match
+- requested_crown_region_localization_match
+- requested_crown_component_completeness
+- requested_crown_no_global_hairstyle_substitution
+- requested_crown_visible_headshape_preservation
+- no_hairstyle_replacement
+- local_crown_height_amount_match
+- visible_head_shape_preserved
+- crown_root_volume_natural
+- front_side_hairline_preserved
+- face_head_proportion_preserved_crown
+- edit_confined_to_upper_crown
+- boundary_blends_naturally
+- occlusion_and_shadow_natural
+- bilateral_balance_when_expected
+- same_person_identity
+- facial_features_preserved
+- target_edges_clean
+- hairstyle_color_texture_preserved
+- color_light_integration
+- no_obvious_artifacts
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_crown_operation_headshape_family_match: 0.24
+    requested_crown_edit_strength_match: 0.06
+    requested_crown_region_localization_match: 0.10
+    requested_crown_component_completeness: 0.08
+    requested_crown_no_global_hairstyle_substitution: 0.12
+    requested_crown_visible_headshape_preservation: 0.12
+    no_hairstyle_replacement: 0.10
+    local_crown_height_amount_match: 0.07
+    visible_head_shape_preserved: 0.04
+    crown_root_volume_natural: 0.03
+    front_side_hairline_preserved: 0.03
+    face_head_proportion_preserved_crown: 0.01
+  Localization and Anatomical Integration:
+    edit_confined_to_upper_crown: 0.34
+    boundary_blends_naturally: 0.26
+    occlusion_and_shadow_natural: 0.18
+    bilateral_balance_when_expected: 0.22
+  Subject Preservation:
+    same_person_identity: 0.55
+    facial_features_preserved: 0.45
+  Task Realism and Image Quality:
+    target_edges_clean: 0.20
+    hairstyle_color_texture_preserved: 0.45
+    color_light_integration: 0.20
+    no_obvious_artifacts: 0.15
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Instruction and Task-Specific Target Checks:
+      requested_crown_operation_headshape_family_match:
+        title: Requested crown operation and head-shape family match
+        definition: Judge the exact local crown-height operation together with preservation of the source visible head-shape
+          and hairstyle family. The correct family is same haircut, same front/side hair silhouette, same hairline, same
+          hair color, and same visible head outline with only local upper-crown lift/refinement. A photorealistic substitute
+          hairstyle, wider side hair, changed fringe, shifted hairline, recolored hair, wig-like fullness, or different
+          visible head shape is still a family failure on this facet.
+        anchors:
+          0: The requested local crown-height operation and same-headshape/same-hairstyle family is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of local crown refinement is visible; the central family requirement is essentially unmet.
+          2: A small relevant attempt is present, but the visible head shape or hairstyle family is severely wrong.
+          3: The operation is weakly attempted, but a primary family feature is wrong, such as new haircut, changed head silhouette, changed hairline, or changed front/side hair.
+          4: The result belongs to a related but clearly wrong family, such as global hairstyle restyling, broad volume increase, or hair recoloring instead of local crown lift.
+          5: The local crown goal is partially recognizable, but the hairstyle/head-shape family or a defining preservation constraint is visibly incorrect.
+          6: The family is mostly correct, but one important subtype distinction remains wrong, such as side width, front contour, or hairline consistency.
+          7: The exact local crown family is clearly successful, with only a minor visible preservation flaw.
+          8: The exact local crown operation and same-headshape family are highly accurate, with only a tiny local imperfection.
+          9: The exact requested local crown-height operation is fully realized with no substitute hairstyle, no head-shape redesign, and no defining preservation error.
+      requested_crown_edit_strength_match:
+        title: Requested crown edit strength is matched
+        definition: Judge whether the crown change is visible at the requested amount without being too weak, globally restyled,
+          inflated, helmet-like, cone-like, or destructive to the original head/hair silhouette.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      requested_crown_region_localization_match:
+        title: Requested crown region localization match
+        definition: Judge whether the change is localized to only the upper crown silhouette and immediately adjacent crown-root
+          volume above the original hairline. A low score is required when the edit spreads into bangs/front hair, side hair,
+          hairline placement, forehead boundary, whole hairstyle, face, clothing, background, camera angle, or framing.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      requested_crown_component_completeness:
+        title: Requested crown component completeness
+        definition: Judge whether all requested crown-specific components are satisfied together, including balanced full-crown look,
+          realistic strand continuity, original hairline placement, original hairstyle edges, no helmet/cone/inflated contour,
+          and no changes outside the local upper crown.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      requested_crown_no_global_hairstyle_substitution:
+        title: No global hairstyle substitution
+        definition: Judge whether the candidate avoids using a broad hairstyle replacement to satisfy crown volume. A high
+          score requires no new haircut, no changed bangs, no changed front/side silhouette, no hair recoloring, no side-hair
+          widening, no wig-like fullness, and no changed visible head outline. A low score is required when the candidate
+          looks like a different hairstyle even if the crown looks fuller.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      requested_crown_visible_headshape_preservation:
+        title: Requested visible head-shape preservation
+        definition: Judge whether the visible head/hair silhouette remains the source silhouette except for local upper-crown
+          height refinement. A high score requires preserved side width, front contour, hairline, forehead boundary, haircut
+          identity, and crown-to-side transition. A low score is required when the candidate redesigns the apparent head
+          shape or changes the visible hair mass rather than locally lifting the crown.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      no_hairstyle_replacement:
+        title: No hairstyle replacement
+        definition: Judge whether the candidate performs a local upper-crown height refinement without replacing the source
+          hairstyle. A high score requires the same haircut, same front hair, same side hair, same hairline placement, same
+          hair color, same strand direction family, and same visible head/hair outline, with only local crown lift or local
+          crown volume refinement. A low score is required when the candidate looks like a new haircut, fuller wig, restyled
+          hair, recolored hair, changed bangs, changed side hair, shifted hairline, or fundamentally changed visible head shape.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      local_crown_height_amount_match:
+        title: Local crown height amount match
+        definition: Judge whether the amount of change is a local upper-crown height increase or refinement, not a full hairstyle
+          restyling. A high score requires a visible but modest lift/fill only at the top crown, consistent with the original
+          head width, hairline, front hair, side hair, and haircut identity. A low score is required when the crown remains
+          essentially unchanged, when the change is too weak, or when volume is achieved by broad head/hair silhouette redesign.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      visible_head_shape_preserved:
+        title: Visible head shape preserved
+        definition: Judge whether the visible head/hair silhouette remains the same overall shape as the source while only
+          the upper crown is locally refined. A high score requires preserving lateral head width, side hair outline, front
+          hair contour, forehead boundary, hairline, and original hairstyle proportions. A low score is required when the
+          candidate changes the apparent head shape, makes the head wider/narrower, replaces the top silhouette with a new
+          hairstyle, creates a cone/helmet/wig-like outline, or changes the visible contour beyond local crown lift.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      hairstyle_color_texture_preserved:
+        title: Hairstyle, color, and texture preserved
+        definition: Judge whether the original hairstyle family, front and side hairstyle edges, bangs, hairline placement,
+          hair color, strand texture, and overall hair identity are preserved except for the requested local upper-crown
+          silhouette refinement. A high score requires the candidate to look like the same hairstyle with only the upper crown
+          subtly refined. A low score is required when the candidate changes hair color, replaces the hairstyle, reshapes
+          bangs/front hair, shifts the hairline, changes side hair, creates a wig-like texture, or uses a broad hairstyle
+          replacement to satisfy crown volume.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      front_side_hairline_preserved:
+        title: Front and side hairline preserved
+        definition: Judge whether the front hairline, bangs/front hair, side hair outline, forehead boundary, and original
+          hairstyle edges remain source-consistent while only the upper crown silhouette is refined. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      face_head_proportion_preserved_crown:
+        title: Face and head proportion preserved
+        definition: Judge face and head proportion preserved for Crown Height. Compare the source image, edit prompt, and
+          edited image. A high score requires preserving the source face/head proportion and not using skull stretching, face
+          narrowing/widening, forehead expansion, hairline movement, or a broad hairstyle replacement to fake crown height.
+          A low score is required when the upper-crown effect comes with visible face/head proportion drift or hairline drift.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+  Localization and Anatomical Integration:
+    Localization, Boundary, and Anatomy:
+      edit_confined_to_upper_crown:
+        title: Edit confined to upper crown
+        definition: Judge whether the edit is confined to the upper crown silhouette and immediately adjacent crown-root volume.
+          A high score requires no visible change to bangs/front hair, side hair, hairline placement, hair color, face, neck,
+          clothing, background, camera angle, framing, or global color. A low score is required when the change spreads into
+          the front hair, side hair, forehead boundary, whole hairstyle, face, or scene.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      boundary_blends_naturally:
+        title: Boundary blends naturally
+        definition: Judge boundary blends naturally for Crown Height. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      occlusion_and_shadow_natural:
+        title: Occlusion and shadow natural
+        definition: Judge occlusion and shadow natural for Crown Height. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      bilateral_balance_when_expected:
+        title: Bilateral balance when expected
+        definition: Judge bilateral balance when expected for Crown Height. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+  Subject Preservation:
+    Identity, Expression, Pose, and Non-target Preservation:
+      same_person_identity:
+        title: Same person identity
+        definition: Judge same person identity for Crown Height. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      facial_features_preserved:
+        title: Facial features preserved
+        definition: Judge facial features preserved for Crown Height. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+  Task Realism and Image Quality:
+    Rendering Realism and Artifacts:
+      target_edges_clean:
+        title: Target edges clean
+        definition: Judge target edges clean for Crown Height. Compare the source image, edit prompt, and edited image. A
+          high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      crown_root_volume_natural:
+        title: Crown root volume natural
+        definition: Judge whether the local crown-root volume and strand continuity look natural while preserving the original
+          haircut. A high score requires believable local root lift or crown fill with the same strand direction family and
+          no pasted hair, no wig-like density, no broad texture replacement, no altered front/side hair edges, no shifted
+          hairline, and no background-edge warping. A low score is required when the crown volume is achieved through broad
+          hairstyle replacement, unnatural density, fake strands, masking, or a changed visible head outline.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      color_light_integration:
+        title: Color and light integration
+        definition: Judge color and light integration for Crown Height. Compare the source image, edit prompt, and edited
+          image. A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and
+          no unrelated change. A low score is required when this facet is missing, reversed, applied to the wrong area, excessive,
+          weak, anatomically implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.
+      no_obvious_artifacts:
+        title: No obvious artifacts
+        definition: Judge no obvious artifacts for Crown Height. Compare the source image, edit prompt, and edited image.
+          A high score requires prompt-faithful satisfaction inside only the upper crown silhouette and immediately adjacent crown-root volume while preserving the original hairline, front/side hairstyle edges, forehead boundary, hair color, face, and all non-target regions, natural integration, and no unrelated change.
+          A low score is required when this facet is missing, reversed, applied to the wrong area, excessive, weak, anatomically
+          implausible, or only supported by generic attractiveness.
+        anchors:
+          0: The facet is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace is visible; the main requirement is essentially unmet.
+          2: A small relevant attempt is present, but the facet is severely wrong or incomplete.
+          3: The facet is weakly attempted, with a primary requirement wrong or missing.
+          4: The facet is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: The facet is partially correct, but several visible issues remain.
+          6: The facet is mostly correct, but one clear important issue remains.
+          7: The facet is strong, with only a minor visible flaw.
+          8: The facet is near-perfect, with only a tiny local imperfection.
+          9: The facet is fully satisfied with concrete visual evidence and no visible defect.

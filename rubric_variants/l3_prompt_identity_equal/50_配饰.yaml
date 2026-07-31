@@ -1,0 +1,831 @@
+task_key: portrait_accessory_addition
+task_title: Portrait Accessory Addition
+task_title_zh: 人像配饰添加
+version: v48_fixed_integer_22_l3_portrait_accessory_addition_successgate_hybrid_compact_deep_review_compact_secondpass_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator specializing in portrait accessory addition, hair-band category/design/material
+  matching, physical attachment, hair occlusion, subject preservation, and artifact control.
+judge_instructions: 'Strictly compare SOURCE, EDIT PROMPT, and EDITED IMAGE.
+
+
+  Task target: Add the requested accessory only in the intended contact region. For this task, the key positive edit is a
+  small clear chocolate-brown denim ruffled-edge hair band holding back the bangs, physically integrated with hair and head
+  pose while preserving all non-target regions.
+
+
+  Before returning JSON, privately run this judging protocol. Do not output private notes; use them only to produce the final
+  score_vector.
+
+
+  1) Task-state card.
+
+  Classify the candidate as clean_success, minor_flaws_success, partial_success, no_visible_edit, under_edited, wrong_direction,
+  wrong_region, wrong_operation, substitute_edit, correct_but_non_target_changed, correct_but_artifact, artifact_driven, or
+  unusable. Identify the actual visible edit, target region, and any changed non-target regions.
+
+
+  2) Defect-first scoring.
+
+  For every active L3 facet, first decide the visible defect level: none, tiny, minor, clear, major, severe, absent_or_reversed,
+  or unusable. Then choose the integer score. 7 is not a default score; it means strong evidence with only a minor flaw.
+
+
+  Score calibration:
+
+  - 9 = essentially exact, rare, clean positive evidence.
+
+  - 8 = near-exact with only a tiny local issue.
+
+  - 7 = strong but visibly imperfect.
+
+  - 6 = mostly correct with one clear issue.
+
+  - 4-5 = partial, mediocre, or mixed evidence.
+
+  - 2-3 = weak attempt with major visible failure.
+
+  - 0-1 = absent, reversed, wrong-region, unrelated, or unusable.
+
+
+  Task-specific defects to check:
+
+  - requested accessory absent, barely visible, wrong category, wrong design, wrong material, wrong color, wrong scale, wrong
+  placement, wrong orientation, or wrong count/components;
+
+  - generic headband, bow, clip, scarf, hat, jewelry, clothing change, hairstyle change, or style transfer substituted for
+  the specified ruffled-edge denim hair band;
+
+  - accessory floats, penetrates hair/skin, lacks support/tension/gravity, has wrong front-back occlusion, wrong curvature,
+  wrong perspective, or broken structure;
+
+  - bangs/hair are replaced globally rather than minimally adjusted at contact, or face/ears/makeup/clothing are damaged around
+  the accessory;
+
+  - identity, expression, gaze, head/body pose, hair color/style outside contact, clothing details, background, lighting,
+  camera, aspect ratio, or resolution changes;
+
+  - pasted edges, halos, jagged contours, melted hair/fabric, duplicated parts, unrealistic material texture, missing shadows/highlights,
+  or background warp.
+
+
+  3) Failure propagation.
+
+  Apply global_scoring_policy.failure_propagation after raw facet scoring. If a failure is detected, cap every affected L3
+  by the corresponding severity cap. Do not allow good preservation, clean background, or photorealism to compensate for missing
+  or wrong target editing.
+
+
+  4) Positive-case check.
+
+  High scores are allowed when the requested edit is clearly correct. Before giving 8 or 9, verify that the relevant positive-case
+  conditions in global_scoring_policy are visibly satisfied.
+
+
+  5) Flat-vector review.
+
+  Privately rescore if all scores are 7, 14+ scores are 7, 18+ scores are identical, all scores are 7-9, or visible defects
+  exist but no affected score is below 7.
+
+
+  Task-specific focus: requested portrait hair accessory addition. For this YAML, success requires the specified small chocolate-brown
+  denim ruffled-edge hair band holding back the bangs, physically integrated with hair/head pose. Do not reward a generic
+  bow, clip, scarf, hat, jewelry, hairstyle change, recolored hair, or clothing change as the requested accessory.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-location, wrong-type, mostly unchanged, wrong-region, or mainly a substitute
+  operation, apply failure_propagation before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, wrong-location, wrong-region, or wrong-substitute attempts; use 5-6 for mixed but recognizable
+  attempts; reserve 0-1 and 8-9 for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 5956
+  unique_prompt_variants: 921
+  valid_accessory_families:
+  - hair ribbons, hair bands, head wraps, clips, cuffs, and hair rings
+  - forehead chains, face gems, rhinestones, and removable face decorations
+  - hats, caps, beanies, hoods, and headscarves
+  - eyeglasses and sunglasses
+  - face masks and other wearable face coverings
+  - necklaces, chokers, pendants, earrings, nose rings, and jewelry sets
+  - neckties, bow ties, neck scarves, and collar-mounted accessories
+  - bags, straps, and small wearable devices such as clip-on microphones
+  non_accessory_contamination:
+  - clothing or neckline replacement
+  - makeup, lipstick, blush, and eyebrow editing
+  - hair-color and eye-color changes
+  - freckles, scars, and pigment-only face paint
+  recurring_requirements:
+  - match the requested accessory type, design, color, material, size, and placement
+  - use natural scale relative to the face, head, neck, or body
+  - rebuild contact, occlusion, highlights, reflections, and shadows
+  - preserve identity, expression, gaze, pose, hairstyle, clothing, and scene
+  - keep the edit localized, photorealistic, cleanly blended, and artifact-free
+valid_task_scope:
+  accepted:
+  - adding a removable or wearable accessory to a person
+  - adding a coordinated accessory set when explicitly requested
+  - minimal local movement of hair, fabric, or skin caused by physical contact
+  - local optical reconstruction for lenses, metal, gems, glass, and glossy materials
+  rejected_as_wrong_task:
+  - replacing garments, tops, jackets, collars, or necklines
+  - applying cosmetic pigment or changing intrinsic facial color
+  - changing hair color, eye color, eyebrows, freckles, scars, or anatomy
+  - adding a permanent body feature rather than a wearable or removable object
+target_action_summary: Add the requested hair accessory, here a small but clearly visible chocolate-brown denim hair band
+  with ruffled edge holding back the bangs unless the prompt states otherwise. It must have correct category, design, material,
+  color, scale, placement, attachment, occlusion, and physical interaction. Preserve the person and all non-target content;
+  the accessory must look genuinely worn/attached rather than pasted on.
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate semantic accessory compliance, physical integration, subject preservation,
+    and rendering quality. A visually attractive object must not score highly when its type, material, placement, attachment,
+    occlusion, or requested attributes are incorrect.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence and prompt-specified attributes.
+  - Do not reward clothing replacement, makeup, recoloring, or anatomy edits as accessories.
+  - Do not reward floating, pasted, duplicated, or physically impossible accessories.
+  - One severe identity, attachment, anatomy, or scene error must not be averaged away.
+  - No hard caps, rank bonuses, external metrics, or manual failure deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_accessory_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request adding a wearable or removable accessory and provide enough information to
+    identify its intended body or clothing attachment region.
+  wrong_task_examples:
+  - replace the current jacket, top, neckline, or whole outfit
+  - add lipstick, blush, eye makeup, or eyebrow changes
+  - change hair color or eye color
+  - add freckles, a scar, or pigment-only face paint
+  conflict_examples:
+  - add and remove the same accessory
+  - place the same accessory in two incompatible locations
+  - request transparent and fully opaque lenses simultaneously
+  - preserve the exact contact region while requiring visible physical displacement
+  visibility_failures:
+  - the requested attachment region is outside the frame
+  - occlusion prevents assessment of accessory type or placement
+  - resolution is insufficient to judge the requested design or components
+category_specific_interpretation:
+  hair_accessories: Respect hair strands, bangs, hairline, ears, crown curvature, and local compression.
+  headwear: Respect skull scale, brim direction, hair compression, forehead shadows, and head pose.
+  eyewear: Respect nose and ear support, temple arms, lens transparency, refraction, reflection, and gaze visibility.
+  face_coverings: Respect nose-mouth coverage, ear loops or straps, folds, breathing volume, and facial contours.
+  jewelry: Respect attachment points, gravity, symmetry or intentional asymmetry, skin contact, chain paths, and metal or
+    gem optics.
+  neck_accessories: Respect neck circumference, collar interaction, knot position, fabric drape, and garment occlusion.
+  bags_and_devices: Respect straps, clips, cables, garment contact, gravity, body pose, and visible support.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Return one independent integer score for every active_l3 item in order. Score each facet from visible evidence
+    in SOURCE, EDIT PROMPT, and EDITED IMAGE.
+  output_order_rule: The score_vector must contain exactly 22 integers in active_l3 order; never reorder, omit, rename, or
+    explain facets.
+  anchor_interpolation: Use 1, 2, 4, 6, and 8 as intermediate severities. Do not round uncertainty upward.
+  anti_saturation: 0-3 = failed or damaging; 4-5 = partial/mediocre; 6 = mostly correct with one clear issue; 7 = strong but
+    visibly imperfect; 8 = near-exact; 9 = rare, essentially complete and clean.
+  no_cross_compensation: A decorative or attractive image cannot compensate for wrong accessory category, missing denim/ruffled-edge/color
+    cues, poor attachment, hair replacement, identity drift, or pasted artifacts.
+  primary_edit_success_rule: If the requested accessory is absent, wrong type, or not visibly attached in the intended region,
+    the candidate is a weak/negative edit even when the portrait remains clean.
+  preservation_only_no_success_rule: A clean unchanged source-like image is not a successful edit. If the requested target
+    change is absent, preservation and photorealism may score high only on truly pure preservation facets, but they must not
+    lift task, localization, integration, or local realism facets into the successful range.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, choose its severity from the scale below. The final score for every affected L3 must be
+      min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score. Do not reveal propagation reasoning;
+      return only the final adjusted vector.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, wrong-region, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_wrong_accessory_type:
+        detect_when: The requested hair accessory is absent, barely visible, replaced by a bow/clip/scarf/hat/jewelry/generic
+          ornament, or confused with a hairstyle/clothing change.
+        severity_guidance: Tiny but recognizable requested accessory evidence may be severity 1-2. Barely visible/incomplete
+          accessory should be severity 2-3. Wrong accessory category such as bow/clip/scarf/hat/jewelry/generic ornament,
+          hairstyle-only change, or absent target must be severity 4-5.
+        affected_l3:
+        - accessory_primary_addition_outcome_match
+        - accessory_requested_type_design_match
+        - accessory_count_component_set_completeness_match
+        - accessory_requested_style_visibility_match
+        - accessory_edit_localized_to_target_contact_region
+        - accessory_attachment_fit_contact_consistency
+        - accessory_occlusion_layering_consistency
+        - accessory_geometry_perspective_pose_alignment
+        - accessory_contact_region_reconstruction_quality
+        - accessory_structural_component_integrity
+        - accessory_material_surface_detail_realism
+        - accessory_requested_color_finish_match
+        - accessory_requested_material_texture_match
+        - accessory_requested_size_scale_match
+        - accessory_requested_placement_orientation_match
+        - accessory_subject_identity_non_target_anatomy_preservation
+        - accessory_expression_gaze_pose_preservation
+        - accessory_hair_makeup_clothing_detail_preservation
+        - accessory_scene_camera_global_lighting_preservation
+        - accessory_artifact_background_stability
+      attribute_mismatch_color_material_scale_placement:
+        detect_when: The accessory has wrong ruffled-edge design, missing denim cue, wrong chocolate-brown color/finish, wrong
+          material, incorrect size, wrong head/hair placement, wrong orientation, or incomplete/duplicated components.
+        severity_guidance: One minor attribute imperfection may be severity 1. Clear mismatch in ruffled edge, denim cue,
+          chocolate-brown color, fabric finish, scale, orientation, or placement should be severity 2-3. Multiple requested
+          attribute failures, wrong head/hair placement, duplicated/incomplete components, or accessory no longer matching
+          prompt must be severity 4-5.
+        affected_l3:
+        - accessory_requested_type_design_match
+        - accessory_requested_color_finish_match
+        - accessory_requested_material_texture_match
+        - accessory_requested_size_scale_match
+        - accessory_requested_placement_orientation_match
+        - accessory_count_component_set_completeness_match
+        - accessory_requested_style_visibility_match
+        - accessory_material_surface_detail_realism
+        - accessory_local_highlight_reflection_shadow_realism
+        - accessory_primary_addition_outcome_match
+        - accessory_edit_localized_to_target_contact_region
+        - accessory_attachment_fit_contact_consistency
+        - accessory_occlusion_layering_consistency
+        - accessory_geometry_perspective_pose_alignment
+        - accessory_contact_region_reconstruction_quality
+        - accessory_structural_component_integrity
+        - accessory_contour_edge_blending_quality
+        - accessory_artifact_background_stability
+      attachment_occlusion_perspective_failure:
+        detect_when: The accessory floats, penetrates hair/skin, lacks contact/support/tension, has impossible gravity, wrong
+          occlusion ordering, wrong curvature/depth, pose-inconsistent perspective, or broken structural components.
+        affected_l3:
+        - accessory_edit_localized_to_target_contact_region
+        - accessory_attachment_fit_contact_consistency
+        - accessory_occlusion_layering_consistency
+        - accessory_geometry_perspective_pose_alignment
+        - accessory_contact_region_reconstruction_quality
+        - accessory_structural_component_integrity
+        - accessory_material_surface_detail_realism
+        - accessory_local_highlight_reflection_shadow_realism
+        - accessory_contour_edge_blending_quality
+        - accessory_primary_addition_outcome_match
+        - accessory_requested_color_finish_match
+        - accessory_requested_material_texture_match
+        - accessory_requested_style_visibility_match
+        - accessory_artifact_background_stability
+        - accessory_requested_type_design_match
+        - accessory_requested_size_scale_match
+        - accessory_requested_placement_orientation_match
+        - accessory_count_component_set_completeness_match
+        - accessory_subject_identity_non_target_anatomy_preservation
+        severity_guidance: Small contact/depth imperfection may be severity 1. Clear floating, penetration, weak support/tension,
+          wrong occlusion ordering, wrong curvature/depth, or pose-inconsistent perspective should be severity 2-3. Accessory
+          visibly pasted, physically impossible, detached, or structurally broken must be severity 4-5.
+      hairstyle_replacement_or_contact_region_damage:
+        detect_when: Hair/bangs are globally restyled, hair color changes, ears/skin/makeup/clothing are damaged, or the contact
+          region is erased/melted/duplicated instead of minimally rebuilt around the accessory.
+        affected_l3:
+        - accessory_primary_addition_outcome_match
+        - accessory_requested_placement_orientation_match
+        - accessory_edit_localized_to_target_contact_region
+        - accessory_contact_region_reconstruction_quality
+        - accessory_subject_identity_non_target_anatomy_preservation
+        - accessory_expression_gaze_pose_preservation
+        - accessory_hair_makeup_clothing_detail_preservation
+        - accessory_contour_edge_blending_quality
+        - accessory_artifact_background_stability
+        severity_guidance: Minor local hair-contact reconstruction issue may be severity 1. Clear bangs/hair contact damage,
+          local hair melt, color drift, ear/skin/makeup/clothing disturbance, or over-edited contact region should be severity
+          2-3. Global hairstyle replacement, hair color change, erased contact region, or major non-target damage must be
+          severity 4-5.
+      identity_pose_scene_drift:
+        detect_when: Face identity, facial features, expression, gaze, head/body pose, hair outside contact, makeup, clothing,
+          background, global lighting, camera angle, crop, aspect ratio, or resolution changes beyond the accessory edit.
+        affected_l3:
+        - accessory_subject_identity_non_target_anatomy_preservation
+        - accessory_expression_gaze_pose_preservation
+        - accessory_hair_makeup_clothing_detail_preservation
+        - accessory_scene_camera_global_lighting_preservation
+        - accessory_artifact_background_stability
+        - accessory_primary_addition_outcome_match
+        - accessory_edit_localized_to_target_contact_region
+        - accessory_material_surface_detail_realism
+        - accessory_local_highlight_reflection_shadow_realism
+        - accessory_contour_edge_blending_quality
+        - accessory_requested_type_design_match
+        - accessory_requested_color_finish_match
+        - accessory_requested_material_texture_match
+        - accessory_requested_size_scale_match
+        - accessory_requested_placement_orientation_match
+        - accessory_count_component_set_completeness_match
+        - accessory_requested_style_visibility_match
+        - accessory_attachment_fit_contact_consistency
+        severity_guidance: Minor local lighting/color drift may be severity 1. Clear expression/gaze/pose, makeup/clothing,
+          background, lighting, crop, aspect, or resolution drift should be severity 2-3. Face identity, facial features,
+          head/body pose, camera angle, or broad scene-state change must be severity 4-5.
+      pasted_or_synthetic_artifact:
+        detect_when: Accessory or nearby hair has halos, jagged edges, blur, cutout seams, melted fabric/hair, duplicated
+          parts, flat texture, unrealistic shadows/highlights, warped anatomy, or background deformation.
+        affected_l3:
+        - accessory_attachment_fit_contact_consistency
+        - accessory_occlusion_layering_consistency
+        - accessory_geometry_perspective_pose_alignment
+        - accessory_contact_region_reconstruction_quality
+        - accessory_structural_component_integrity
+        - accessory_material_surface_detail_realism
+        - accessory_local_highlight_reflection_shadow_realism
+        - accessory_contour_edge_blending_quality
+        - accessory_artifact_background_stability
+        - accessory_primary_addition_outcome_match
+        - accessory_requested_color_finish_match
+        - accessory_requested_material_texture_match
+        - accessory_requested_style_visibility_match
+        - accessory_edit_localized_to_target_contact_region
+        - accessory_requested_type_design_match
+        - accessory_requested_size_scale_match
+        - accessory_requested_placement_orientation_match
+        - accessory_count_component_set_completeness_match
+        - accessory_subject_identity_non_target_anatomy_preservation
+        severity_guidance: Tiny edge/texture artifact may be severity 1. Clear halo, jagged edge, blur, cutout seam, melted
+          fabric/hair, duplicated part, flat texture, or unrealistic shadow/highlight should be severity 2-3. Severe pasted/synthetic
+          accessory, warped anatomy/background, or unusable reconstruction must be severity 4-5.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive accessory sample shows the requested accessory category/design/color/material/scale/placement
+    clearly, physically attached to the intended hair/head region, with correct occlusion and preserved identity, hair, clothing,
+    background, and lighting.
+  success_gate_conditions:
+  - 'The accessory is clearly present and matches the requested type/design: a hair band with ruffled edge that visibly holds
+    back the bangs rather than a generic bow, clip, scarf, hat, or hairstyle change.'
+  - Chocolate-brown color, denim-like fabric texture, small-but-readable scale, component completeness, orientation, and placement
+    are all consistent with the prompt.
+  - Attachment, contact, tension/gravity, occlusion layering with hair/bangs/ears, curvature, perspective, and structural
+    integrity make the accessory look worn rather than pasted.
+  - Face identity, expression, gaze, pose, hair color/style outside minimal contact, makeup, clothing, background, global
+    lighting, camera angle, aspect ratio, and resolution are preserved.
+  - Material details, shadows/highlights, contour blending, hair-contact reconstruction, and nearby background remain clean
+    without halos, melt, duplication, blur, or warping.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, wrong-type/wrong-category, unusable, or clearly source-breaking target editing.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  no_compensation_rule: A decorative or attractive image cannot compensate for wrong accessory category, missing denim/ruffled-edge/color
+    cues, poor attachment, hair replacement, identity drift, or pasted artifacts.
+  task_disambiguation_rule: Add the requested hair accessory, here a small but clearly visible chocolate-brown denim hair
+    band with ruffled edge holding back the bangs unless the prompt states otherwise. It must have correct category, design,
+    material, color, scale, placement, attachment, occlusion, and physical interaction. Preserve the person and all non-target
+    content; the accessory must look genuinely worn/attached rather than pasted on.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- accessory_primary_addition_outcome_match
+- accessory_requested_type_design_match
+- accessory_requested_color_finish_match
+- accessory_requested_material_texture_match
+- accessory_requested_size_scale_match
+- accessory_requested_placement_orientation_match
+- accessory_count_component_set_completeness_match
+- accessory_requested_style_visibility_match
+- accessory_edit_localized_to_target_contact_region
+- accessory_attachment_fit_contact_consistency
+- accessory_occlusion_layering_consistency
+- accessory_geometry_perspective_pose_alignment
+- accessory_contact_region_reconstruction_quality
+- accessory_structural_component_integrity
+- accessory_subject_identity_non_target_anatomy_preservation
+- accessory_expression_gaze_pose_preservation
+- accessory_hair_makeup_clothing_detail_preservation
+- accessory_scene_camera_global_lighting_preservation
+- accessory_material_surface_detail_realism
+- accessory_local_highlight_reflection_shadow_realism
+- accessory_contour_edge_blending_quality
+- accessory_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  high_score_note: Do not copy a fixed example vector. Give 8-9 only when the matching facet has visible positive evidence
+    and no propagated failure cap.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Physical Integration and Localization: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    accessory_primary_addition_outcome_match: 0.18
+    accessory_requested_type_design_match: 0.16
+    accessory_requested_color_finish_match: 0.12
+    accessory_requested_material_texture_match: 0.11
+    accessory_requested_size_scale_match: 0.11
+    accessory_requested_placement_orientation_match: 0.12
+    accessory_count_component_set_completeness_match: 0.11
+    accessory_requested_style_visibility_match: 0.09
+  Physical Integration and Localization:
+    accessory_edit_localized_to_target_contact_region: 0.17
+    accessory_attachment_fit_contact_consistency: 0.21
+    accessory_occlusion_layering_consistency: 0.17
+    accessory_geometry_perspective_pose_alignment: 0.17
+    accessory_contact_region_reconstruction_quality: 0.15
+    accessory_structural_component_integrity: 0.13
+  Subject Preservation:
+    accessory_subject_identity_non_target_anatomy_preservation: 0.3
+    accessory_expression_gaze_pose_preservation: 0.24
+    accessory_hair_makeup_clothing_detail_preservation: 0.23
+    accessory_scene_camera_global_lighting_preservation: 0.23
+  Task Realism and Image Quality:
+    accessory_material_surface_detail_realism: 0.28
+    accessory_local_highlight_reflection_shadow_realism: 0.27
+    accessory_contour_edge_blending_quality: 0.25
+    accessory_artifact_background_stability: 0.2
+aggregation:
+  prompt_compliance: Masked weighted arithmetic mean over the 8 Prompt Compliance facets. Explicitly requested attributes
+    receive mask=1; genuinely unspecified optional attributes may receive mask=0.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.62 * P_masked + 0.18 * L + 0.13 * S + 0.07 * Q
+  attachment_score: A = score(accessory_attachment_fit_contact_consistency) / 9.0
+  preservation_score: I = score(accessory_subject_identity_non_target_anatomy_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.20) * (I ** 0.16)
+taxonomy:
+  Prompt Compliance:
+    Requested Accessory Attributes:
+      accessory_primary_addition_outcome_match:
+        title: Primary accessory-addition outcome
+        definition: Whether the requested hair accessory is clearly present on the intended subject. Do not give credit for
+          unrelated hairstyle changes, generic decoration, clothing change, or global style change.
+        anchors:
+          0: Accessory is absent, removed, wrong task, or only hairstyle/background changed.
+          3: Very weak, incomplete, barely visible, or ambiguous accessory addition.
+          5: Accessory is present but materially incomplete or not clearly the requested item.
+          7: Clear accessory addition with one notable issue.
+          9: The requested hair band is fully present, readable, and prompt-faithful.
+        rubric: Whether the requested hair accessory is clearly present on the intended subject. Do not give credit for unrelated
+          hairstyle changes, generic decoration, clothing change, or global style change. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      accessory_requested_type_design_match:
+        title: Accessory type and design
+        definition: Whether category, silhouette, construction, and named design match the prompt. The requested item is a
+          hair band with ruffled edge that holds back bangs; a plain headband, bow, clip, scarf, hat, or generic ornament
+          is not exact.
+        anchors:
+          0: Wrong accessory category or design.
+          3: Only a vague resemblance to a hair accessory.
+          5: General hair accessory is present but major requested design elements are missing.
+          7: Correct hair-band design with one minor discrepancy.
+          9: Hair band, ruffled edge, and bang-holding design match exactly.
+        rubric: Whether category, silhouette, construction, and named design match the prompt. The requested item is a hair
+          band with ruffled edge that holds back bangs; a plain headband, bow, clip, scarf, hat, or generic ornament is not
+          exact. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_requested_color_finish_match:
+        title: Color and finish
+        definition: Whether hue, value, saturation, and surface finish match the requested chocolate brown accessory color
+          while remaining integrated with source lighting.
+        anchors:
+          0: Wrong color, absent color, or color cannot be verified.
+          3: Strong mismatch from chocolate brown or visibly inconsistent finish.
+          5: Brown-ish target color is recognizable but clearly inaccurate.
+          7: Mostly chocolate brown with one minor tonal or finish difference.
+          9: Chocolate brown color and finish precisely match the request.
+        rubric: Whether hue, value, saturation, and surface finish match the requested chocolate brown accessory color while
+          remaining integrated with source lighting. Apply this facet's 0-9 anchors directly. If a task-specific failure affects
+          this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      accessory_requested_material_texture_match:
+        title: Material and texture
+        definition: Whether the requested denim material is visually identifiable. Do not reward plastic, metal, silk, velvet,
+          leather, or plain painted cloth unless denim-like fabric cues are visible.
+        anchors:
+          0: Wrong material, unreadable material, or no material evidence.
+          3: Material is very unclear or mostly wrong for denim.
+          5: Some fabric cue exists but denim is not convincing.
+          7: Mostly denim-like material with one minor issue.
+          9: Denim material and texture are precise and physically convincing.
+        rubric: Whether the requested denim material is visually identifiable. Do not reward plastic, metal, silk, velvet,
+          leather, or plain painted cloth unless denim-like fabric cues are visible. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      accessory_requested_size_scale_match:
+        title: Size and scale
+        definition: Whether requested tiny, small, medium, large, wide, thin, or oversized scale is correct relative to the
+          wearer.
+        anchors:
+          0: Scale is opposite or physically impossible.
+          3: Severely too large, too small, or inconsistent.
+          5: General size class is recognizable but inaccurate.
+          7: Correct scale with one minor issue.
+          9: Requested size and wearer-relative scale match exactly.
+        rubric: Whether requested tiny, small, medium, large, wide, thin, or oversized scale is correct relative to the wearer.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_requested_placement_orientation_match:
+        title: Placement and orientation
+        definition: Whether body region, side, height, tilt, wrap direction, and wearing method match.
+        anchors:
+          0: Wrong region, side, or orientation.
+          3: Major placement or wearing-method error.
+          5: Generally placed correctly with one clear mismatch.
+          7: Correct with one minor positional difference.
+          9: Placement and orientation are exact and natural.
+        rubric: Whether body region, side, height, tilt, wrap direction, and wearing method match. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      accessory_count_component_set_completeness_match:
+        title: Count, components, and set completeness
+        definition: Whether requested strands, loops, lenses, earrings, pendants, straps, paired items, and coordinated sets
+          are complete.
+        anchors:
+          0: Required items are missing, duplicated, or replaced.
+          3: Major count or component failure.
+          5: Core item exists but one important component is wrong.
+          7: Complete with one minor component issue.
+          9: All requested items and components are exactly complete.
+        rubric: Whether requested strands, loops, lenses, earrings, pendants, straps, paired items, and coordinated sets are
+          complete. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_requested_style_visibility_match:
+        title: Style and visibility
+        definition: Whether delicate, refined, bold, minimal, editorial, sporty, or moderately visible styling is achieved.
+        anchors:
+          0: Style is opposite, invisible, or excessively dominant.
+          3: Strong style or visibility mismatch.
+          5: Requested impression is recognizable but inaccurate.
+          7: Appropriate style with one minor mismatch.
+          9: Style and normal-view visibility match precisely.
+        rubric: Whether delicate, refined, bold, minimal, editorial, sporty, or moderately visible styling is achieved. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Physical Integration and Localization:
+    Attachment, Contact, and Geometry:
+      accessory_edit_localized_to_target_contact_region:
+        title: Edit localization
+        definition: Whether changes are confined to the accessory and minimum necessary contact region.
+        anchors:
+          0: Broad face, hair, clothing, body, or scene alteration.
+          3: Significant spill into non-target areas.
+          5: Mostly localized with one clear extra change.
+          7: Localized with one minor spill.
+          9: Precisely confined to the accessory and contact area.
+        rubric: Whether changes are confined to the accessory and minimum necessary contact region. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      accessory_attachment_fit_contact_consistency:
+        title: Attachment, fit, and contact
+        definition: Whether the object is physically supported, fitted, wrapped, clipped, tied, or resting correctly.
+        anchors:
+          0: Accessory floats, penetrates, detaches, or lacks support.
+          3: Major fit, tension, gravity, or contact error.
+          5: Attachment is plausible but visibly imperfect.
+          7: Natural fit with one minor issue.
+          9: Attachment and contact are fully convincing.
+        rubric: Whether the object is physically supported, fitted, wrapped, clipped, tied, or resting correctly. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_occlusion_layering_consistency:
+        title: Occlusion and layering
+        definition: Whether hair, skin, ears, lenses, straps, fabric, chains, and accessory parts have correct front-back
+          order.
+        anchors:
+          0: Severe penetration or impossible layering.
+          3: Major missing or contradictory occlusion.
+          5: Mostly correct with one obvious layering error.
+          7: Correct with one minor issue.
+          9: All occlusion relationships are precise and natural.
+        rubric: Whether hair, skin, ears, lenses, straps, fabric, chains, and accessory parts have correct front-back order.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_geometry_perspective_pose_alignment:
+        title: Geometry, perspective, and pose alignment
+        definition: Whether curvature, depth, foreshortening, symmetry, tilt, and gravity match the head or body pose.
+        anchors:
+          0: Geometry contradicts pose or perspective.
+          3: Major scale, depth, curvature, or alignment error.
+          5: Generally plausible with one clear inconsistency.
+          7: Coherent with one minor issue.
+          9: Geometry is fully compatible with pose and camera perspective.
+        rubric: Whether curvature, depth, foreshortening, symmetry, tilt, and gravity match the head or body pose. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_contact_region_reconstruction_quality:
+        title: Contact-region reconstruction
+        definition: Whether contacted hair, skin, ears, nose, neck, collar, or clothing are minimally and naturally rebuilt.
+        anchors:
+          0: Contact region is erased, melted, duplicated, or severely warped.
+          3: Major local anatomy, hair, or fabric damage.
+          5: Contact is readable but visibly processed.
+          7: Natural with one minor reconstruction issue.
+          9: Contact-region adaptation is seamless and physically correct.
+        rubric: Whether contacted hair, skin, ears, nose, neck, collar, or clothing are minimally and naturally rebuilt. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_structural_component_integrity:
+        title: Structural and component integrity
+        definition: Whether frames, bands, chains, clasps, knots, lenses, loops, straps, cables, gems, and paired parts remain
+          coherent.
+        anchors:
+          0: Accessory structure is broken, melted, or impossible.
+          3: Major missing, duplicated, disconnected, or malformed parts.
+          5: Main structure is present with one obvious defect.
+          7: Structurally sound with one minor issue.
+          9: All parts are complete, connected, and mechanically plausible.
+        rubric: Whether frames, bands, chains, clasps, knots, lenses, loops, straps, cables, gems, and paired parts remain
+          coherent. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      accessory_subject_identity_non_target_anatomy_preservation:
+        title: Identity and anatomy preservation
+        definition: Whether the same person, face shape, facial features, body proportions, and age impression remain unchanged.
+        anchors:
+          0: Different person or major anatomy redesign.
+          3: Strong identity or non-target anatomical drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and all non-target anatomy remain unchanged.
+        rubric: Whether the same person, face shape, facial features, body proportions, and age impression remain unchanged.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_expression_gaze_pose_preservation:
+        title: Expression, gaze, and pose preservation
+        definition: Whether expression, eye direction, mouth state, head angle, body pose, and hand placement remain stable.
+        anchors:
+          0: Major expression, gaze, or pose change.
+          3: Strong positional or expressive drift.
+          5: Mostly preserved with one clear difference.
+          7: Preserved with one minor shift.
+          9: Expression, gaze, and pose remain unchanged.
+        rubric: Whether expression, eye direction, mouth state, head angle, body pose, and hand placement remain stable. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_hair_makeup_clothing_detail_preservation:
+        title: Hair, makeup, and clothing preservation
+        definition: Whether hairstyle, hair color, makeup, facial hair, garment design, textures, seams, and patterns remain
+          unchanged outside contact.
+        anchors:
+          0: Major hair, makeup, facial-hair, or clothing replacement.
+          3: Strong non-target detail or color drift.
+          5: Mostly preserved with one obvious alteration.
+          7: Preserved with one minor difference.
+          9: All non-contact appearance details remain unchanged.
+        rubric: Whether hairstyle, hair color, makeup, facial hair, garment design, textures, seams, and patterns remain unchanged
+          outside contact. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_scene_camera_global_lighting_preservation:
+        title: Scene, camera, and global lighting preservation
+        definition: Whether background, crop, camera angle, scale, composition, global exposure, light direction, and resolution
+          remain stable.
+        anchors:
+          0: Major scene, camera, framing, or lighting replacement.
+          3: Strong background, crop, scale, or illumination drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: Scene, camera, framing, and global lighting remain unchanged.
+        rubric: Whether background, crop, camera angle, scale, composition, global exposure, light direction, and resolution
+          remain stable. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Material Rendering and Artifact Control:
+      accessory_material_surface_detail_realism:
+        title: Material and surface-detail realism
+        definition: Whether weave, grain, metal, gems, lenses, leather, seams, and fine construction details remain photorealistic.
+        anchors:
+          0: Severely synthetic, smeared, flat, or textureless.
+          3: Strong material or repeated-texture artifacts.
+          5: Usable but visibly processed.
+          7: Realistic with one minor surface issue.
+          9: Material rendering is fully photorealistic and detailed.
+        rubric: Whether weave, grain, metal, gems, lenses, leather, seams, and fine construction details remain photorealistic.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_local_highlight_reflection_shadow_realism:
+        title: Highlights, reflections, and shadows
+        definition: Whether local illumination follows material, shape, source lighting, transparency, and contact.
+        anchors:
+          0: Lighting or optics strongly contradict the scene.
+          3: Major missing, duplicated, or incorrect highlights or shadows.
+          5: Generally plausible with one obvious lighting issue.
+          7: Consistent with one minor issue.
+          9: Highlights, reflections, and shadows integrate perfectly.
+        rubric: Whether local illumination follows material, shape, source lighting, transparency, and contact. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: Whether boundaries remain clean without halos, jagged edges, cutouts, blur, or pasted-on seams.
+        anchors:
+          0: Severe compositing or edge failure.
+          3: Strong halos, seams, jaggedness, or blur.
+          5: Mostly blended with one clear boundary artifact.
+          7: Clean with one minor edge issue.
+          9: All boundaries are seamless, sharp, and natural.
+        rubric: Whether boundaries remain clean without halos, jagged edges, cutouts, blur, or pasted-on seams. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      accessory_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Whether duplicated parts, warped anatomy, melted hair or fabric, bent text, and background deformation
+          are absent.
+        anchors:
+          0: Severe structural artifacts or scene instability.
+          3: Multiple obvious distortions.
+          5: One clear artifact or moderate instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; wearer and scene remain fully stable.
+        rubric: Whether duplicated parts, warped anatomy, melted hair or fabric, bent text, and background deformation are
+          absent. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+prompt_applicability:
+  purpose: Keep the fixed 22-score output while allowing optional accessory attributes to be activated only when the prompt
+    specifies them.
+  always_applicable:
+  - accessory_primary_addition_outcome_match
+  - accessory_requested_type_design_match
+  - accessory_requested_size_scale_match
+  - accessory_requested_placement_orientation_match
+  - accessory_count_component_set_completeness_match
+  activation_rules:
+    accessory_requested_color_finish_match:
+    - activate when color, metallic tone, transparency, lens tint, gloss, matte, or finish is specified
+    accessory_requested_material_texture_match:
+    - activate when material, weave, metal, gem, glass, leather, fabric, or texture is specified
+    accessory_requested_style_visibility_match:
+    - activate when styling, aesthetic, prominence, delicacy, boldness, or visibility is specified
+  mask_values:
+    applicable: 1
+    not_applicable: 0
+  aggregation_rule: P = sum_i(weight_i * mask_i * normalized_score_i) / sum_i(weight_i * mask_i)

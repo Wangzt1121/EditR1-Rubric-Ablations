@@ -1,0 +1,868 @@
+task_key: overall_face_width_narrowing
+task_title: Overall Face Width Narrowing
+task_title_zh: 脸变窄
+version: v48_fixed_integer_22_l3_overall_face_width_narrowing_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+target_region: the visible lateral facial contour from the temple-side or upper-face boundary through the cheeks and mandibular
+  sides to the chin-side transitions, plus only the minimum adjacent hair, ear, skin, and background blending zones required
+  for natural inward contour reconstruction
+target_action_summary: Narrow the overall visible face width by moving the lateral facial contour inward in a distributed,
+  pose-aware way while preserving facial height, internal feature size and geometry, source face-shape character, identity,
+  head pose, hair, neck, body, camera state, lighting, and background.
+judge_role: You are a strict expert evaluator for overall face-width narrowing, lateral facial-contour anatomy, identity preservation,
+  and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare the original temple/cheek/jaw side contour, face width, face height, internal feature size/shape/spacing,
+  source face-shape character, ears, hairline, neck, body, clothing, expression, pose, lighting, background, crop, and camera
+  state.
+
+
+  2) Task target. A successful edit narrows the visible outer facial contour in a distributed, pose-aware way across the assessable
+  upper/mid/lower face while preserving facial height, internal features, identity, head-neck-body relation, and global scene.
+  It is not head scaling, full-image resizing, V-line-only sculpting, jaw-only slimming, feature compression, or generic beautification.
+
+
+  3) Task-specific failures. Treat absent/weak narrowing, wrong region or substitute operation, over-narrowing, contour/anatomy
+  breakage, and non-target source drift as failures. Before returning scores, apply global_scoring_policy.failure_propagation:
+  detect each failure, estimate severity 0-5, cap affected L3 with cap_by_severity, then output the adjusted vector.
+
+
+  4) Calibration. 9 is rare. 7 requires visible evidence for that exact L3 and only minor flaws. If the face is unchanged
+  or narrowed by a substitute operation, preservation and realism must not raise edit-dependent facets into the successful
+  range.
+
+
+  Task-specific focus: overall face-width narrowing. Do not reward whole-head scaling, full-image resizing, internal-feature
+  compression, V-line-only change, jaw-only slimming, or beauty slimming as face narrowing.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Overall width reduction, regional coverage, contour distribution,
+    facial-feature geometry, face-shape character, anatomical integration, identity, and rendering are separated without repeatedly
+    scoring the same preservation property.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use YAML failure_propagation severity caps as the rubric-level instruction; do not rely on external metrics, rank bonuses,
+    or hidden program-side deductions.
+  - Overall face-width narrowing must be separated from jaw-only, cheek-only, chin-only, and whole-head edits.
+  - Facial-feature size and shape are evaluated separately from facial-feature spacing and position.
+  - Face height and aspect-ratio preservation are evaluated separately from source face-shape character.
+  - Easy clothing, background, camera, and body checks are merged rather than expanded into many L3 facets.
+  - Facial identity remains one dedicated, high-impact L3 facet and cannot be compensated by an attractive narrow face.
+  - Subject Preservation contributes 42% of the final reward.
+  - Public floating-point values use at most three decimal places.
+evaluation_notes:
+- The uploaded file contains 522 prompts and 11 unique templates. One strict local instruction appears 422 times, while ten
+  retouching-intensity and finish templates appear ten times each.
+- All prompts request narrowing the overall face width. None requests widening the face, shrinking the whole head, changing
+  facial-feature size, thinning the neck, resizing the body, or modifying the background.
+- Overall face narrowing should affect the visible side contour across the assessable upper, middle, and lower face. It must
+  not collapse into only jaw slimming or only cheek hollowing.
+- Internal features remain source-sized and source-shaped. Their absolute locations may require only tiny local blending adjustments,
+  but meaningful changes in eye spacing, nose width, mouth width, or feature scale are wrong.
+- The source face-shape family should remain recognizable. The edit changes width, not chin length, chin projection, jaw angle,
+  cheekbone design, forehead height, or face length.
+- For three-quarter and tilted views, the near and far facial sides should not move by equal raw pixel amounts. Judge the
+  result relative to perspective, foreshortening, visible contour, and source asymmetry.
+- Newly exposed background and hair-side gaps must be reconstructed naturally after inward contour movement. Background bending,
+  repeated texture, or hair dragged inward is a visible failure.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by visual evidence, then apply task-specific failure_propagation
+    caps before returning the final score_vector.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is good. A smooth contour cannot compensate for unchanged
+    face width, and correct narrowing cannot compensate for altered features, identity, neck, body, or background.
+  face_narrowing_disambiguation_rule: Correct face narrowing moves the lateral facial contour inward while preserving internal
+    facial geometry. Whole-head shrinking, image compression, V-line reshaping, jaw-only slimming, cheek-only slimming, body
+    enlargement, camera zoom, crop change, and side-shadow painting are different operations.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited result as the same individual. The external face width may decrease, but internal landmark
+    geometry, characteristic face-shape cues, age impression, expression, skin tone, and same-person impression must remain
+    stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the result is attractive, realistic, or strongly
+    narrowed.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent despite contour reconstruction.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence
+      score. Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: The outer face width is unchanged, barely narrower, wider/reversed, or the visible narrowing is too weak
+          to satisfy the prompt.
+        severity_guidance: Tiny but directionally correct outer-contour narrowing may be severity 1. Clear but weak/partial
+          narrowing should be severity 2. Mostly unchanged face width must be severity 3. Reversed/wider, absent, or unassessable
+          target change must be severity 4-5.
+        affected_l3:
+        - requested_face_narrowing_operation_match
+        - requested_face_width_direction_match
+        - requested_face_narrowing_magnitude_match
+        - requested_upper_mid_lower_face_coverage_match
+        - requested_lateral_contour_inward_distribution_match
+        - requested_face_narrowing_visibility_finish_match
+        - face_narrowing_edit_localized_to_lateral_face_contour
+        - face_narrowing_temple_cheek_jaw_transition_coherent
+        - face_narrowing_pose_aware_bilateral_perspective_balance
+        - requested_face_height_aspect_ratio_preservation_match
+        - requested_facial_feature_size_shape_preservation_match
+        - requested_facial_feature_spacing_position_preservation_match
+        - requested_face_shape_profile_character_match
+        - requested_head_ear_hairline_neck_relation_preserved
+        - unrequested_body_camera_crop_properties_preserved
+        - face_narrowing_identity_landmark_consistency
+        - face_narrowing_expression_gaze_head_pose_scene_preserved
+        - face_narrowing_artifact_sharpness_no_warp_mask
+      substitute_head_scale_feature_compression_or_local_slimming:
+        detect_when: The result achieves a narrower look through whole-head scaling, full-image/crop change, feature compression,
+          jaw-only/chin-only/cheek-only slimming, V-line conversion, neck thinning, or generic beauty slimming rather than
+          distributed outer-contour narrowing.
+        severity_guidance: If substitute effects are minor and real outer-contour narrowing remains, severity may be 2. If
+          substitution is the main visible edit, severity 3-4. Whole-head/image scaling, feature compression, identity drift,
+          or camera/crop replacement must be severity 4-5.
+        affected_l3:
+        - requested_face_narrowing_operation_match
+        - requested_face_width_direction_match
+        - requested_upper_mid_lower_face_coverage_match
+        - requested_lateral_contour_inward_distribution_match
+        - requested_face_height_aspect_ratio_preservation_match
+        - requested_facial_feature_size_shape_preservation_match
+        - requested_facial_feature_spacing_position_preservation_match
+        - requested_face_shape_profile_character_match
+        - requested_head_ear_hairline_neck_relation_preserved
+        - unrequested_body_camera_crop_properties_preserved
+        - face_narrowing_edit_localized_to_lateral_face_contour
+        - face_narrowing_temple_cheek_jaw_transition_coherent
+        - face_narrowing_identity_landmark_consistency
+        - face_narrowing_expression_gaze_head_pose_scene_preserved
+        - requested_face_narrowing_magnitude_match
+        - face_narrowing_artifact_sharpness_no_warp_mask
+      over_narrowed_or_face_anatomy_broken:
+        detect_when: The face becomes pinched, collapsed, asymmetric, unnaturally thin, alien, dented, wavy, or anatomically
+          implausible; temple-cheek-jaw transitions break.
+        severity_guidance: Clear contour/anatomy issue must be at least severity 2. Collapsed/alien face, severe asymmetry,
+          or broken contour path must be severity 3-5.
+        affected_l3:
+        - requested_face_narrowing_magnitude_match
+        - requested_lateral_contour_inward_distribution_match
+        - requested_face_height_aspect_ratio_preservation_match
+        - requested_face_shape_profile_character_match
+        - requested_face_narrowing_visibility_finish_match
+        - face_narrowing_temple_cheek_jaw_transition_coherent
+        - face_narrowing_pose_aware_bilateral_perspective_balance
+        - face_narrowing_identity_landmark_consistency
+        - face_narrowing_artifact_sharpness_no_warp_mask
+        - requested_face_narrowing_operation_match
+        - requested_face_width_direction_match
+        - requested_upper_mid_lower_face_coverage_match
+        - requested_facial_feature_size_shape_preservation_match
+        - requested_facial_feature_spacing_position_preservation_match
+        - face_narrowing_edit_localized_to_lateral_face_contour
+        - face_narrowing_hair_ear_skin_background_occlusion_consistent
+        - face_narrowing_skin_hair_detail_realistic
+        - face_narrowing_lighting_shadow_color_integration
+        - face_narrowing_boundary_background_reconstruction_consistent
+      boundary_occlusion_or_background_reconstruction_broken:
+        detect_when: Hair, ears, skin edge, neck, clothing, or background near the narrowed contour is bent, smeared, repeated,
+          cut, haloed, masked, or reconstructed inconsistently.
+        severity_guidance: Clear boundary or occlusion defect must be at least severity 2. Large warping, mask seam, or broken
+          background/ear/hair relation must be severity 3-5.
+        affected_l3:
+        - requested_head_ear_hairline_neck_relation_preserved
+        - face_narrowing_edit_localized_to_lateral_face_contour
+        - face_narrowing_hair_ear_skin_background_occlusion_consistent
+        - face_narrowing_lighting_shadow_color_integration
+        - face_narrowing_boundary_background_reconstruction_consistent
+        - face_narrowing_artifact_sharpness_no_warp_mask
+        - requested_face_narrowing_operation_match
+        - requested_face_width_direction_match
+        - requested_face_narrowing_magnitude_match
+        - requested_upper_mid_lower_face_coverage_match
+        - requested_lateral_contour_inward_distribution_match
+        - requested_face_height_aspect_ratio_preservation_match
+        - requested_facial_feature_size_shape_preservation_match
+        - requested_facial_feature_spacing_position_preservation_match
+        - requested_face_narrowing_visibility_finish_match
+        - face_narrowing_temple_cheek_jaw_transition_coherent
+        - face_narrowing_pose_aware_bilateral_perspective_balance
+        - face_narrowing_identity_landmark_consistency
+        - face_narrowing_skin_hair_detail_realistic
+      source_identity_feature_or_global_state_drift:
+        detect_when: Identity, facial-feature size/shape/spacing, expression, gaze, head pose, skin texture/color, hair, body,
+          clothing, lighting, background, crop, or camera state changes beyond the requested contour narrowing.
+        severity_guidance: Minor local boundary drift may be severity 1. Clear feature spacing, skin/hair, lighting, background,
+          or crop drift must be at least severity 2. Identity, expression, internal face geometry, camera/framing, or broad
+          source-state change must be severity 3-5.
+        affected_l3:
+        - requested_face_height_aspect_ratio_preservation_match
+        - requested_facial_feature_size_shape_preservation_match
+        - requested_facial_feature_spacing_position_preservation_match
+        - requested_face_shape_profile_character_match
+        - requested_head_ear_hairline_neck_relation_preserved
+        - unrequested_body_camera_crop_properties_preserved
+        - face_narrowing_identity_landmark_consistency
+        - face_narrowing_expression_gaze_head_pose_scene_preserved
+        - face_narrowing_skin_hair_detail_realistic
+        - face_narrowing_lighting_shadow_color_integration
+        - face_narrowing_boundary_background_reconstruction_consistent
+        - requested_face_narrowing_operation_match
+        - requested_face_width_direction_match
+        - requested_face_narrowing_magnitude_match
+        - requested_upper_mid_lower_face_coverage_match
+        - requested_lateral_contour_inward_distribution_match
+        - face_narrowing_edit_localized_to_lateral_face_contour
+        - face_narrowing_temple_cheek_jaw_transition_coherent
+        - face_narrowing_artifact_sharpness_no_warp_mask
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Face-width narrowing means localized, pose-aware inward adjustment of the outer face contour while
+    preserving internal features and source state. It is not whole-head scaling, feature compression, V-line-only slimming,
+    jaw-only/chin-only editing, camera/crop change, or generic beauty filtering.
+  no_compensation_rule: If face-width narrowing is absent, preservation/background/photorealism must not raise edit-dependent
+    facets. If the result is globally scaled, feature-compressed, V-line-substituted, beautified, or source-changing, a prettier
+    or narrower-looking face must not raise source-preserving face-narrowing facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample narrows the visible outer face contour in a distributed, pose-aware way while
+    preserving facial height, internal features, source face character, identity, head-neck relation, and scene state.
+  success_gate_conditions:
+  - The lateral face contour is visibly narrower across the assessable upper/mid/lower face rather than only one local segment.
+  - Internal features keep their source size, shape, spacing, and position without compression or drift.
+  - The result is not whole-head scaling, full-image resizing, V-line-only sculpting, jaw-only slimming, neck thinning, or
+    beauty slimming.
+  - Hair, ears, skin edge, neck, clothing, background, lighting, crop, and camera remain source-consistent.
+  - Contour transitions are smooth and anatomically plausible with no visible warp, halo, or reconstruction defect.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_face_narrowing_operation_match
+- requested_face_width_direction_match
+- requested_face_narrowing_magnitude_match
+- requested_upper_mid_lower_face_coverage_match
+- requested_lateral_contour_inward_distribution_match
+- requested_face_height_aspect_ratio_preservation_match
+- requested_facial_feature_size_shape_preservation_match
+- requested_facial_feature_spacing_position_preservation_match
+- requested_face_shape_profile_character_match
+- requested_head_ear_hairline_neck_relation_preserved
+- requested_face_narrowing_visibility_finish_match
+- unrequested_body_camera_crop_properties_preserved
+- face_narrowing_edit_localized_to_lateral_face_contour
+- face_narrowing_temple_cheek_jaw_transition_coherent
+- face_narrowing_pose_aware_bilateral_perspective_balance
+- face_narrowing_hair_ear_skin_background_occlusion_consistent
+- face_narrowing_identity_landmark_consistency
+- face_narrowing_expression_gaze_head_pose_scene_preserved
+- face_narrowing_skin_hair_detail_realistic
+- face_narrowing_lighting_shadow_color_integration
+- face_narrowing_boundary_background_reconstruction_consistent
+- face_narrowing_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_face_narrowing_operation_match: 0.19
+    requested_face_width_direction_match: 0.1
+    requested_face_narrowing_magnitude_match: 0.08
+    requested_upper_mid_lower_face_coverage_match: 0.1
+    requested_lateral_contour_inward_distribution_match: 0.1
+    requested_face_height_aspect_ratio_preservation_match: 0.07
+    requested_facial_feature_size_shape_preservation_match: 0.08
+    requested_facial_feature_spacing_position_preservation_match: 0.08
+    requested_face_shape_profile_character_match: 0.07
+    requested_head_ear_hairline_neck_relation_preserved: 0.05
+    requested_face_narrowing_visibility_finish_match: 0.04
+    unrequested_body_camera_crop_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    face_narrowing_edit_localized_to_lateral_face_contour: 0.27
+    face_narrowing_temple_cheek_jaw_transition_coherent: 0.28
+    face_narrowing_pose_aware_bilateral_perspective_balance: 0.24
+    face_narrowing_hair_ear_skin_background_occlusion_consistent: 0.21
+  Subject Preservation:
+    face_narrowing_identity_landmark_consistency: 0.8
+    face_narrowing_expression_gaze_head_pose_scene_preserved: 0.2
+  Task Realism and Image Quality:
+    face_narrowing_skin_hair_detail_realistic: 0.27
+    face_narrowing_lighting_shadow_color_integration: 0.27
+    face_narrowing_boundary_background_reconstruction_consistent: 0.24
+    face_narrowing_artifact_sharpness_no_warp_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Face-Width Operation:
+      requested_face_narrowing_operation_match:
+        title: Requested overall face-narrowing operation match
+        definition: Judge whether the overall visible lateral facial contour genuinely becomes narrower while facial features,
+          head, neck, body, camera, and frame remain stable. Do not credit substitute operations.
+        anchors:
+          0: The requested face-narrowing operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of overall face narrowing is visible.
+          2: A small relevant attempt exists, but the result is dominated by a substitute operation.
+          3: The face is weakly edited, but overall contour narrowing is mostly wrong.
+          4: A recognizable narrowing attempt exists, yet a major part is replaced by jaw-only, feature, head, body, crop,
+            or camera change.
+          5: The operation is partially correct, with several substantial substitution or completeness errors.
+          6: Overall face narrowing is mostly correct, but one clear operation error remains.
+          7: The requested operation is clearly achieved, with only a minor visible mismatch.
+          8: The operation is highly accurate, with only a tiny local imperfection.
+          9: The complete visible facial contour is precisely narrowed with no substitute operations.
+        rubric: Judge whether the overall visible lateral facial contour genuinely becomes narrower while facial features,
+          head, neck, body, camera, and frame remain stable. Do not credit substitute operations. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_face_width_direction_match:
+        title: Requested face-width direction match
+        definition: Judge whether the net visible face width decreases rather than remaining unchanged, widening, or appearing
+          narrower only through lighting, pose, or camera changes.
+        anchors:
+          0: The face widens, the direction is reversed, unrelated, or unusable.
+          1: Only a negligible trace of the correct inward direction is visible.
+          2: A small inward change exists, but the net direction is severely wrong or ambiguous.
+          3: The direction is weakly attempted and remains largely incorrect.
+          4: The correct direction is recognizable, but a major contradictory regional or substitute change remains.
+          5: The direction is partially correct, with several visible inconsistencies.
+          6: The net face-width direction is mostly correct, but one clear contradiction remains.
+          7: The face becomes clearly narrower, with only a minor directional inconsistency.
+          8: The direction is highly accurate and coherent, with only a tiny local issue.
+          9: The visible face width decreases unmistakably and coherently across all assessable regions.
+        rubric: Judge whether the net visible face width decreases rather than remaining unchanged, widening, or appearing
+          narrower only through lighting, pose, or camera changes. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_face_narrowing_magnitude_match:
+        title: Requested face-narrowing magnitude match
+        definition: Judge whether the amount is clearly visible at normal viewing size but remains believable, identity-preserving,
+          and free of pinching or excessive slimming.
+        anchors:
+          0: The requested magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible width change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The magnitude is weakly attempted but clearly mismatched.
+          4: The effect is recognizable, but the amount has a major mismatch.
+          5: The magnitude is partially appropriate, with several visible intensity problems.
+          6: The amount is mostly correct, but one clear under- or over-narrowing issue remains.
+          7: The requested magnitude is clearly achieved, with only a minor mismatch.
+          8: The magnitude is highly accurate, with only a tiny excess or residual.
+          9: The face-width reduction is exactly visible enough, balanced, and believable.
+        rubric: Judge whether the amount is clearly visible at normal viewing size but remains believable, identity-preserving,
+          and free of pinching or excessive slimming. Apply this facet's 0-9 anchors directly. If a task-specific failure
+          affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_upper_mid_lower_face_coverage_match:
+        title: Requested upper-, middle-, and lower-face coverage match
+        definition: 'Judge whether all assessable lateral width regions are coherently addressed: temple or upper-face side,
+          cheek or midface side, and mandibular or lower-face side.'
+        anchors:
+          0: Regional coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the facial contour is treated.
+          2: A small region changes, but most upper, middle, or lower face-width regions are missed.
+          3: Coverage is weak and major facial-width regions remain untreated.
+          4: The contour edit is recognizable, but one major face level is missed or edited incorrectly.
+          5: Coverage is partial, with several visible omissions or regional inconsistencies.
+          6: Coverage is mostly complete, but one clear facial level or side remains inconsistent.
+          7: The overall facial contour is well covered, with only a minor local miss.
+          8: Coverage is highly complete and coherent, with only a tiny imperfection.
+          9: Every assessable upper-, middle-, and lower-face width region is treated precisely and coherently.
+        rubric: 'Judge whether all assessable lateral width regions are coherently addressed: temple or upper-face side, cheek
+          or midface side, and mandibular or lower-face side. Apply this facet''s 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.'
+      requested_lateral_contour_inward_distribution_match:
+        title: Requested lateral-contour inward distribution match
+        definition: Judge whether inward movement is smoothly distributed along the facial side contour rather than concentrated
+          into dents, pinched cheeks, a sudden V-line, or one isolated segment.
+        anchors:
+          0: Inward contour distribution is absent, reversed, unrelated, or unusable.
+          1: Only a negligible segment shows appropriate inward movement.
+          2: A small attempt exists, but the contour is severely uneven, pinched, or anatomically wrong.
+          3: Distribution is weak and major dents, shelves, or isolated narrowing remain.
+          4: The contour is recognizable, but a major regional concentration or taper mismatch remains.
+          5: Distribution is partial, with several substantial unevenness problems.
+          6: The contour is mostly well distributed, but one clear dent, bulge, or abrupt taper remains.
+          7: Inward movement is naturally distributed, with only a minor local imbalance.
+          8: Distribution is highly accurate, with only a tiny local imperfection.
+          9: The full visible contour moves inward with seamless, anatomically balanced distribution.
+        rubric: Judge whether inward movement is smoothly distributed along the facial side contour rather than concentrated
+          into dents, pinched cheeks, a sudden V-line, or one isolated segment. Apply this facet's 0-9 anchors directly. If
+          a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      requested_face_height_aspect_ratio_preservation_match:
+        title: Requested face-height and aspect-ratio preservation match
+        definition: Judge whether facial height, forehead-to-chin distance, vertical thirds, and head pose remain stable while
+          only face width is reduced.
+        anchors:
+          0: Face height or vertical proportion is severely changed, reversed, or unusable.
+          1: Only a negligible amount of source vertical geometry remains.
+          2: Major vertical compression, stretching, or face-length change is visible.
+          3: Height preservation is weak and clear aspect-ratio distortion remains.
+          4: The face is recognizable, but a major height or vertical-proportion mismatch remains.
+          5: Preservation is partial, with several visible vertical differences.
+          6: Face height is mostly preserved, but one clear aspect-ratio issue remains.
+          7: Vertical proportion is strong, with only a minor discrepancy.
+          8: Face height and vertical geometry are nearly source-identical, with only a tiny difference.
+          9: Facial height and all vertical proportions remain exactly source-consistent.
+        rubric: Judge whether facial height, forehead-to-chin distance, vertical thirds, and head pose remain stable while
+          only face width is reduced. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+    Internal Geometry, Face Character, and Non-target Control:
+      requested_facial_feature_size_shape_preservation_match:
+        title: Requested facial-feature size and shape preservation match
+        definition: Preserve the visible size and shape of eyes, brows, nose, lips, mouth, ears, teeth, and other facial features.
+          Penalize global horizontal compression and feature-specific resizing.
+        anchors:
+          0: Facial-feature size or shape is severely changed, replaced, or unusable.
+          1: Only a negligible amount of source feature geometry remains.
+          2: Several major facial features are resized or reshaped.
+          3: One major or multiple obvious feature-size or shape changes remain.
+          4: The face is recognizable, but a clear important feature is resized or reshaped.
+          5: Preservation is moderate, with several visible feature differences.
+          6: Most feature sizes and shapes are preserved, but one clear change remains.
+          7: Feature preservation is strong, with only a minor discrepancy.
+          8: Feature size and shape are nearly source-identical, with only a tiny difference.
+          9: All facial-feature sizes and shapes remain exactly source-consistent.
+        rubric: Preserve the visible size and shape of eyes, brows, nose, lips, mouth, ears, teeth, and other facial features.
+          Penalize global horizontal compression and feature-specific resizing. Apply this facet's 0-9 anchors directly. If
+          a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      requested_facial_feature_spacing_position_preservation_match:
+        title: Requested facial-feature spacing and position preservation match
+        definition: Preserve eye spacing, brow placement, nose position, mouth position, ear placement, facial centerline,
+          and relative landmark geometry while the outer contour narrows.
+        anchors:
+          0: Feature spacing or position is severely changed, replaced, or unusable.
+          1: Only a negligible amount of source landmark placement remains.
+          2: Several major landmarks are moved or compressed.
+          3: One major or multiple obvious spacing or position changes remain.
+          4: The face is recognizable, but a clear important landmark relationship is changed.
+          5: Placement preservation is moderate, with several visible relative-position differences.
+          6: Most feature positions are preserved, but one clear change remains.
+          7: Feature spacing and placement are strong, with only a minor discrepancy.
+          8: Relative landmark geometry is nearly source-identical, with only a tiny difference.
+          9: All facial-feature spacing, positions, and centerline relationships remain exactly source-consistent.
+        rubric: Preserve eye spacing, brow placement, nose position, mouth position, ear placement, facial centerline, and
+          relative landmark geometry while the outer contour narrows. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_face_shape_profile_character_match:
+        title: Requested source face-shape profile and character match
+        definition: Judge whether the original round, square, oval, long, heart-shaped, angular, or other face-shape character
+          remains recognizable after narrowing, without generic V-line conversion.
+        anchors:
+          0: Source face-shape character is severely replaced, reversed, or unusable.
+          1: Only a negligible trace of the original contour character remains.
+          2: The face is converted into a substantially different shape family.
+          3: Source character is weakly preserved and major redesign remains.
+          4: The person is recognizable, but a major chin, jaw, cheek, or contour-character mismatch remains.
+          5: Face-shape preservation is partial, with several visible character changes.
+          6: The source shape family is mostly preserved, but one clear redesign remains.
+          7: Face-shape character is strong, with only a minor discrepancy.
+          8: The narrowed contour is nearly source-character-identical, with only a tiny difference.
+          9: The original face-shape family, chin, jaw, cheek, and contour character remain fully recognizable.
+        rubric: Judge whether the original round, square, oval, long, heart-shaped, angular, or other face-shape character
+          remains recognizable after narrowing, without generic V-line conversion. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_head_ear_hairline_neck_relation_preserved:
+        title: Requested head, ear, hairline, and neck relationship is preserved
+        definition: Preserve skull and head size, ear size and placement, hairline, hairstyle attachment, neck width, head-neck
+          relationship, and visible sideburn or facial-hair boundaries.
+        anchors:
+          0: Head, ears, hairline, or neck relationship is severely changed or unusable.
+          1: Most listed relationships visibly drift.
+          2: Several major head, ear, hairline, or neck changes are present.
+          3: One major or multiple obvious relationship changes remain.
+          4: The result is recognizable, but a clear important head, ear, hairline, or neck mismatch remains.
+          5: Preservation is moderate, with several visible differences.
+          6: Most relationships are preserved, but one clear change remains.
+          7: Preservation is strong, with only a minor discrepancy.
+          8: Head, ears, hairline, and neck are nearly source-identical, with only a tiny difference.
+          9: All head, ear, hairline, hairstyle, and neck relationships remain exactly source-consistent.
+        rubric: Preserve skull and head size, ear size and placement, hairline, hairstyle attachment, neck width, head-neck
+          relationship, and visible sideburn or facial-hair boundaries. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_face_narrowing_visibility_finish_match:
+        title: Requested normal-view visibility and natural finish match
+        definition: Judge whether the narrower-face result is easy to perceive at normal portrait size and matches the requested
+          realistic, editorial, app-style, studio, commercial, or premium finish.
+        anchors:
+          0: The requested visibility and finish are absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible improvement is present.
+          2: A small relevant trace exists, but the result is severely too weak, excessive, or artificial.
+          3: The requested finish is weakly attempted and remains clearly mismatched.
+          4: The result is recognizable, but a major visibility or naturalness problem remains.
+          5: Visibility and finish are partially achieved, with several substantial issues.
+          6: The result is mostly correct, but one clear visibility or finish issue remains.
+          7: The requested presentation is strong, with only a minor mismatch.
+          8: Visibility and naturalness are highly accurate, with only a tiny local issue.
+          9: The face-width reduction is clearly visible, fully believable, photorealistic, and seamlessly finished.
+        rubric: Judge whether the narrower-face result is easy to perceive at normal portrait size and matches the requested
+          realistic, editorial, app-style, studio, commercial, or premium finish. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      unrequested_body_camera_crop_properties_preserved:
+        title: Unrequested body, camera, crop, and global properties are preserved
+        definition: Preserve neck, shoulder width, body size and proportions, pose, clothing, subject distance, crop, framing,
+          camera angle, perspective, composition, aspect ratio, resolution, and global image state.
+        anchors:
+          0: Unrequested body, camera, crop, or global properties are severely changed or unusable.
+          1: Most listed non-target properties visibly drift.
+          2: Several major body, framing, camera, or crop changes are present.
+          3: One major or multiple obvious non-target changes remain.
+          4: The image is recognizable, but a clear important body, camera, or composition property is changed.
+          5: Preservation is moderate, with several visible differences.
+          6: Most properties are preserved, but one clear change remains.
+          7: Preservation is strong, with only a minor discrepancy.
+          8: Body, camera, crop, and composition are nearly source-identical, with only a tiny difference.
+          9: All unrequested body, camera, framing, composition, and resolution properties remain source-consistent.
+        rubric: Preserve neck, shoulder width, body size and proportions, pose, clothing, subject distance, crop, framing,
+          camera angle, perspective, composition, aspect ratio, resolution, and global image state. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Facial Contour Placement and Integration:
+      face_narrowing_edit_localized_to_lateral_face_contour:
+        title: Face-narrowing edit is localized to the lateral facial contour
+        definition: Keep geometric changes within the assessable temple-side, cheek-side, mandibular-side contour and minimum
+          blending zones. Avoid altering internal features, ears, hair, neck, body, clothing, and broader scene.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: A small relevant attempt exists, but large non-target areas are altered.
+          3: Localization is weak and major spill remains.
+          4: The target contour is recognizable, but one major internal-feature, head, neck, body, or scene region is changed.
+          5: Localization is partial, with several substantial spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed contour region remains.
+          7: The edit is well localized, with only a minor local spill.
+          8: Localization is highly accurate, with only a tiny imperfection.
+          9: Geometric editing is precisely confined to the lateral facial contour and minimum blending zones.
+        rubric: Keep geometric changes within the assessable temple-side, cheek-side, mandibular-side contour and minimum
+          blending zones. Avoid altering internal features, ears, hair, neck, body, clothing, and broader scene. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      face_narrowing_temple_cheek_jaw_transition_coherent:
+        title: Temple, cheek, and jaw contour transitions are coherent
+        definition: Judge continuity from the upper facial side through cheek and mandibular contour into the chin-side region,
+          without dents, shelves, pinching, discontinuities, or sudden V-line convergence.
+        anchors:
+          0: Contour continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of coherent transition remains.
+          2: The facial side contour is severely broken, pinched, or anatomically impossible.
+          3: Continuity is weakly attempted and major contradictions remain.
+          4: The contour is recognizable, but a major dent, shelf, bulge, gap, or abrupt taper remains.
+          5: Continuity is partial, with several substantial structural problems.
+          6: The anatomy is mostly coherent, but one clear transition error remains.
+          7: Temple-cheek-jaw continuity is strong, with only a minor mismatch.
+          8: The transition is highly accurate, with only a tiny local imperfection.
+          9: The entire upper-, middle-, and lower-face side contour is anatomically continuous and natural.
+        rubric: Judge continuity from the upper facial side through cheek and mandibular contour into the chin-side region,
+          without dents, shelves, pinching, discontinuities, or sudden V-line convergence. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      face_narrowing_pose_aware_bilateral_perspective_balance:
+        title: Pose-aware bilateral and perspective balance
+        definition: Judge near-side and far-side contour movement, foreshortening, face rotation, tilt, lens perspective,
+          and source asymmetry rather than raw mirror symmetry.
+        anchors:
+          0: Pose-aware balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct bilateral perspective remains.
+          2: The contour is severely asymmetric or inconsistent with head pose.
+          3: Balance is weakly attempted and major perspective errors remain.
+          4: The result is recognizable, but a major side-to-side or foreshortening mismatch remains.
+          5: Balance is partial, with several substantial perspective or asymmetry problems.
+          6: Balance is mostly correct, but one clear side or perspective error remains.
+          7: Pose-aware balance is strong, with only a minor mismatch.
+          8: Balance is highly accurate, with only a tiny local imperfection.
+          9: Both facial sides narrow coherently with head pose, perspective, and source-supported asymmetry.
+        rubric: Judge near-side and far-side contour movement, foreshortening, face rotation, tilt, lens perspective, and
+          source asymmetry rather than raw mirror symmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure
+          affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      face_narrowing_hair_ear_skin_background_occlusion_consistent:
+        title: Hair, ear, skin, and background occlusion integration is consistent
+        definition: Judge hair strands, sideburns, ears, earrings, glasses, facial hair, skin boundaries, and newly exposed
+          background for correct stretching, attachment, layering, and reconstruction.
+        anchors:
+          0: Local occlusion integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct layering remains.
+          2: Hair, ears, skin, accessories, or background are severely distorted, erased, or wrongly layered.
+          3: Integration is weakly attempted and major overlap errors remain.
+          4: The relationships are recognizable, but a major penetration, gap, stretch, repeated background, or boundary error
+            remains.
+          5: Integration is partial, with several substantial occlusion or reconstruction problems.
+          6: Integration is mostly correct, but one clear boundary or layering issue remains.
+          7: Hair, ears, skin, and background integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All local hair, ear, skin, accessory, and background relationships remain physically coherent.
+        rubric: Judge hair strands, sideburns, ears, earrings, glasses, facial hair, skin boundaries, and newly exposed background
+          for correct stretching, attachment, layering, and reconstruction. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      face_narrowing_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare source and result as the same individual, not merely as a plausible similar person. Judge internal
+          landmark geometry, eyes, brows, nose, mouth, ears, chin, jaw character, age impression, gender presentation, characteristic
+          asymmetry, skin tone, stable marks, and same-person impression. Only overall face width may change.
+        anchors:
+          0: The edited subject is effectively a different person, severely distorted, or unusable.
+          1: Identity correspondence is extremely weak; defining landmarks and the person impression are replaced.
+          2: Major identity drift affects several defining facial regions.
+          3: Substantial identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression.
+          5: The person remains recognizable, but multiple landmarks, proportions, age cues, or details drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity preservation is strong, with only a minor visible drift.
+          8: The face is nearly source-identical apart from intended width reduction, with only a tiny discrepancy.
+          9: The same identity, internal landmark geometry, age impression, skin tone, and characteristic details are source-identical
+            apart from overall face width.
+        rubric: Compare source and result as the same individual, not merely as a plausible similar person. Judge internal
+          landmark geometry, eyes, brows, nose, mouth, ears, chin, jaw character, age impression, gender presentation, characteristic
+          asymmetry, skin tone, stable marks, and same-person impression. Only overall face width may change. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+      face_narrowing_expression_gaze_head_pose_scene_preserved:
+        title: Expression, gaze, head pose, hair, scene, camera, and global state are preserved
+        definition: Preserve gaze, expression, mouth state, head rotation and tilt, hairstyle, hair color, facial hair, neck,
+          clothing, accessories, background hue and texture, white balance, brightness, contrast, saturation, lighting, framing,
+          camera angle, composition, aspect ratio, and resolution.
+        anchors:
+          0: Non-target subject or scene state is severely changed or unusable.
+          1: Most listed non-target properties are clearly inconsistent with the source.
+          2: Several major changes affect expression, gaze, pose, hair, scene, camera, or global image state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image remains recognizable, but a clear important non-target mismatch remains.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Expression, gaze, pose, hair, scene, camera, and global color are nearly source-identical, with only a tiny discrepancy.
+          9: All non-target subject, scene, camera, lighting, color, composition, and resolution properties remain source-consistent.
+        rubric: Preserve gaze, expression, mouth state, head rotation and tilt, hairstyle, hair color, facial hair, neck,
+          clothing, accessories, background hue and texture, white balance, brightness, contrast, saturation, lighting, framing,
+          camera angle, composition, aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+  Task Realism and Image Quality:
+    Face-Contour Rendering Quality:
+      face_narrowing_skin_hair_detail_realistic:
+        title: Skin, facial-hair, and hair detail are realistic
+        definition: Judge pores, fine lines, makeup, facial hair, sideburns, scalp hair, hair strands, skin microtexture,
+          and source-level sharpness after lateral contour reconstruction.
+        anchors:
+          0: Detail realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic source detail remains.
+          2: A small relevant attempt exists, but the contour region is severely blurred, plastic, repeated, or synthetic.
+          3: Realism is weakly attempted and major detail damage remains.
+          4: The face is recognizable, but a major blur, smoothing, texture, facial-hair, or hair-detail error remains.
+          5: Realism is partial, with several substantial visible problems.
+          6: Detail is mostly realistic, but one clear texture or hair issue remains.
+          7: Skin, facial-hair, and hair detail are strong, with only a minor mismatch.
+          8: Detail is highly realistic, with only a tiny local imperfection.
+          9: All skin, facial-hair, hair, and fine-detail structure are fully photorealistic and source-consistent.
+        rubric: Judge pores, fine lines, makeup, facial hair, sideburns, scalp hair, hair strands, skin microtexture, and
+          source-level sharpness after lateral contour reconstruction. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      face_narrowing_lighting_shadow_color_integration:
+        title: Lighting, shadows, and color integrate with the source
+        definition: Judge cheek and jaw shading, ear and hair shadows, skin tone, facial depth, contact shadows, white balance,
+          and global illumination without false side-darkening or contour painting.
+        anchors:
+          0: Lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct illumination remains.
+          2: A small relevant attempt exists, but shadows or color are severely false or inconsistent.
+          3: Integration is weakly attempted and major lighting errors remain.
+          4: The lighting is recognizable, but a major halo, false shadow, flat patch, or color mismatch remains.
+          5: Integration is partial, with several substantial shadow or color problems.
+          6: Lighting is mostly correct, but one clear local issue remains.
+          7: Shadow, lighting, and color integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All facial contour, hair, ear, skin, and background illumination perfectly match the source.
+        rubric: Judge cheek and jaw shading, ear and hair shadows, skin tone, facial depth, contact shadows, white balance,
+          and global illumination without false side-darkening or contour painting. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      face_narrowing_boundary_background_reconstruction_consistent:
+        title: Facial boundaries and background reconstruction are consistent
+        definition: Judge temple, cheek, jaw, chin-side, hair, ear, accessory, and clothing boundaries together with newly
+          exposed background for clean but natural physical relationships.
+        anchors:
+          0: Boundary and reconstruction consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or reconstruction remains.
+          2: A small relevant attempt exists, but major leakage, gaps, repeated background, or impossible overlap is visible.
+          3: Consistency is weakly attempted and major boundary errors remain.
+          4: The relationships are recognizable, but a major seam, cutout, overlap, or reconstruction error remains.
+          5: Consistency is partial, with several substantial visible problems.
+          6: Boundaries are mostly correct, but one clear contact or reconstruction issue remains.
+          7: Boundary and reconstruction consistency are strong, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All facial contour, hair, ear, accessory, clothing, and background boundaries are seamless and physically coherent.
+        rubric: Judge temple, cheek, jaw, chin-side, hair, ear, accessory, and clothing boundaries together with newly exposed
+          background for clean but natural physical relationships. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      face_narrowing_artifact_sharpness_no_warp_mask:
+        title: Artifact control, source sharpness, and absence of warp or mask
+        definition: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched ears or
+          hair, bent background, warped neck or clothing, mask-like transitions, and source-resolution consistency.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: A small relevant attempt exists, but severe warping, masking, blur, or duplication dominates.
+          3: Artifact control is weakly achieved and major defects remain.
+          4: The result is recognizable, but a major seam, warp, duplicate edge, mask, or sharpness mismatch remains.
+          5: Quality is partial, with several substantial visible artifacts.
+          6: The result is mostly clean, but one clear artifact or sharpness issue remains.
+          7: Artifact control is strong, with only a minor visible defect.
+          8: The result is nearly artifact-free, with only a tiny local imperfection.
+          9: The edited image is fully stable, source-sharp, seamless, and free of warping, masking, duplication, or background
+            deformation.
+        rubric: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, clone patterns, stretched ears or hair,
+          bent background, warped neck or clothing, mask-like transitions, and source-resolution consistency. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful face narrowing from hiding identity, facial-feature geometry, head, neck, body, camera, or background
+    drift. Identity is judged by source-to-result correspondence, not by attractiveness or slimness.
+  comparison_checklist:
+  - internal facial landmark size, shape, spacing, and position
+  - eye shape, spacing, aperture, gaze, eyelids, and eyelashes
+  - eyebrow position and shape
+  - nose width, length, geometry, and placement
+  - mouth width, lip geometry, teeth visibility, and expression
+  - chin length and projection, jaw angle, cheek character, and source face-shape family
+  - ear size and placement, hairline, hairstyle, and facial hair
+  - facial height, forehead-to-chin distance, and vertical proportions
+  - head size, head pose, neck width, shoulders, body proportions, and clothing
+  - age impression, gender presentation, skin tone, stable marks, and facial texture
+  - background hue, texture, brightness, contrast, white balance, and composition
+  - camera angle, crop, framing, lighting, aspect ratio, and resolution
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the result is attractive, slimmer, symmetrical, or instruction-compliant.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Only the overall lateral face width may change; internal features and all other subject and image properties remain constrained.
+  - Face-width correctness, identity, feature geometry, expression, neck, body, background, camera state, and rendering quality
+    are independent.
+  task_specific_exception: only the visible lateral facial contour and the minimum adjacent skin, hair, ear, and background
+    reconstruction zones needed for a natural overall face-width reduction

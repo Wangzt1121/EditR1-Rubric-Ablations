@@ -1,0 +1,1022 @@
+task_key: female_calf_slimming
+task_title: Female Calf Slimming
+task_title_zh: 女性瘦小腿
+version: v50_fixed_integer_22_l3_female_calf_slimming_human_preference_width_gate_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator specializing in female calf slimming, lower-leg anatomy, calf-only localization,
+  joint preservation, clothing/occlusion integration, and background stability.
+judge_instructions: 'Strictly compare SOURCE, EDIT PROMPT, and EDITED IMAGE.
+
+
+  Task target: Narrow only the requested calf silhouettes. The broad calf zone should become visibly slimmer than the source
+  at the actual calf contour, not merely look naturally slim in the original image. Knees, ankles, feet, thighs, hips, leg
+  length, pose, clothing, face, hair, lighting, background, frame, aspect ratio, and resolution must stay unchanged.
+
+
+  Before returning JSON, privately run this judging protocol. Do not output private notes; use them only to produce the final
+  score_vector.
+
+
+  1) Task-state card.
+
+  Classify the candidate as clean_success, minor_flaws_success, partial_success, near_identical_to_source, no_visible_edit,
+  under_edited, wrong_direction, wrong_region, wrong_operation, substitute_edit, correct_but_non_target_changed, correct_but_artifact,
+  artifact_driven, or unusable. Identify the actual visible edit, target region, and any changed non-target regions.
+
+
+  2) Defect-first scoring.
+
+  For every active L3 facet, first decide the visible defect level: none, tiny, minor, clear, major, severe, absent_or_reversed,
+  or unusable. Then choose the integer score. 7 is not a default score; it means strong evidence with only a minor flaw.
+
+
+  Human-preference score calibration:
+
+  - 9 = essentially exact, rare, clean positive evidence.
+
+  - 8 = near-exact with only a tiny local issue.
+
+  - 7 = strong but visibly imperfect; for core calf-slimming facets, 7 requires obvious source-to-edited width reduction
+  at the real calf contour.
+
+  - 6 = mostly correct with one clear issue; for core calf-slimming facets, 6 still requires visible calf-width reduction.
+  Do not use 6 for near-identical, no-op, lighting-only, texture-only, or merely naturally slim source-like calves.
+
+  - 4-5 = partial, mediocre, or mixed evidence.
+
+  - 2-3 = weak attempt with major visible failure, near-identical target shape, or no reliable width-reduction evidence.
+
+  - 0-1 = absent, reversed, wrong-region, unrelated, or unusable.
+
+
+  Task-specific defects to check:
+
+  - near-identical calf silhouette, no visible calf narrowing, too weak slimming, opposite change, wrong side, or one requested
+  calf missed;
+
+  - slimming comes from global body scaling, leg lengthening, pose/stance change, knee/ankle movement, foot movement, thigh/hip
+  slimming, or camera/crop change;
+
+  - widest calf zone remains bulky, taper is abrupt/straight/pinched/segmented, or muscle volume becomes hollow, bone-like,
+  flat, lumpy, or anatomically impossible;
+
+  - knee, ankle, lower-leg axis, joint continuity, leg length, body height, stance, or perspective changes;
+
+  - clothing, footwear, seams, hems, folds, occlusion, crossed-leg layering, or calf contour integration breaks;
+
+  - face, identity, non-target body, clothing color/design, background, lighting, aspect ratio, resolution, or framing changes;
+
+  - duplicated limbs, missing anatomy, warped floor/wall, holes, blur, liquify seams, or texture artifacts.
+
+
+  3) Visible-change gate.
+
+  Compare the source and edited calf contours directly at the broadest calf zone, inner/outer calf edges, and knee-to-ankle
+  taper. Do not reward a calf that was already slim in the source as evidence of successful editing. If the requested calf
+  silhouette is nearly identical to source, if the broadest calf zone does not move visibly inward, or if only texture/lighting/edge
+  smoothness changed, trigger target_absent_wrong_side_or_too_weak with severity at least 3. If the narrowing is only barely
+  visible or uncertain, trigger the same failure with severity at least 2. Core Prompt Compliance facets may receive 6+ only
+  when there is visible width-reduction evidence, and may receive 7+ only when calf-width reduction is clearly visible without
+  relying on imagination, image quality, pose, or preservation.
+
+
+  4) Failure propagation.
+
+  Apply global_scoring_policy.failure_propagation after raw facet scoring. If a failure is detected, cap every affected L3
+  by the corresponding severity cap. Do not allow good preservation, clean background, or photorealism to compensate for missing
+  or wrong target editing.
+
+
+  5) Positive-case check.
+
+  High scores are allowed when the requested edit is clearly correct. Before giving 7, 8, or 9 to any core calf-slimming facet,
+  verify that the relevant positive-case conditions in global_scoring_policy are visibly satisfied and that the source-to-edited
+  calf contour difference is clear.
+
+
+  6) Flat-vector review.
+
+  Privately rescore if all scores are 7, 14+ scores are 7, 18+ scores are identical, all scores are 7-9, or visible defects
+  exist but no affected score is below 7. A flat all-7 vector is invalid for this task unless the calf-width reduction is
+  clearly visible; if the calf looks nearly unchanged, core Prompt Compliance and calf-localization facets must be below 6.
+
+
+  Task-specific focus: localized female calf slimming. Success requires the requested calf zone to become visibly narrower
+  while knees, ankles, feet, thighs, hips, leg length, pose, clothing/occlusion, background, framing, and lighting remain
+  source-consistent. Do not reward thigh/hip/waist slimming, whole-leg scaling, leg-length change, pose/camera/crop change,
+  or broad body retouching as calf slimming.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, wrong-region, or mainly a substitute operation,
+  apply failure_propagation before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward. A clean near-identical image is a negative/low-mid training sample for calf slimming.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s. The final vector should still show that the edit request itself failed.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, wrong-region, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve
+  0-1 and 8-9 for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+target_region: 'The visible calf region of each assessable leg, extending from below the knee to above the ankle while excluding
+  the knee joint, ankle joint, and foot.
+
+  '
+target_action_summary: Reduce the visible width and bulk of the requested female calf or calves through calf-only contour
+  editing, producing a narrower, smooth, anatomically plausible lower-leg silhouette. Preserve knees, ankles, feet, thighs,
+  leg length, joint positions, pose, identity, clothing, background, lighting, framing, aspect ratio, and resolution.
+design_principle:
+  summary: 'Use exactly 22 fixed L3 outputs. Separate calf-slimming success from localization, lower-leg anatomy, non-target
+    preservation, and rendering quality. A narrower calf must not receive a high reward when it is produced by global scaling,
+    joint movement, leg shortening, pose change, clothing damage, or background warping.
+
+    '
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - The judge always returns all 22 scores in active_l3 order.
+  - Compare the source image, prompt, and edited image directly.
+  - Judge only visible and assessable evidence; do not invent hidden anatomy.
+  - Do not reward global image scaling, cropping, camera change, or leg stretching as calf slimming.
+  - Do not reward generic attractiveness when the requested calf edit is inaccurate.
+  - A correct slimming direction cannot compensate for joint distortion, pose drift, identity drift, or scene warping.
+  - One severe non-target alteration must not be averaged away by many preserved easy regions.
+  - No hard caps, rank bonuses, external image metrics, or manual failure deductions.
+  - Public floating-point values use at most 3 decimal places.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: 'The prompt must request narrowing, slimming, or reducing the visible width, thickness, circumference
+    appearance, contour, or bulk of at least one calf.
+
+    '
+  wrong_task_examples:
+  - adding muscle fullness or athletic bulk to the thighs and calves
+  - enlarging, thickening, or strengthening the calves
+  - slimming the thighs, waist, or whole legs without a calf target
+  - changing leg length, body height, or pose instead of calf width
+  conflict_examples:
+  - make the same calf both slimmer and visibly bulkier
+  - reduce calf width while preserving the exact original calf contour
+  - shorten the lower legs while keeping leg length unchanged
+  visibility_failures:
+  - neither calf is visible enough to compare
+  - the calf region is fully hidden by framing or an opaque obstruction
+  - blur or resolution prevents judging calf boundaries and adjacent joints
+  partial_visibility_rule: 'When only one requested calf is assessable, score visible evidence without penalizing the hidden
+    calf and set visibility-dependent Prompt Compliance facets to mask=0 where necessary.
+
+    '
+body_geometry_preservation_protocol:
+  strict_rules:
+  - The task changes calf contour, not skeletal length or joint placement.
+  - Preserve knee centers, ankle centers, feet, thighs, leg axes, body height, and leg length.
+  - Preserve the original standing, sitting, crossing, bending, or walking pose.
+  - Clothing may follow the new calf contour only as minimally necessary; preserve its texture, seams, folds, pattern, and
+    color.
+  - Do not collapse the calf into a straight tube, concave shape, or unnaturally thin bone-like lower leg.
+  - Do not bend nearby floors, walls, furniture, shadows, or image boundaries.
+  - Do not create the result through whole-leg or whole-image horizontal scaling.
+identity_preservation_protocol:
+  target_exemptions:
+  - The explicitly requested calf contour and only its minimum necessary local clothing boundary may change.
+  - The intended calf slimming must not itself be treated as identity drift.
+  strict_rules:
+  - Preserve the same person, face, hair, skin tone, age impression, and characteristic appearance.
+  - Preserve all non-target body proportions except unavoidable local calf-contour adaptation.
+  - A changed-person impression or broad body redesign must strongly reduce preservation scores.
+  - Improved attractiveness cannot compensate for identity or body-shape drift outside the calves.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Return one independent integer score for every active_l3 item in order. Score each facet from visible evidence
+    in SOURCE, EDIT PROMPT, and EDITED IMAGE.
+  output_order_rule: The score_vector must contain exactly 22 integers in active_l3 order; never reorder, omit, rename, or
+    explain facets.
+  anchor_interpolation: Use 1, 2, 4, 6, and 8 as intermediate severities. Do not round uncertainty upward.
+  anti_saturation: 0-3 = failed, no-op, near-identical, wrong-region, or damaging; 4-5 = partial/mediocre/uncertain; 6 =
+    mostly correct with one clear issue and visible calf narrowing; 7 = strong but visibly imperfect with clear source-to-edited
+    calf narrowing; 8 = near-exact; 9 = rare, essentially complete and clean.
+  no_cross_compensation: A thinner-looking leg cannot compensate for changed knees/ankles, altered pose, shortened/lengthened
+    legs, global body scaling, background warping, or non-calf body edits.
+  primary_edit_success_rule: If the requested calf or calves are not visibly slimmer in the calf region itself after direct
+    source-to-edited contour comparison, the candidate is a weak/negative edit even when preserved areas look clean.
+  core_width_evidence_rule: For the six core calf-slimming facets, scores 6-9 require visible inward movement of the actual
+    calf silhouette at the broadest calf zone or along the calf edges. If width reduction is not confidently visible at normal
+    viewing size, score these core facets 0-4 depending on severity. Do not infer success from clean edges, darker stockings,
+    pose, existing slimness, or general attractiveness.
+  naturally_slim_source_rule: Do not treat a calf that was already slim in the source as successful evidence. The score must
+    depend on visible narrowing of the edited calf contour relative to the source.
+  preservation_only_no_success_rule: A clean unchanged source-like image is not a successful edit. If the requested target
+    change is absent, preservation and photorealism may score high only on truly pure preservation facets, but they must not
+    lift task, localization, integration, or local realism facets into the successful range.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, choose its severity from the scale below. The final score for every affected L3 must be
+      min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score. Do not reveal propagation reasoning;
+      return only the final adjusted vector.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, wrong-region, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_side_or_too_weak:
+        detect_when: The requested calf is unchanged, near-identical to source, only texture/lighting/edge smoothness changes,
+          only naturally slim but not edited, barely slimmer, wider, the wrong side is edited, or one requested calf is missed
+          in a bilateral prompt.
+        severity_guidance: Tiny but clearly visible calf-contour narrowing may be severity 1. Barely visible narrowing or
+          incomplete side coverage should be severity 2. Near-identical, no reliable broadest-zone reduction, or mostly unchanged
+          requested calf must be at least severity 3, even if preservation and image quality are good. Wrong side, missed side
+          in bilateral prompt, reversed/wider calf, or absent target must be severity 4-5. Do not classify a naturally slim
+          source calf as edited evidence.
+        affected_l3:
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_requested_side_coverage_match
+        - female_calf_slimming_magnitude_match
+        - female_calf_widest_zone_reduction_match
+        - female_calf_longitudinal_taper_match
+        - female_calf_muscle_bulk_refinement_match
+        - female_calf_leg_proportion_harmony_match
+        - female_calf_requested_details_completeness_match
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_knee_ankle_anatomical_continuity
+        - female_calf_surface_texture_realism
+        - female_calf_lighting_shadow_consistency
+        - female_calf_contour_edge_blending_quality
+        - female_calf_knee_boundary_preservation
+        - female_calf_leg_length_body_height_preservation
+        - female_calf_non_target_body_region_preservation
+        - female_calf_subject_identity_non_target_scene_preservation
+        - female_calf_clothing_camera_composition_preservation
+        - female_calf_artifact_background_stability
+      wrong_region_or_global_leg_body_edit:
+        detect_when: The visible change comes from thigh/hip/waist slimming, whole-leg/body scaling, leg lengthening/shortening,
+          camera/crop change, or broad body retouching rather than calf-only width reduction.
+        severity_guidance: Minor non-calf cue with real calf slimming may be severity 1-2. If thigh/hip/waist slimming, whole-leg/body
+          scaling, leg-length change, camera/crop change, or broad body retouching substantially creates the effect, severity
+          3. If it replaces calf slimming, severity 4-5.
+        affected_l3:
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_requested_side_coverage_match
+        - female_calf_slimming_magnitude_match
+        - female_calf_widest_zone_reduction_match
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_leg_length_body_height_preservation
+        - female_calf_non_target_body_region_preservation
+        - female_calf_subject_identity_non_target_scene_preservation
+        - female_calf_clothing_camera_composition_preservation
+        - female_calf_longitudinal_taper_match
+        - female_calf_muscle_bulk_refinement_match
+        - female_calf_leg_proportion_harmony_match
+        - female_calf_requested_details_completeness_match
+        - female_calf_knee_boundary_preservation
+        - female_calf_artifact_background_stability
+      calf_shape_or_muscle_anatomy_failure:
+        detect_when: The calf taper becomes abrupt, straight, concave, pinched, segmented, flat, hollow, bone-like, lumpy,
+          asymmetrical, or disproportionate to thigh/knee/ankle/foot/body.
+        affected_l3:
+        - female_calf_slimming_magnitude_match
+        - female_calf_widest_zone_reduction_match
+        - female_calf_longitudinal_taper_match
+        - female_calf_muscle_bulk_refinement_match
+        - female_calf_leg_proportion_harmony_match
+        - female_calf_knee_ankle_anatomical_continuity
+        - female_calf_leg_axis_pose_alignment_consistency
+        - female_calf_surface_texture_realism
+        - female_calf_contour_edge_blending_quality
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_requested_side_coverage_match
+        - female_calf_requested_details_completeness_match
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_knee_boundary_preservation
+        - female_calf_ankle_boundary_preservation
+        - female_calf_clothing_occlusion_contour_integration
+        - female_calf_leg_length_body_height_preservation
+        - female_calf_lighting_shadow_consistency
+        - female_calf_artifact_background_stability
+        severity_guidance: Small taper irregularity may be severity 1. Clear abrupt/straight/concave/pinched/flat/lumpy/asymmetric
+          calf shape should be severity 2-3. Hollow, bone-like, segmented, disproportionate, or impossible lower-leg anatomy
+          must be severity 4-5.
+      joint_pose_length_drift:
+        detect_when: Knee, ankle, foot, leg axis, stance, crossing, bend, perspective, knee-to-ankle distance, total leg length,
+          body height, or lower-body pose changes.
+        affected_l3:
+        - female_calf_knee_boundary_preservation
+        - female_calf_ankle_boundary_preservation
+        - female_calf_knee_ankle_anatomical_continuity
+        - female_calf_leg_axis_pose_alignment_consistency
+        - female_calf_leg_length_body_height_preservation
+        - female_calf_non_target_body_region_preservation
+        - female_calf_clothing_camera_composition_preservation
+        - female_calf_artifact_background_stability
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_subject_identity_non_target_scene_preservation
+        - female_calf_surface_texture_realism
+        - female_calf_lighting_shadow_consistency
+        - female_calf_contour_edge_blending_quality
+        - female_calf_requested_side_coverage_match
+        - female_calf_slimming_magnitude_match
+        - female_calf_widest_zone_reduction_match
+        - female_calf_longitudinal_taper_match
+        - female_calf_muscle_bulk_refinement_match
+        - female_calf_leg_proportion_harmony_match
+        - female_calf_requested_details_completeness_match
+        severity_guidance: Minor perspective/axis drift may be severity 1. Clear knee, ankle, foot, leg axis, stance, crossing,
+          bend, knee-to-ankle distance, leg length, body height, or pose drift should be severity 2-3. Major pose/length/camera
+          replacement or source-state change must be severity 4-5.
+      clothing_occlusion_boundary_failure:
+        detect_when: Fabric, seams, hems, shoes, socks, folds, crossed-leg layering, foreground occluders, or local clothing
+          contours detach, melt, penetrate, blur, duplicate, or no longer follow the leg.
+        affected_l3:
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_knee_boundary_preservation
+        - female_calf_ankle_boundary_preservation
+        - female_calf_clothing_occlusion_contour_integration
+        - female_calf_clothing_camera_composition_preservation
+        - female_calf_surface_texture_realism
+        - female_calf_lighting_shadow_consistency
+        - female_calf_contour_edge_blending_quality
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_knee_ankle_anatomical_continuity
+        - female_calf_leg_axis_pose_alignment_consistency
+        - female_calf_artifact_background_stability
+        - female_calf_requested_side_coverage_match
+        - female_calf_slimming_magnitude_match
+        - female_calf_widest_zone_reduction_match
+        - female_calf_longitudinal_taper_match
+        - female_calf_muscle_bulk_refinement_match
+        - female_calf_leg_proportion_harmony_match
+        - female_calf_requested_details_completeness_match
+        - female_calf_leg_length_body_height_preservation
+        severity_guidance: Tiny seam/edge issue may be severity 1. Clear fabric, shoe, sock, hem, fold, crossed-leg layering,
+          occluder, or clothing-contour inconsistency should be severity 2-3. Detached/melted clothing, penetration, duplicated
+          edge, or severe occlusion break must be severity 4-5.
+      identity_non_target_scene_change:
+        detect_when: Face, hair, identity, expression, non-calf body, clothing color/design, background, lighting, camera
+          angle, crop, aspect ratio, or resolution changes outside the calf contour edit.
+        affected_l3:
+        - female_calf_non_target_body_region_preservation
+        - female_calf_subject_identity_non_target_scene_preservation
+        - female_calf_clothing_camera_composition_preservation
+        - female_calf_artifact_background_stability
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_leg_length_body_height_preservation
+        - female_calf_surface_texture_realism
+        - female_calf_lighting_shadow_consistency
+        - female_calf_contour_edge_blending_quality
+        - female_calf_requested_side_coverage_match
+        - female_calf_slimming_magnitude_match
+        - female_calf_widest_zone_reduction_match
+        - female_calf_longitudinal_taper_match
+        - female_calf_muscle_bulk_refinement_match
+        - female_calf_leg_proportion_harmony_match
+        - female_calf_requested_details_completeness_match
+        - female_calf_knee_boundary_preservation
+        severity_guidance: Minor local lighting/color drift may be severity 1. Clear face/hair, non-calf body, clothing design/color,
+          background, lighting, crop, aspect, or resolution drift should be severity 2-3. Identity, pose, camera, or broad
+          scene-state change must be severity 4-5.
+      artifact_or_background_warp:
+        detect_when: Duplicated limbs, missing anatomy, ghosting, liquify seams, holes, blur bands, oversharpening, warped
+          floors/walls/objects, repeated patterns, or unstable edges appear around the calf or scene.
+        affected_l3:
+        - female_calf_edit_localized_to_calf_region
+        - female_calf_knee_ankle_anatomical_continuity
+        - female_calf_clothing_occlusion_contour_integration
+        - female_calf_surface_texture_realism
+        - female_calf_lighting_shadow_consistency
+        - female_calf_contour_edge_blending_quality
+        - female_calf_artifact_background_stability
+        - female_calf_primary_slimming_outcome_match
+        - female_calf_knee_boundary_preservation
+        - female_calf_ankle_boundary_preservation
+        - female_calf_leg_axis_pose_alignment_consistency
+        severity_guidance: Small local artifact may be severity 1. Clear liquify seam, ghosting, duplicated limb, blur band,
+          oversharpening, hole, unstable edge, or warped floor/wall/object should be severity 2-3. Severe artifact-driven
+          edit or unusable reconstruction must be severity 4-5.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive calf-slimming sample visibly narrows the requested calf width/bulk relative to the source
+    contour while preserving knee and ankle landmarks, leg length, pose, clothing/occlusion, identity, and scene.
+  positive_negative_sample_rule: 'For training preference, a positive sample is not simply a clean image: it must visibly
+    satisfy the calf-slimming instruction. Good samples show narrower calf contours at the broadest zones of the requested
+    visible calves, smooth knee-to-ankle taper, plausible muscle volume, and preserved knees/ankles/pose/clothing/background.
+    Negative samples include clean no-op images, near-identical calf silhouettes, naturally slim but unchanged calves, one-sided
+    edits in bilateral prompts, thigh/hip/whole-leg slimming, pose/camera changes, pinched tube-like legs, or artifact-driven
+    apparent slimming.
+
+    '
+  success_gate_conditions:
+  - The requested calf or calves are visibly narrower than the source at the broadest calf zone, with natural magnitude and
+    no wrong-side or missed-side error; natural slimness already present in the source is not enough.
+  - The lower-leg taper remains smooth and anatomically plausible from below the knee to the ankle, preserving muscle volume
+    rather than becoming hollow or bone-like.
+  - Knees, ankles, feet, thighs, hips, leg axis, stance, leg length, body height, and camera/framing remain source-consistent.
+  - Clothing, footwear, seams, hems, folds, crossed-leg/occlusion ordering, background, lighting, aspect ratio, and resolution
+    are preserved except for minimal local contour adaptation.
+  - Calf surface texture, shading, edge blending, and surrounding background are clean without liquify seams, duplicated limbs,
+    blur bands, holes, or warped lines.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_6_eligibility_rule: Core calf-slimming facets may receive 6 only when there is visible but imperfect calf-width reduction.
+    If the calf contour is nearly identical to source, or if narrowing is only guessed from lighting, texture, pose, or existing
+    slimness, core facets must be 0-4 and target_absent_wrong_side_or_too_weak should be applied.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet. Core calf-slimming facets may receive 7+ only when
+    the edited calf contour is clearly narrower than the source.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, near-identical to
+    source, mostly unchanged, or mainly a substitute operation, apply failure_propagation before assigning preservation/quality
+    highs. Unchanged non-target regions may receive moderate preservation scores, but failed editing must not become high
+    reward through unrelated 8-9 scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If calf-width reduction is not obvious after direct source comparison, core Prompt Compliance
+    and calf-localization facets must stay below 6. If any task-specific failure affects that L3, apply the severity cap first;
+    if evidence is generic, ambiguous, or borrowed from another facet, choose the lower score.
+  no_compensation_rule: A thinner-looking leg cannot compensate for changed knees/ankles, altered pose, shortened/lengthened
+    legs, global body scaling, background warping, or non-calf body edits.
+  task_disambiguation_rule: Reduce the visible width and bulk of the requested female calf or calves through calf-only contour
+    editing, producing a narrower, smooth, anatomically plausible lower-leg silhouette. Preserve knees, ankles, feet, thighs,
+    leg length, joint positions, pose, identity, clothing, background, lighting, framing, aspect ratio, and resolution.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally and return public values with at most 3 decimal places.
+active_l3:
+- female_calf_primary_slimming_outcome_match
+- female_calf_requested_side_coverage_match
+- female_calf_slimming_magnitude_match
+- female_calf_widest_zone_reduction_match
+- female_calf_longitudinal_taper_match
+- female_calf_muscle_bulk_refinement_match
+- female_calf_leg_proportion_harmony_match
+- female_calf_requested_details_completeness_match
+- female_calf_edit_localized_to_calf_region
+- female_calf_knee_boundary_preservation
+- female_calf_ankle_boundary_preservation
+- female_calf_knee_ankle_anatomical_continuity
+- female_calf_leg_axis_pose_alignment_consistency
+- female_calf_clothing_occlusion_contour_integration
+- female_calf_leg_length_body_height_preservation
+- female_calf_non_target_body_region_preservation
+- female_calf_subject_identity_non_target_scene_preservation
+- female_calf_clothing_camera_composition_preservation
+- female_calf_surface_texture_realism
+- female_calf_lighting_shadow_consistency
+- female_calf_contour_edge_blending_quality
+- female_calf_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output facet names, evidence, explanations, summaries, or failure tags in the training path.
+  high_score_note: Do not copy a fixed example vector. Give 8-9 only when the matching facet has visible positive evidence
+    and no propagated failure cap.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    female_calf_primary_slimming_outcome_match: 0.22
+    female_calf_requested_side_coverage_match: 0.12
+    female_calf_slimming_magnitude_match: 0.16
+    female_calf_widest_zone_reduction_match: 0.16
+    female_calf_longitudinal_taper_match: 0.1
+    female_calf_muscle_bulk_refinement_match: 0.1
+    female_calf_leg_proportion_harmony_match: 0.07
+    female_calf_requested_details_completeness_match: 0.07
+  Localization and Anatomical Integration:
+    female_calf_edit_localized_to_calf_region: 0.22
+    female_calf_knee_boundary_preservation: 0.14
+    female_calf_ankle_boundary_preservation: 0.14
+    female_calf_knee_ankle_anatomical_continuity: 0.2
+    female_calf_leg_axis_pose_alignment_consistency: 0.16
+    female_calf_clothing_occlusion_contour_integration: 0.14
+  Subject Preservation:
+    female_calf_leg_length_body_height_preservation: 0.28
+    female_calf_non_target_body_region_preservation: 0.24
+    female_calf_subject_identity_non_target_scene_preservation: 0.28
+    female_calf_clothing_camera_composition_preservation: 0.2
+  Task Realism and Image Quality:
+    female_calf_surface_texture_realism: 0.28
+    female_calf_lighting_shadow_consistency: 0.25
+    female_calf_contour_edge_blending_quality: 0.25
+    female_calf_artifact_background_stability: 0.22
+aggregation:
+  prompt_compliance: 'Masked weighted arithmetic mean over the 8 Prompt Compliance L3 facets. Only facets with applicability
+    mask=1 enter the numerator and denominator.
+
+    '
+  other_l1_blocks: 'Use weighted arithmetic means for Localization and Anatomical Integration, Subject Preservation, and Task
+    Realism and Image Quality.
+
+    '
+  base_formula: base_reward = 0.67 * P_masked + 0.23 * L + 0.07 * S + 0.03 * Q
+  anatomy_score: A = score(female_calf_knee_ankle_anatomical_continuity) / 9.0
+  preservation_score: N = score(female_calf_subject_identity_non_target_scene_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (N ** 0.20)
+  properties:
+  - Fixed 22-score output
+  - Prompt-aware compliance
+  - Continuous anatomy constraint
+  - Continuous non-target preservation constraint
+  - No cross-facet compensation
+taxonomy:
+  Prompt Compliance:
+    Requested Calf Slimming:
+      female_calf_primary_slimming_outcome_match:
+        title: Primary calf-slimming outcome
+        definition: 'Judge whether the requested calf or calves are visibly narrower and less bulky than in the source, in
+          the correct direction and target area. Do not give credit for slimming produced by changing the whole leg, camera
+          scale, crop, aspect ratio, leg length, or pose.
+
+          '
+        anchors:
+          0: No visible calf slimming, opposite-direction enlargement, wrong region, or a different task.
+          3: Near-identical, very weak, one-sided, or inconsistent attempt; calves remain substantially source-like.
+          5: Calves are somewhat slimmer, but the reduction is weak, incomplete, non-local, or clearly inaccurate; not enough
+            for a positive sample.
+          7: The requested calves are clearly slimmer than the source at the actual calf contour, with one visible outcome issue.
+          9: Both calf silhouettes are cleanly, naturally, and unmistakably slimmer with no material outcome error.
+        rubric: Judge whether the requested calf or calves are visibly narrower and less bulky than in the source, in the
+          correct direction and target area. Do not give credit for slimming produced by changing the whole leg, camera scale,
+          crop, aspect ratio, leg length, or pose. A nearly identical source-like calf must not score above 4 on this facet;
+          score 6 or higher only when real calf-width reduction is visible at normal viewing size.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_requested_side_coverage_match:
+        title: Requested side and bilateral coverage
+        definition: 'Judge whether every visible requested calf is edited. For bilateral prompts, both assessable calves must
+          be addressed without editing an unrequested side.
+
+          '
+        anchors:
+          0: A requested calf is missed, the wrong leg/region is edited, or side coverage cannot be verified.
+          3: Only a small portion or one of two clearly visible requested calves is edited, or coverage is mostly inferred
+            from an unchanged source-like leg.
+          5: Both sides are attempted but one side is notably incomplete, too weak, inconsistent, or non-local; visible bilateral
+            narrowing is not yet convincing.
+          7: All requested visible calves show clear edited coverage with a minor coverage imbalance.
+          9: Every requested and assessable calf is fully, correctly, and locally covered.
+        rubric: Judge whether every visible requested calf is edited. For bilateral prompts, both assessable calves must be
+          addressed without editing an unrequested side. Do not count an already slim but unchanged source calf as covered.
+          In a bilateral prompt, if one visible calf is near-identical to source, this facet must stay below 6.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_slimming_magnitude_match:
+        title: Slimming magnitude
+        definition: 'Judge whether the amount of narrowing matches the prompt. When no degree is specified, require a clearly
+          visible but natural cosmetic reduction rather than a negligible, extreme, or globally scaled transformation.
+
+          '
+        anchors:
+          0: Wrong direction, no useful narrowing, or grossly excessive deformation.
+          3: The change is barely visible, near-identical to source, severely excessive, uneven, or mostly caused by global
+            distortion.
+          5: Direction is correct, but the amount is noticeably too weak, too strong, or partly non-local; not enough to be
+            a clear successful edit.
+          7: The magnitude is clearly visible and appropriate, with only a small under- or over-edit.
+          9: The reduction is clearly visible, balanced, natural, and exactly appropriate.
+        rubric: Judge whether the amount of narrowing matches the prompt. When no degree is specified, require a clearly visible
+          but natural cosmetic reduction rather than a negligible, extreme, or globally scaled transformation. Apply this
+          facet's 0-9 anchors directly. If the reduction is not obvious after direct source comparison, this facet should
+          stay below 5; score 6+ only when calf width reduction is visible but imperfect. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      female_calf_widest_zone_reduction_match:
+        title: Widest-zone width reduction
+        definition: 'Judge whether the broadest calf region is genuinely narrowed rather than merely shifting, blurring, or
+          trimming an unrelated edge.
+
+          '
+        anchors:
+          0: The widest calf zone is not reduced or becomes wider.
+          3: Only a tiny, ambiguous, source-like, or misplaced part of the contour is reduced.
+          5: The widest zone is reduced, but weakly, unevenly, or incompletely; the success is still uncertain.
+          7: The main width is visibly and correctly reduced relative to the source, with a minor contour inconsistency.
+          9: The widest zone is accurately narrowed while retaining plausible form.
+        rubric: Judge whether the broadest calf region is genuinely narrowed rather than merely shifting, blurring, or trimming
+          an unrelated edge. If the broadest calf zone looks nearly the same as the source, this facet must be below 5. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_longitudinal_taper_match:
+        title: Knee-to-ankle taper
+        definition: 'Judge the full visible calf silhouette from below the knee toward the ankle. The contour should taper
+          smoothly rather than becoming abrupt, straight, pinched, concave, or segmented.
+
+          '
+        anchors:
+          0: The taper is anatomically impossible or severely broken.
+          3: The contour is visibly pinched, stepped, tube-like, or essentially unchanged from the source.
+          5: A slimmer taper exists but is weak, uncertain, or has obvious irregular transitions.
+          7: A visibly slimmer taper is smooth overall with one local shape issue.
+          9: The calf has a natural, continuous, and well-proportioned taper.
+        rubric: Judge the full visible calf silhouette from below the knee toward the ankle. The contour should taper smoothly
+          rather than becoming abrupt, straight, pinched, concave, or segmented. A naturally smooth but unchanged source-like
+          taper is not high-score evidence; score 6+ only when taper change is visibly tied to calf slimming. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      female_calf_muscle_bulk_refinement_match:
+        title: Calf bulk and muscle-shape refinement
+        definition: 'Judge whether bulky convexity is reduced while preserving a plausible gastrocnemius and lower-leg volume.
+          Do not reward flattening, hollowing, or bone-like thinning.
+
+          '
+        anchors:
+          0: Bulk is increased or the calf structure collapses.
+          3: The calf is crudely flattened, hollowed, remains bulky, or is nearly unchanged from the source.
+          5: Bulk is reduced but too weak, incomplete, uncertain, or muscle form is noticeably unnatural.
+          7: Muscle bulk is visibly refined naturally with a small form issue.
+          9: Bulk is reduced with convincing, smooth, and anatomically plausible volume.
+        rubric: Judge whether bulky convexity is reduced while preserving a plausible gastrocnemius and lower-leg volume.
+          Do not reward flattening, hollowing, bone-like thinning, or unchanged naturally slim calves; score 6+ only when actual calf bulk reduction is visible. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      female_calf_leg_proportion_harmony_match:
+        title: Calf proportion relative to the leg
+        definition: 'Judge whether the edited calf remains proportionate to the visible thigh, knee, ankle, foot, and overall
+          body. Do not reward an unnaturally tiny lower leg.
+
+          '
+        anchors:
+          0: The calf-body proportion is severely implausible.
+          3: The calf is visibly mismatched to adjacent leg proportions, or no meaningful calf reduction exists to evaluate
+            as a successful proportion change.
+          5: The result is slimmer but proportionally awkward, or the target change is too weak to be a positive sample.
+          7: A visibly slimmer calf remains harmonious with a minor mismatch.
+          9: The visible calf reduction is fully balanced with the entire visible leg and body.
+        rubric: Judge whether the edited calf remains proportionate to the visible thigh, knee, ankle, foot, and overall body.
+          Do not reward an unnaturally tiny lower leg, and do not score a no-op highly as harmonious slimming. Apply this facet's 0-9 anchors directly. If a task-specific failure
+          affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      female_calf_requested_details_completeness_match:
+        title: Requested details and completeness
+        definition: 'Judge all remaining explicit requirements, including calf-only scope, clean blending, original leg placement,
+          clothing consistency, and any stated preservation clause not already captured by a more specific facet.
+
+          '
+        anchors:
+          0: Multiple explicit requirements are ignored.
+          3: Only a small subset of requested details is satisfied.
+          5: The main edit is present but several explicit details are missed, or the target edit is visibly too weak.
+          7: Nearly all details are satisfied with one visible omission and visible calf slimming is present.
+          9: Every explicit and assessable requirement is completely satisfied.
+        rubric: Judge all remaining explicit requirements, including calf-only scope, clean blending, original leg placement,
+          clothing consistency, and any stated preservation clause not already captured by a more specific facet. Apply this
+          facet's 0-9 anchors directly. If the primary calf-slimming edit is near-identical/no-op, this facet cannot be high merely because preservation clauses are satisfied. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Calf Localization and Lower-Leg Anatomy:
+      female_calf_edit_localized_to_calf_region:
+        title: Calf-only localization
+        definition: 'Judge whether visible shape changes are confined to the calf region and the minimum necessary local clothing
+          boundary. Thighs, knees, ankles, feet, hips, and unrelated regions must not be reshaped. A no-op or nearly unchanged
+          calf is not precise successful localization.
+
+          '
+        anchors:
+          0: Large non-calf regions are edited or the whole leg/body is scaled.
+          3: Clear spill affects multiple adjacent regions, or the actual visible edit is not in the calf.
+          5: The edit is mostly localized but too weak/no-op-like, uncertain, or visibly alters one adjacent region.
+          7: A visible calf edit is strongly localized with a small boundary spill.
+          9: Visible changes are precisely confined to the intended calf region.
+        rubric: Judge whether shape changes are confined to the calf region and the minimum necessary local clothing boundary.
+          Thighs, knees, ankles, feet, hips, and unrelated regions must not be reshaped. Do not score a no-op highly just
+          because nothing outside the calf changed. Apply this facet's 0-9 anchors directly. If a task-specific failure affects
+          this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      female_calf_knee_boundary_preservation:
+        title: Knee boundary preservation
+        definition: 'Preserve knee size, patella region, joint position, crease structure, and the transition immediately
+          below the knee.
+
+          '
+        anchors:
+          0: The knee is moved, resized, erased, or severely deformed.
+          3: Major knee shape or crease distortion is visible.
+          5: The knee is recognizable but has a clear boundary change.
+          7: The knee is preserved with a minor transition issue.
+          9: The knee and upper-calf boundary are unchanged and anatomically clean.
+        rubric: Preserve knee size, patella region, joint position, crease structure, and the transition immediately below
+          the knee. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_ankle_boundary_preservation:
+        title: Ankle boundary preservation
+        definition: 'Preserve ankle width, malleolus landmarks, joint position, and the transition from lower calf to ankle
+          and foot.
+
+          '
+        anchors:
+          0: The ankle or foot connection is moved, erased, or severely deformed.
+          3: Major ankle narrowing, widening, or landmark loss is visible.
+          5: The ankle remains recognizable but has a clear shape change.
+          7: The ankle is preserved with a minor transition issue.
+          9: The ankle and lower-calf boundary remain unchanged and anatomically clean.
+        rubric: Preserve ankle width, malleolus landmarks, joint position, and the transition from lower calf to ankle and
+          foot. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_knee_ankle_anatomical_continuity:
+        title: Knee-calf-ankle anatomical continuity
+        definition: 'Judge whether bones, muscle mass, soft tissue, and contour flow form one plausible lower leg between
+          fixed knee and ankle joints.
+
+          '
+        anchors:
+          0: The lower leg is disconnected, collapsed, duplicated, or anatomically impossible.
+          3: Severe pinching, bending, asymmetry, or structural discontinuity is visible.
+          5: The leg is connected but has an obvious anatomical inconsistency.
+          7: Anatomy is coherent with one local weakness.
+          9: The complete lower-leg structure is continuous, plausible, and fully integrated.
+        rubric: Judge whether bones, muscle mass, soft tissue, and contour flow form one plausible lower leg between fixed
+          knee and ankle joints. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_leg_axis_pose_alignment_consistency:
+        title: Leg axis, placement, and pose consistency
+        definition: 'Preserve each leg''s original axis, joint alignment, stance, crossing, bend, perspective, and position
+          in the image.
+
+          '
+        anchors:
+          0: Pose or leg alignment is substantially changed.
+          3: Clear bending, shifting, rotation, or perspective drift occurs.
+          5: Pose is mostly preserved but one alignment change is obvious.
+          7: Alignment is stable with a minor local drift.
+          9: Leg axes, placement, pose, and perspective are unchanged.
+        rubric: Preserve each leg's original axis, joint alignment, stance, crossing, bend, perspective, and position in the
+          image. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_clothing_occlusion_contour_integration:
+        title: Clothing and occlusion integration
+        definition: 'When calves are clothed or partly occluded, the new contour must respect fabric depth, seams, folds,
+          hems, footwear, crossed legs, and foreground objects without penetration or floating edges.
+
+          '
+        anchors:
+          0: Severe clothing breakage, penetration, or impossible occlusion occurs.
+          3: Major fabric or depth-order errors are visible.
+          5: The contour follows the body but has a clear clothing or occlusion defect.
+          7: Integration is convincing with one small local issue.
+          9: Clothing, objects, and depth ordering adapt naturally and consistently.
+        rubric: When calves are clothed or partly occluded, the new contour must respect fabric depth, seams, folds, hems,
+          footwear, crossed legs, and foreground objects without penetration or floating edges. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Body, Identity, and Scene Preservation:
+      female_calf_leg_length_body_height_preservation:
+        title: Leg length and body height preservation
+        definition: 'Preserve knee-to-ankle distance, total leg length, body height, and vertical body proportions. Calf slimming
+          must come from local width reduction only.
+
+          '
+        anchors:
+          0: Leg length or body height is substantially changed.
+          3: Clear vertical stretching, shortening, or rescaling is present.
+          5: Mostly preserved but a visible length or proportion shift remains.
+          7: Length and height are stable with a minor discrepancy.
+          9: Leg length, body height, and vertical proportions are unchanged.
+        rubric: Preserve knee-to-ankle distance, total leg length, body height, and vertical body proportions. Calf slimming
+          must come from local width reduction only. Apply this facet's 0-9 anchors directly. If a task-specific failure affects
+          this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      female_calf_non_target_body_region_preservation:
+        title: Non-target body-region preservation
+        definition: 'Preserve thighs, hips, waist, torso, arms, hands, feet, and all other non-calf body shapes. Evaluate
+          broad body drift rather than calf boundary precision already covered elsewhere.
+
+          '
+        anchors:
+          0: Multiple non-target body regions are substantially redesigned.
+          3: One major or several moderate body changes are visible.
+          5: Most regions are preserved but one clear non-target shape change remains.
+          7: Non-target body geometry is stable with a minor drift.
+          9: All assessable non-target body regions are unchanged.
+        rubric: Preserve thighs, hips, waist, torso, arms, hands, feet, and all other non-calf body shapes. Evaluate broad
+          body drift rather than calf boundary precision already covered elsewhere. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      female_calf_subject_identity_non_target_scene_preservation:
+        title: Subject identity and non-target scene preservation
+        definition: 'Preserve the same person, face, hair, skin tone, age impression, expression, and all scene content unrelated
+          to the calf edit.
+
+          '
+        anchors:
+          0: A different person or substantially different scene is produced.
+          3: Strong identity drift or major scene replacement is visible.
+          5: The same person is recognizable but has a clear non-target change.
+          7: Identity and scene are strongly preserved with a minor drift.
+          9: Subject identity and all assessable non-target scene content are unchanged.
+        rubric: Preserve the same person, face, hair, skin tone, age impression, expression, and all scene content unrelated
+          to the calf edit. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_calf_clothing_camera_composition_preservation:
+        title: Clothing, camera, and composition preservation
+        definition: 'Preserve clothing color, pattern, texture, seams, and folds except minimum local contour adaptation;
+          also preserve camera angle, crop, framing, aspect ratio, and image resolution.
+
+          '
+        anchors:
+          0: Clothing or camera composition is substantially changed.
+          3: Major clothing damage, crop change, or framing drift is visible.
+          5: Mostly preserved but one clear clothing or composition change remains.
+          7: Preservation is strong with a minor local discrepancy.
+          9: Clothing appearance, camera, composition, aspect ratio, and resolution are unchanged.
+        rubric: Preserve clothing color, pattern, texture, seams, and folds except minimum local contour adaptation; also
+          preserve camera angle, crop, framing, aspect ratio, and image resolution. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Calf Rendering and Artifact Control:
+      female_calf_surface_texture_realism:
+        title: Skin or fabric surface realism
+        definition: 'Preserve plausible skin pores, gradients, fabric weave, seams, and local detail across the edited calf
+          instead of smoothing, smearing, cloning, or generating plastic surfaces.
+
+          '
+        anchors:
+          0: Surface texture is destroyed or obviously synthetic.
+          3: Strong smearing, waxiness, cloning, or texture mismatch is visible.
+          5: Texture is partly convincing but has a clear artificial region.
+          7: Texture is realistic overall with one minor inconsistency.
+          9: Skin or fabric detail is fully natural and continuous.
+        rubric: Preserve plausible skin pores, gradients, fabric weave, seams, and local detail across the edited calf instead
+          of smoothing, smearing, cloning, or generating plastic surfaces. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      female_calf_lighting_shadow_consistency:
+        title: Lighting and shadow consistency
+        definition: 'Preserve source illumination, shading gradients, contact shadows, cast shadows, highlights, and white
+          balance after the contour change.
+
+          '
+        anchors:
+          0: Lighting or shadows are physically incompatible with the source.
+          3: Major missing, duplicated, or displaced shadows are visible.
+          5: Lighting is broadly consistent but one clear mismatch remains.
+          7: Shading and shadows are convincing with a minor issue.
+          9: Lighting, shading, highlights, and shadows are fully coherent.
+        rubric: Preserve source illumination, shading gradients, contact shadows, cast shadows, highlights, and white balance
+          after the contour change. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      female_calf_contour_edge_blending_quality:
+        title: Contour edge and blending quality
+        definition: 'Judge whether edited calf boundaries are clean, sharpness-matched, naturally antialiased, and blended
+          without halos, jagged edges, cutout appearance, blur bands, or abrupt texture transitions.
+
+          '
+        anchors:
+          0: Boundaries are severely broken or visibly pasted.
+          3: Strong halos, jagged edges, blur, or cutout artifacts are present.
+          5: The contour is usable but has a clear blending defect.
+          7: Edges are clean overall with one minor local artifact.
+          9: All edited boundaries are seamless and match the source image quality.
+        rubric: Judge whether edited calf boundaries are clean, sharpness-matched, naturally antialiased, and blended without
+          halos, jagged edges, cutout appearance, blur bands, or abrupt texture transitions. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      female_calf_artifact_background_stability:
+        title: Artifact and background stability
+        definition: 'Check for duplicated limbs, missing anatomy, warped floors or walls, bent objects, repeated patterns,
+          ghosting, holes, blur, oversharpening, and instability near either calf.
+
+          '
+        anchors:
+          0: Severe generation failure or major background deformation.
+          3: Multiple obvious artifacts or one major structural artifact.
+          5: One clear artifact remains but the image is usable.
+          7: Only a minor local artifact is visible.
+          9: No visible artifact, duplication, warping, or background instability.
+        rubric: Check for duplicated limbs, missing anatomy, warped floors or walls, bent objects, repeated patterns, ghosting,
+          holes, blur, oversharpening, and instability near either calf. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+prompt_applicability:
+  purpose: 'Keep the 22-score vector fixed while preventing invisible or unsupported calf attributes from contributing easy
+    scores.
+
+    '
+  always_applicable:
+  - female_calf_primary_slimming_outcome_match
+  - female_calf_slimming_magnitude_match
+  - female_calf_requested_details_completeness_match
+  activation_rules:
+    female_calf_requested_side_coverage_match:
+    - activate when two calves are independently visible or the prompt specifies a side
+    female_calf_widest_zone_reduction_match:
+    - activate when the broadest portion of at least one requested calf is visible
+    female_calf_longitudinal_taper_match:
+    - activate when a substantial knee-to-ankle calf segment is visible
+    female_calf_muscle_bulk_refinement_match:
+    - activate when skin shape or clothing contour reveals calf volume
+    female_calf_leg_proportion_harmony_match:
+    - activate when at least one neighboring knee, ankle, thigh, or foot is visible
+  parser_guidance:
+    slimming_terms:
+    - slim
+    - narrow
+    - reduce width
+    - reduce bulk
+    - reduce thickness
+    - reduce circumference appearance
+    - refine calf outline
+    - reduce outward contour
+    bilateral_terms:
+    - both calves
+    - both legs
+    - bilateral calf areas
+    - each calf
+    preservation_terms:
+    - keep unchanged
+    - preserve
+    - do not alter
+    - calf only
+    - excluding knees and ankles
+    - maintain leg length
+    - maintain body height
+    - retain original pose
+    - keep clothing texture consistent
+    wrong_direction_terms:
+    - add muscle fullness
+    - athletic bulk
+    - enlarge calves
+    - thicken calves
+    - increase calf volume
+  aggregation_rule: 'P = sum_i(base_weight_i * mask_i * normalized_score_i) / sum_i(base_weight_i * mask_i), over the 8 Prompt
+    Compliance facets.
+
+    '
+  fallback_rule: 'If no parser-produced mask is supplied, activate the three always-applicable facets and infer the remaining
+    facets from visible source evidence and explicit prompt wording. The mask never changes active_l3 or the required 22-score
+    output.
+
+    '

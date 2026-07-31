@@ -1,0 +1,711 @@
+task_key: localized_face_firming
+task_title: Localized Realistic Face Firming
+task_title_zh: 提拉紧致（面部真实紧致，不改脸型结构）
+version: v47_fixed_integer_22_l3_localized_face_firming_compact_failurefix_l3_pi_equal
+target_region: facial skin and soft-tissue regions that can show a realistic firming effect, using only minimal blending near
+  jawline-adjacent hair, ears, glasses, facial hair, clothing, and background boundaries
+target_action_summary: Add a realistic localized firming/tightening effect to facial soft tissue while preserving eye shape,
+  eyebrows, nose, lips, teeth, cheekbones, chin, jaw angles, ears, hair, clothing, background, colors, crop, identity, expression,
+  and camera state.
+judge_role: You are a strict expert evaluator specializing in subtle portrait face-firming retouching, skin/soft-tissue realism,
+  identity preservation, and boundary consistency. Judge actual realistic firming, not jaw slimming, V-line sculpting, chin
+  editing, skin beautification, or global filtering.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit first. Compare facial soft-tissue laxity/tightness, skin texture, cheeks, lower face, chin, jaw angles,
+  cheekbones, mouth, eyes, brows, nose, ears, hair, glasses, facial hair, clothing near the jawline, lighting, color, background,
+  crop, and identity.
+
+
+  2) Target definition. The requested edit is a realistic localized face-firming effect: facial soft tissue should look slightly
+  tighter/firmer and cleaner while source facial geometry is preserved. The prompt explicitly forbids changing eye shape,
+  brows, nose, lips, teeth, cheekbone position, chin, jaw angles, ears, hair, clothing, background objects, color, or crop.
+
+
+  3) Reject substitutes. Jaw-angle slimming, V-line sculpting, pointed-chin creation, face shrinking, head/crop/camera change,
+  skin whitening, heavy smoothing, younger-face beauty filtering, makeup change, or false shadow contouring is not successful
+  firming.
+
+
+  4) Primary failure gates. If no visible realistic firming is present, activate target_absent_or_too_weak. If the result
+  mainly changes face shape, chin, jaw angles, camera/crop, or identity, activate geometry_or_identity_changed. If the result
+  is mainly smoothing/whitening/beauty filtering/global color change, activate substitute_beauty_filter_or_global_retouch.
+  If hair/ears/glasses/facial hair/clothing/background boundaries near the face are damaged, activate boundary_occlusion_or_artifact_damage.
+
+
+  5) Failure propagation. Before outputting the final score_vector, detect failures in global_scoring_policy.failure_propagation,
+  estimate severity 0-5, apply cap_by_severity to every affected L3, and output adjusted scores.
+
+
+  6) Score calibration and anti-template. 9 is rare; 8 is near-perfect; 7 is strong with only a minor flaw; 6 has one clear
+  issue; 5 is partial; 4 is a major mismatch; 3 is weak; 2 is a small trace; 1 is negligible; 0 is absent/reversed/unusable.
+  Do not use 7 as default, and do not let preserved background or attractiveness lift a failed firming edit into high reward.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Exactly 22 L3 facets evaluate realistic face firming, source geometry preservation, localization, identity, and
+    rendering quality without rewarding jaw slimming or beauty-filter substitutes.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - Only YAML-level rubric guidance is used; L3 remains integer 0-9 with bottom-up aggregation.
+  - 'The rubric follows the current prompt: realistic face firming while explicitly preserving chin and jaw angles.'
+evaluation_notes:
+- The current task prompt asks for a realistic localized face-firming adjustment, not slim_jaw_corners.
+- Correct results should show visible but natural firming without changing jaw angles, chin, cheekbones, mouth, identity,
+  color, crop, or background.
+- Skin smoothing, whitening, younger-face filtering, V-line sculpting, or face-shape redesign are substitutes and should not
+  receive high Prompt Compliance.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. A 7 requires strong visible evidence after failure propagation;
+    8 requires near-exact source-preserving success; 9 is rare.
+  no_cross_compensation: Do not raise one facet because another is good. Clean skin, beauty, symmetry, or preserved background
+    cannot compensate for absent firming, jaw/chin geometry change, identity drift, or global filtering.
+  task_disambiguation_rule: Face firming means source-preserving soft-tissue tightening/cleaner firmness. It is not jaw-angle
+    reduction, V-line sculpting, chin reshaping, face shrinking, skin whitening, heavy smoothing, or crop/camera substitution.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited result as the same individual. Firming may subtly improve skin/soft-tissue tautness,
+    but facial geometry, landmarks, expression, age impression, skin tone, and same-person impression must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the result is attractive, smoother, younger,
+    or more symmetrical.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Include detected failure names and severity
+      in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: The face does not show a clear realistic firming/tightening effect, or the change is only negligible
+          relative to the source.
+        severity_guidance: Tiny but real source-preserving firming may be severity 1. Clear but weak or incomplete firming
+          may be severity 2. Mostly unchanged facial soft tissue must be severity 3. Absent, reversed, or unusable firming
+          must be severity 4-5.
+        affected_l3:
+        - requested_face_firming_operation_match
+        - requested_visible_firming_magnitude_match
+        - requested_laxity_tightness_improvement_match
+        - requested_target_face_region_coverage_match
+        - requested_skin_tension_without_smoothing_match
+        - requested_natural_firming_finish_match
+        - requested_no_chin_jaw_angle_geometry_change_match
+        - requested_firming_visibility_finish_match
+        - face_firming_edit_localized_to_face_soft_tissue
+        - face_firming_anatomical_soft_tissue_consistency
+        - face_firming_artifact_sharpness_no_warp_mask
+      geometry_or_identity_changed:
+        detect_when: Chin, jaw angles, cheekbones, mouth, nose, eyes, head shape, pose, camera/crop, or same-person identity
+          changes instead of only soft-tissue firmness.
+        severity_guidance: Minor local contour drift may be severity 1-2. Clear chin/jaw/feature geometry change must be severity
+          3. Identity, camera/crop, or broad face-shape replacement must be severity 4-5.
+        affected_l3:
+        - requested_face_firming_operation_match
+        - requested_no_chin_jaw_angle_geometry_change_match
+        - requested_cheekbone_mouth_feature_preservation_match
+        - requested_pose_aware_firming_balance_match
+        - unrequested_face_body_scene_preserved
+        - face_firming_anatomical_soft_tissue_consistency
+        - face_firming_pose_perspective_depth_consistent
+        - face_firming_identity_landmark_consistency
+        - face_firming_expression_gaze_scene_preserved
+        - face_firming_artifact_sharpness_no_warp_mask
+      substitute_beauty_filter_or_global_retouch:
+        detect_when: The visible improvement is mainly skin smoothing, whitening, pore removal, younger-face filtering, makeup/beauty
+          retouch, global color/exposure change, or false shadow contouring rather than realistic firming.
+        severity_guidance: Mild incidental smoothing with real firming may be severity 1-2. If beauty filtering/global retouch
+          is the main visible effect, severity must be 3-4. If it changes identity, age, or source color state, severity must
+          be 4-5.
+        affected_l3:
+        - requested_face_firming_operation_match
+        - requested_visible_firming_magnitude_match
+        - requested_skin_tension_without_smoothing_match
+        - requested_natural_firming_finish_match
+        - requested_firming_visibility_finish_match
+        - unrequested_face_body_scene_preserved
+        - face_firming_identity_landmark_consistency
+        - face_firming_skin_microtexture_realistic
+        - face_firming_lighting_shadow_color_integration
+        - face_firming_artifact_sharpness_no_warp_mask
+      boundary_occlusion_or_artifact_damage:
+        detect_when: Hair, ears, glasses, facial hair, clothing near the jawline, background boundaries, skin edges, shadows,
+          or local texture are warped, stretched, masked, haloed, blurred, duplicated, or visibly reconstructed.
+        severity_guidance: Small local seam may be severity 1. Clear boundary/occlusion damage should be severity 2-3. Strong
+          warping, broken accessories/clothing/hair, or unusable reconstruction must be severity 4-5.
+        affected_l3:
+        - requested_near_jawline_boundary_preservation_match
+        - face_firming_hair_ear_glasses_clothing_occlusion_consistent
+        - face_firming_boundary_background_reconstruction_consistent
+        - face_firming_artifact_sharpness_no_warp_mask
+        - face_firming_lighting_shadow_color_integration
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Avoid many-1s/many-9s
+    split unless visual evidence truly supports both extremes.
+  no_high_score_example_rule: Do not use positive examples or high-score templates. Scores 8-9 are allowed only when the exact
+    L3 has concrete visible evidence and no applicable failure cap.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first.
+  success_gate_definition: A positive sample shows visible, realistic facial firming while preserving source facial geometry,
+    chin, jaw angles, identity, expression, skin texture, lighting, color, crop, clothing, and background.
+  success_gate_conditions:
+  - Facial soft tissue looks visibly firmer/tighter at normal viewing size.
+  - The effect is localized and realistic, not heavy smoothing, whitening, makeup, younger-face filtering, or global relighting.
+  - Chin, jaw angles, cheekbones, mouth, eyes, brows, nose, ears, head pose, camera/crop, and identity remain source-consistent.
+  - Hair, glasses, facial hair, clothing near the jawline, background boundaries, shadows, and occlusion remain coherent.
+  - No detected failure has severity 2 or higher; at most tiny local imperfections remain.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When realistic firming is absent or mainly a substitute operation, do not automatically
+    assign 8-9 to all preservation or quality facets. Unchanged non-target regions may deserve moderate-to-good preservation
+    scores, but a failed edit should not become high reward through unrelated 9s.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_face_firming_operation_match
+- requested_visible_firming_magnitude_match
+- requested_laxity_tightness_improvement_match
+- requested_target_face_region_coverage_match
+- requested_skin_tension_without_smoothing_match
+- requested_natural_firming_finish_match
+- requested_no_chin_jaw_angle_geometry_change_match
+- requested_cheekbone_mouth_feature_preservation_match
+- requested_pose_aware_firming_balance_match
+- requested_near_jawline_boundary_preservation_match
+- requested_firming_visibility_finish_match
+- unrequested_face_body_scene_preserved
+- face_firming_edit_localized_to_face_soft_tissue
+- face_firming_anatomical_soft_tissue_consistency
+- face_firming_hair_ear_glasses_clothing_occlusion_consistent
+- face_firming_pose_perspective_depth_consistent
+- face_firming_identity_landmark_consistency
+- face_firming_expression_gaze_scene_preserved
+- face_firming_skin_microtexture_realistic
+- face_firming_lighting_shadow_color_integration
+- face_firming_boundary_background_reconstruction_consistent
+- face_firming_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_face_firming_operation_match: 0.14
+    requested_visible_firming_magnitude_match: 0.09
+    requested_laxity_tightness_improvement_match: 0.1
+    requested_target_face_region_coverage_match: 0.08
+    requested_skin_tension_without_smoothing_match: 0.09
+    requested_natural_firming_finish_match: 0.08
+    requested_no_chin_jaw_angle_geometry_change_match: 0.1
+    requested_cheekbone_mouth_feature_preservation_match: 0.07
+    requested_pose_aware_firming_balance_match: 0.05
+    requested_near_jawline_boundary_preservation_match: 0.05
+    requested_firming_visibility_finish_match: 0.08
+    unrequested_face_body_scene_preserved: 0.07
+  Localization and Anatomical Integration:
+    face_firming_edit_localized_to_face_soft_tissue: 0.28
+    face_firming_anatomical_soft_tissue_consistency: 0.28
+    face_firming_hair_ear_glasses_clothing_occlusion_consistent: 0.24
+    face_firming_pose_perspective_depth_consistent: 0.2
+  Subject Preservation:
+    face_firming_identity_landmark_consistency: 0.75
+    face_firming_expression_gaze_scene_preserved: 0.25
+  Task Realism and Image Quality:
+    face_firming_skin_microtexture_realistic: 0.3
+    face_firming_lighting_shadow_color_integration: 0.25
+    face_firming_boundary_background_reconstruction_consistent: 0.22
+    face_firming_artifact_sharpness_no_warp_mask: 0.23
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Face-Firming Operation:
+      requested_face_firming_operation_match:
+        title: Requested realistic face-firming operation match
+        definition: Judge whether the edited image genuinely adds a realistic face-firming/tightening effect, not jaw slimming,
+          V-line sculpting, chin reshaping, smoothing, or global filtering.
+        anchors:
+          0: face-firming operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct face-firming operation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: face-firming operation is weakly attempted and major visible errors remain.
+          4: face-firming operation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: face-firming operation is partially correct, with several substantial issues.
+          6: face-firming operation is mostly correct, but one clear issue remains.
+          7: face-firming operation is strong, with only a minor visible mismatch.
+          8: face-firming operation is highly accurate, with only a tiny imperfection.
+          9: The face shows a precise realistic firming effect with no substitute operation.
+        rubric: Judge whether the edited image genuinely adds a realistic face-firming/tightening effect, not jaw slimming,
+          V-line sculpting, chin reshaping, smoothing, or global filtering. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      requested_visible_firming_magnitude_match:
+        title: Requested visible firming magnitude match
+        definition: Judge whether the firming is visible at normal portrait size but restrained enough to remain believable
+          and source-preserving.
+        anchors:
+          0: firming magnitude is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct firming magnitude is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: firming magnitude is weakly attempted and major visible errors remain.
+          4: firming magnitude is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: firming magnitude is partially correct, with several substantial issues.
+          6: firming magnitude is mostly correct, but one clear issue remains.
+          7: firming magnitude is strong, with only a minor visible mismatch.
+          8: firming magnitude is highly accurate, with only a tiny imperfection.
+          9: Firming strength is clearly visible, natural, and exactly appropriate.
+        rubric: Judge whether the firming is visible at normal portrait size but restrained enough to remain believable and
+          source-preserving. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_laxity_tightness_improvement_match:
+        title: Requested laxity and tightness improvement match
+        definition: Judge whether facial soft tissue appears cleaner, less lax, and subtly tighter without changing bone structure
+          or expression.
+        anchors:
+          0: laxity/tightness improvement is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct laxity/tightness improvement is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: laxity/tightness improvement is weakly attempted and major visible errors remain.
+          4: laxity/tightness improvement is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: laxity/tightness improvement is partially correct, with several substantial issues.
+          6: laxity/tightness improvement is mostly correct, but one clear issue remains.
+          7: laxity/tightness improvement is strong, with only a minor visible mismatch.
+          8: laxity/tightness improvement is highly accurate, with only a tiny imperfection.
+          9: Soft-tissue firmness is naturally improved without structural redesign.
+        rubric: Judge whether facial soft tissue appears cleaner, less lax, and subtly tighter without changing bone structure
+          or expression. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_target_face_region_coverage_match:
+        title: Requested target face-region coverage match
+        definition: Judge whether all assessable facial areas needing firming receive coherent treatment without missing obvious
+          regions or editing unrelated regions.
+        anchors:
+          0: target coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct target coverage is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: target coverage is weakly attempted and major visible errors remain.
+          4: target coverage is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: target coverage is partially correct, with several substantial issues.
+          6: target coverage is mostly correct, but one clear issue remains.
+          7: target coverage is strong, with only a minor visible mismatch.
+          8: target coverage is highly accurate, with only a tiny imperfection.
+          9: All assessable face-firming regions are treated coherently and locally.
+        rubric: Judge whether all assessable facial areas needing firming receive coherent treatment without missing obvious
+          regions or editing unrelated regions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects
+          this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      requested_skin_tension_without_smoothing_match:
+        title: Requested skin tension without smoothing match
+        definition: Judge whether skin tension improves while preserving pores, wrinkles, texture, makeup, facial hair, and
+          source-level detail.
+        anchors:
+          0: skin tension without smoothing is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct skin tension without smoothing is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: skin tension without smoothing is weakly attempted and major visible errors remain.
+          4: skin tension without smoothing is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: skin tension without smoothing is partially correct, with several substantial issues.
+          6: skin tension without smoothing is mostly correct, but one clear issue remains.
+          7: skin tension without smoothing is strong, with only a minor visible mismatch.
+          8: skin tension without smoothing is highly accurate, with only a tiny imperfection.
+          9: Skin looks firmer while texture and source detail are fully preserved.
+        rubric: Judge whether skin tension improves while preserving pores, wrinkles, texture, makeup, facial hair, and source-level
+          detail. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_natural_firming_finish_match:
+        title: Requested natural firming finish match
+        definition: Judge whether the result looks like realistic portrait retouching rather than surgery, beauty filter,
+          waxy smoothing, or false contour shadow.
+        anchors:
+          0: natural firming finish is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct natural firming finish is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: natural firming finish is weakly attempted and major visible errors remain.
+          4: natural firming finish is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: natural firming finish is partially correct, with several substantial issues.
+          6: natural firming finish is mostly correct, but one clear issue remains.
+          7: natural firming finish is strong, with only a minor visible mismatch.
+          8: natural firming finish is highly accurate, with only a tiny imperfection.
+          9: Firming is natural, photorealistic, and not filter-like.
+        rubric: Judge whether the result looks like realistic portrait retouching rather than surgery, beauty filter, waxy
+          smoothing, or false contour shadow. Apply this facet's 0-9 anchors directly. If a task-specific failure affects
+          this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+    Source Geometry, Boundaries, and Finish:
+      requested_no_chin_jaw_angle_geometry_change_match:
+        title: Requested no chin or jaw-angle geometry change match
+        definition: Preserve chin length, projection, centerline, jaw angles, jaw width, cheekbones, mouth position, and source
+          facial structure. The prompt explicitly forbids these geometry changes.
+        anchors:
+          0: chin/jaw geometry preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct chin/jaw geometry preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: chin/jaw geometry preservation is weakly attempted and major visible errors remain.
+          4: chin/jaw geometry preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: chin/jaw geometry preservation is partially correct, with several substantial issues.
+          6: chin/jaw geometry preservation is mostly correct, but one clear issue remains.
+          7: chin/jaw geometry preservation is strong, with only a minor visible mismatch.
+          8: chin/jaw geometry preservation is highly accurate, with only a tiny imperfection.
+          9: Chin, jaw angles, jaw width, and facial geometry remain source-identical.
+        rubric: Preserve chin length, projection, centerline, jaw angles, jaw width, cheekbones, mouth position, and source
+          facial structure. The prompt explicitly forbids these geometry changes. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_cheekbone_mouth_feature_preservation_match:
+        title: Requested cheekbone, mouth, and feature preservation match
+        definition: Preserve cheekbone position, mouth/lip/teeth shape, eye shape, brows, nose, ears, and internal facial
+          landmarks.
+        anchors:
+          0: facial feature preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct facial feature preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: facial feature preservation is weakly attempted and major visible errors remain.
+          4: facial feature preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: facial feature preservation is partially correct, with several substantial issues.
+          6: facial feature preservation is mostly correct, but one clear issue remains.
+          7: facial feature preservation is strong, with only a minor visible mismatch.
+          8: facial feature preservation is highly accurate, with only a tiny imperfection.
+          9: All non-target facial features remain source-identical.
+        rubric: Preserve cheekbone position, mouth/lip/teeth shape, eye shape, brows, nose, ears, and internal facial landmarks.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_pose_aware_firming_balance_match:
+        title: Requested pose-aware firming balance match
+        definition: Judge firming balance according to head pose, expression, lighting, lens perspective, and source asymmetry
+          rather than raw symmetry.
+        anchors:
+          0: pose-aware firming balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct pose-aware firming balance is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: pose-aware firming balance is weakly attempted and major visible errors remain.
+          4: pose-aware firming balance is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: pose-aware firming balance is partially correct, with several substantial issues.
+          6: pose-aware firming balance is mostly correct, but one clear issue remains.
+          7: pose-aware firming balance is strong, with only a minor visible mismatch.
+          8: pose-aware firming balance is highly accurate, with only a tiny imperfection.
+          9: Firming is balanced with source pose and natural asymmetry.
+        rubric: Judge firming balance according to head pose, expression, lighting, lens perspective, and source asymmetry
+          rather than raw symmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      requested_near_jawline_boundary_preservation_match:
+        title: Requested near-jawline boundary preservation match
+        definition: Preserve hair, ears, glasses, facial hair, clothing near the jawline, and their boundaries/occlusions
+          while applying firming.
+        anchors:
+          0: near-jawline boundary preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct near-jawline boundary preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: near-jawline boundary preservation is weakly attempted and major visible errors remain.
+          4: near-jawline boundary preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: near-jawline boundary preservation is partially correct, with several substantial issues.
+          6: near-jawline boundary preservation is mostly correct, but one clear issue remains.
+          7: near-jawline boundary preservation is strong, with only a minor visible mismatch.
+          8: near-jawline boundary preservation is highly accurate, with only a tiny imperfection.
+          9: All nearby boundaries and occlusions remain coherent and source-consistent.
+        rubric: Preserve hair, ears, glasses, facial hair, clothing near the jawline, and their boundaries/occlusions while
+          applying firming. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_firming_visibility_finish_match:
+        title: Requested firming visibility and finish match
+        definition: Judge whether the firming improvement is easy to perceive at normal size and finished cleanly without
+          looking artificial.
+        anchors:
+          0: firming visibility and finish is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct firming visibility and finish is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: firming visibility and finish is weakly attempted and major visible errors remain.
+          4: firming visibility and finish is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: firming visibility and finish is partially correct, with several substantial issues.
+          6: firming visibility and finish is mostly correct, but one clear issue remains.
+          7: firming visibility and finish is strong, with only a minor visible mismatch.
+          8: firming visibility and finish is highly accurate, with only a tiny imperfection.
+          9: The firming is clearly visible, cleanly finished, and source-realistic.
+        rubric: Judge whether the firming improvement is easy to perceive at normal size and finished cleanly without looking
+          artificial. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      unrequested_face_body_scene_preserved:
+        title: Unrequested face, body, and scene preserved
+        definition: Preserve hair, clothing, body, background objects, color, crop, camera view, lighting, and all unrelated
+          regions.
+        anchors:
+          0: non-target preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct non-target preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: non-target preservation is weakly attempted and major visible errors remain.
+          4: non-target preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: non-target preservation is partially correct, with several substantial issues.
+          6: non-target preservation is mostly correct, but one clear issue remains.
+          7: non-target preservation is strong, with only a minor visible mismatch.
+          8: non-target preservation is highly accurate, with only a tiny imperfection.
+          9: All unrelated face, body, and scene properties remain source-consistent.
+        rubric: Preserve hair, clothing, body, background objects, color, crop, camera view, lighting, and all unrelated regions.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Face-Firming Placement and Anatomy:
+      face_firming_edit_localized_to_face_soft_tissue:
+        title: Face-firming edit localized to face soft tissue
+        definition: Keep changes within facial soft-tissue firming zones and minimal blending areas; avoid jaw/chin geometry,
+          hair, clothing, background, and crop changes.
+        anchors:
+          0: localization to soft tissue is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct localization to soft tissue is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: localization to soft tissue is weakly attempted and major visible errors remain.
+          4: localization to soft tissue is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: localization to soft tissue is partially correct, with several substantial issues.
+          6: localization to soft tissue is mostly correct, but one clear issue remains.
+          7: localization to soft tissue is strong, with only a minor visible mismatch.
+          8: localization to soft tissue is highly accurate, with only a tiny imperfection.
+          9: The edit is precisely localized to face soft tissue and minimal blending zones.
+        rubric: Keep changes within facial soft-tissue firming zones and minimal blending areas; avoid jaw/chin geometry,
+          hair, clothing, background, and crop changes. Apply this facet's 0-9 anchors directly. If a task-specific failure
+          affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      face_firming_anatomical_soft_tissue_consistency:
+        title: Face-firming anatomical soft-tissue consistency
+        definition: Judge whether skin tension, cheek/lower-face transitions, facial volume, shadows, and soft-tissue flow
+          remain anatomically plausible.
+        anchors:
+          0: soft-tissue anatomical consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct soft-tissue anatomical consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: soft-tissue anatomical consistency is weakly attempted and major visible errors remain.
+          4: soft-tissue anatomical consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: soft-tissue anatomical consistency is partially correct, with several substantial issues.
+          6: soft-tissue anatomical consistency is mostly correct, but one clear issue remains.
+          7: soft-tissue anatomical consistency is strong, with only a minor visible mismatch.
+          8: soft-tissue anatomical consistency is highly accurate, with only a tiny imperfection.
+          9: Soft-tissue flow is anatomically coherent and natural.
+        rubric: Judge whether skin tension, cheek/lower-face transitions, facial volume, shadows, and soft-tissue flow remain
+          anatomically plausible. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      face_firming_hair_ear_glasses_clothing_occlusion_consistent:
+        title: Hair, ear, glasses, clothing occlusion consistency
+        definition: Judge hair, ears, glasses, facial hair, collars, accessories, and clothing near the face for correct attachment,
+          layering, and reconstruction.
+        anchors:
+          0: occlusion consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct occlusion consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: occlusion consistency is weakly attempted and major visible errors remain.
+          4: occlusion consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: occlusion consistency is partially correct, with several substantial issues.
+          6: occlusion consistency is mostly correct, but one clear issue remains.
+          7: occlusion consistency is strong, with only a minor visible mismatch.
+          8: occlusion consistency is highly accurate, with only a tiny imperfection.
+          9: All nearby occlusions and attachments are physically coherent.
+        rubric: Judge hair, ears, glasses, facial hair, collars, accessories, and clothing near the face for correct attachment,
+          layering, and reconstruction. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      face_firming_pose_perspective_depth_consistent:
+        title: Pose, perspective, and depth consistency
+        definition: Judge head rotation, camera angle, lens perspective, facial depth, and source-supported asymmetry after
+          firming.
+        anchors:
+          0: pose and perspective consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct pose and perspective consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: pose and perspective consistency is weakly attempted and major visible errors remain.
+          4: pose and perspective consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: pose and perspective consistency is partially correct, with several substantial issues.
+          6: pose and perspective consistency is mostly correct, but one clear issue remains.
+          7: pose and perspective consistency is strong, with only a minor visible mismatch.
+          8: pose and perspective consistency is highly accurate, with only a tiny imperfection.
+          9: Pose, perspective, and depth remain fully source-consistent.
+        rubric: Judge head rotation, camera angle, lens perspective, facial depth, and source-supported asymmetry after firming.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      face_firming_identity_landmark_consistency:
+        title: Identity and landmark consistency
+        definition: Compare source and result as the same individual, not a prettier similar person. Judge landmarks, face
+          shape, age impression, expression, skin tone, and same-person impression.
+        anchors:
+          0: identity preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct identity preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: identity preservation is weakly attempted and major visible errors remain.
+          4: identity preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: identity preservation is partially correct, with several substantial issues.
+          6: identity preservation is mostly correct, but one clear issue remains.
+          7: identity preservation is strong, with only a minor visible mismatch.
+          8: identity preservation is highly accurate, with only a tiny imperfection.
+          9: The subject remains exactly the same person with source landmarks preserved.
+        rubric: Compare source and result as the same individual, not a prettier similar person. Judge landmarks, face shape,
+          age impression, expression, skin tone, and same-person impression. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      face_firming_expression_gaze_scene_preserved:
+        title: Expression, gaze, and scene state preserved
+        definition: Preserve expression, gaze, mouth state, facial feature state, clothing, background, lighting, color, crop,
+          and camera state.
+        anchors:
+          0: expression and scene preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct expression and scene preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: expression and scene preservation is weakly attempted and major visible errors remain.
+          4: expression and scene preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: expression and scene preservation is partially correct, with several substantial issues.
+          6: expression and scene preservation is mostly correct, but one clear issue remains.
+          7: expression and scene preservation is strong, with only a minor visible mismatch.
+          8: expression and scene preservation is highly accurate, with only a tiny imperfection.
+          9: Expression, gaze, and global scene state remain source-identical.
+        rubric: Preserve expression, gaze, mouth state, facial feature state, clothing, background, lighting, color, crop,
+          and camera state. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply
+          failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Face-Firming Rendering Quality:
+      face_firming_skin_microtexture_realistic:
+        title: Skin microtexture realism
+        definition: Judge pores, fine lines, makeup, facial hair, skin grain, focus, and source-level sharpness after firming.
+        anchors:
+          0: skin microtexture realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct skin microtexture realism is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: skin microtexture realism is weakly attempted and major visible errors remain.
+          4: skin microtexture realism is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: skin microtexture realism is partially correct, with several substantial issues.
+          6: skin microtexture realism is mostly correct, but one clear issue remains.
+          7: skin microtexture realism is strong, with only a minor visible mismatch.
+          8: skin microtexture realism is highly accurate, with only a tiny imperfection.
+          9: Skin texture is realistic, source-sharp, and not smoothed away.
+        rubric: Judge pores, fine lines, makeup, facial hair, skin grain, focus, and source-level sharpness after firming.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      face_firming_lighting_shadow_color_integration:
+        title: Lighting, shadow, and color integration
+        definition: Judge facial shadows, skin tone, white balance, highlights, and local/global illumination without false
+          contour painting or relighting.
+        anchors:
+          0: lighting/color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct lighting/color integration is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: lighting/color integration is weakly attempted and major visible errors remain.
+          4: lighting/color integration is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: lighting/color integration is partially correct, with several substantial issues.
+          6: lighting/color integration is mostly correct, but one clear issue remains.
+          7: lighting/color integration is strong, with only a minor visible mismatch.
+          8: lighting/color integration is highly accurate, with only a tiny imperfection.
+          9: Lighting, shadows, and color remain physically integrated and source-consistent.
+        rubric: Judge facial shadows, skin tone, white balance, highlights, and local/global illumination without false contour
+          painting or relighting. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      face_firming_boundary_background_reconstruction_consistent:
+        title: Boundary and background reconstruction consistency
+        definition: Judge skin, hair, ear, glasses, clothing, and background boundaries for clean but natural physical relationships
+          after local retouching.
+        anchors:
+          0: boundary/background consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct boundary/background consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: boundary/background consistency is weakly attempted and major visible errors remain.
+          4: boundary/background consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: boundary/background consistency is partially correct, with several substantial issues.
+          6: boundary/background consistency is mostly correct, but one clear issue remains.
+          7: boundary/background consistency is strong, with only a minor visible mismatch.
+          8: boundary/background consistency is highly accurate, with only a tiny imperfection.
+          9: All boundaries and background relationships are seamless and natural.
+        rubric: Judge skin, hair, ear, glasses, clothing, and background boundaries for clean but natural physical relationships
+          after local retouching. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      face_firming_artifact_sharpness_no_warp_mask:
+        title: Artifact, sharpness, no-warp, no-mask quality
+        definition: Judge halos, jagged edges, blur, over-sharpening, clone patterns, liquify waves, warped features, mask
+          seams, and source-resolution consistency.
+        anchors:
+          0: artifact-free quality is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct artifact-free quality is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: artifact-free quality is weakly attempted and major visible errors remain.
+          4: artifact-free quality is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: artifact-free quality is partially correct, with several substantial issues.
+          6: artifact-free quality is mostly correct, but one clear issue remains.
+          7: artifact-free quality is strong, with only a minor visible mismatch.
+          8: artifact-free quality is highly accurate, with only a tiny imperfection.
+          9: The image is source-sharp, seamless, and free of warping, masking, blur, or artifacts.
+        rubric: Judge halos, jagged edges, blur, over-sharpening, clone patterns, liquify waves, warped features, mask seams,
+          and source-resolution consistency. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.

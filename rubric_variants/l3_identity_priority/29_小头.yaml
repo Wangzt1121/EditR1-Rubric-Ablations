@@ -1,0 +1,880 @@
+task_key: direction_aware_head_size_adjustment
+task_title: Direction-Aware Head Size Adjustment
+task_title_zh: 小头（头部尺寸调整）
+version: v48_fixed_integer_22_l3_direction_aware_head_size_adjustment_successgate_hybrid_compact_deep_review_compact_l3_identity_priority
+target_region: the complete visible head unit, including face, skull contour, ears, hair, hairstyle silhouette, and the minimum
+  hair-background and head-neck blending zones required for coherent scaling
+target_action_summary: Scale the complete head unit smaller or larger according to the current prompt while preserving head
+  shape, facial identity, internal feature geometry, expression, head pose, neck, shoulders, body proportions, clothing, camera
+  state, lighting, composition, and background.
+judge_role: You are a strict expert evaluator for direction-aware complete-head size adjustment, head-body proportion, identity
+  preservation, and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare complete head unit size, face/cranium/ears/hair silhouette, head shape, internal facial geometry,
+  head-to-body proportion, neck attachment, shoulders/body, clothing, expression, pose, background, lighting, crop, camera
+  perspective, and source identity.
+
+
+  2) Task target. Follow the prompt direction: reduce or enlarge the complete visible head unit, not just face/jaw/hair, while
+  preserving head shape, internal feature geometry, expression, identity, neck/body relation, camera state, lighting, composition,
+  and background. For the common 小头 case, the head should become smaller relative to the unchanged body.
+
+
+  3) Task-specific failures. Treat absent/wrong-direction scaling, incomplete head-unit scaling, whole-image/body/crop substitute,
+  broken head-neck/background reconstruction, identity/internal-feature drift, and unrealistic over-scaling as failures. Before
+  returning scores, apply global_scoring_policy.failure_propagation: detect each failure, estimate severity 0-5, cap affected
+  L3 with cap_by_severity, then output the adjusted vector.
+
+
+  4) Calibration. 9 is rare. 7 requires prompt-direction evidence. If the head-size direction is wrong or absent, natural
+  face quality or unchanged identity must not lift edit-dependent facets into the successful range.
+
+
+  Task-specific focus: complete head-unit scale adjustment. Do not reward whole-image resize, body scaling, crop/camera substitute,
+  face-only scaling, floating head, or cartoon proportion as head-size success.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Direction, complete-head scaling, internal geometry, head-body proportion,
+    anatomical attachment, identity, and rendering are separated without repeatedly scoring the same preservation property.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use YAML failure_propagation severity caps as the rubric-level instruction; do not rely on external metrics, rank bonuses,
+    or hidden program-side deductions.
+  - Head reduction and enlargement use the same fixed L3 set; direction is resolved from the current prompt.
+  - Complete-head scaling, head shape, internal facial geometry, and head-to-body proportion are judged separately.
+  - Clothing, background, camera state, and easy preservation checks are merged rather than expanded into many L3 facets.
+  - Male or female identity is judged source-to-result; the rubric does not impose one ideal head-to-body ratio.
+  - Subject Preservation contributes 44% of the final reward and cannot be compensated by a successful size edit.
+  - Public floating-point values use at most three decimal places.
+evaluation_notes:
+- 'The uploaded training file contains 900 prompts: 740 request reducing overall head size and 160 request increasing overall
+  head size. Always follow the current prompt direction.'
+- The complete head unit includes the face, cranium, ears, hair, and hairstyle silhouette. Resizing only the face, jaw, forehead,
+  or hair is not sufficient.
+- Uniform scaling means head width and height change coherently while the source head shape, facial-feature ratios, and hairstyle
+  design remain stable.
+- The head may require a minimal positional adjustment to remain naturally attached to the unchanged neck, but arbitrary translation,
+  changed pose, or altered head-neck relationship is incorrect.
+- For head reduction, the previously occupied background must be reconstructed without cloning, halos, or repeated texture.
+  For enlargement, newly occluded background and nearby boundaries must remain plausible.
+- Do not reward apparent small-head proportions caused by enlarging shoulders or body, widening the frame, zooming out, changing
+  the crop, or moving the subject farther from the camera.
+- Do not force a universal beauty ratio. Judge whether the requested size direction is visible, coherent, and source-appropriate
+  while preserving the same person and body.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by visual evidence, then apply task-specific failure_propagation
+    caps before returning the final score_vector.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is good. A natural face cannot compensate for the
+    wrong head-size direction, and correct scaling cannot compensate for identity, body, camera, or background drift.
+  head_scale_disambiguation_rule: Correct head-size editing uniformly scales the complete head unit. Face slimming, feature
+    resizing, hair-only scaling, body enlargement, camera zoom, crop change, and subject-distance change are different operations.
+  direction_rule: Determine reduction or enlargement only from the current prompt. Never assume reduction because the task
+    title is 小头.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited face as the same individual after global head scaling. Absolute pixel size may change,
+    but normalized facial landmark geometry, characteristic asymmetry, age impression, skin tone, and identity must remain
+    stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because target compliance, realism, clothing preservation,
+    or background preservation is strong.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence
+      score. Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: The complete head unit does not visibly change size, changes too weakly, or changes opposite to the prompt
+          direction; for 小头/reduce prompts the head is not smaller relative to the body.
+        severity_guidance: Tiny but correct complete-head scale change may be severity 1. Correct but weak/partial change
+          should be severity 2. Mostly unchanged head size must be severity 3. Wrong direction, absent target, or no smaller
+          head for 小头 prompts must be severity 4-5.
+        affected_l3:
+        - requested_head_size_adjustment_operation_match
+        - requested_head_scale_direction_match
+        - requested_head_scale_magnitude_match
+        - requested_complete_head_unit_coverage_match
+        - requested_uniform_isotropic_head_scaling_match
+        - requested_head_to_body_proportion_match
+        - requested_head_size_visibility_finish_match
+        - head_scale_edit_localized_to_head_and_blending_zone
+        - requested_head_shape_aspect_ratio_match
+        - requested_internal_facial_geometry_preservation_match
+        - requested_head_placement_neck_anchor_match
+        - requested_hair_ear_head_unit_consistency_match
+        - unrequested_body_camera_crop_properties_preserved
+        - head_scale_head_neck_attachment_anatomically_coherent
+        - head_scale_identity_landmark_consistency
+        - head_scale_expression_body_scene_global_state_preserved
+        - head_scale_artifact_sharpness_no_warp_mask
+      incomplete_head_unit_or_face_only_scaling:
+        detect_when: Only the face, jaw, forehead, cranium, hair, or ears are resized while the complete head unit is not
+          scaled together; internal features are compressed instead of the head unit scaling uniformly.
+        severity_guidance: Clear incomplete head-unit scaling must be at least severity 2. Face-only/hair-only/jaw-only scaling
+          or internal feature compression must be severity 3-5.
+        affected_l3:
+        - requested_head_size_adjustment_operation_match
+        - requested_complete_head_unit_coverage_match
+        - requested_uniform_isotropic_head_scaling_match
+        - requested_head_shape_aspect_ratio_match
+        - requested_internal_facial_geometry_preservation_match
+        - requested_hair_ear_head_unit_consistency_match
+        - head_scale_edit_localized_to_head_and_blending_zone
+        - head_scale_hair_ear_background_occlusion_consistent
+        - head_scale_identity_landmark_consistency
+        - head_scale_artifact_sharpness_no_warp_mask
+      global_image_resize_body_scale_crop_or_perspective_substitute:
+        detect_when: The apparent head-size change comes from whole-image resizing, body/shoulder scaling, crop/framing/camera
+          change, perspective change, or moving the person rather than changing head-to-body proportion.
+        severity_guidance: Minor framing drift with real head scaling may be severity 1-2. If crop/camera/body/global scaling
+          is the main source of apparent change, severity 3-4. If it replaces the target or changes scene/body scale substantially,
+          severity 4-5.
+        affected_l3:
+        - requested_head_size_adjustment_operation_match
+        - requested_head_scale_direction_match
+        - requested_head_to_body_proportion_match
+        - requested_head_placement_neck_anchor_match
+        - unrequested_body_camera_crop_properties_preserved
+        - head_scale_edit_localized_to_head_and_blending_zone
+        - head_scale_pose_perspective_depth_consistent
+        - head_scale_expression_body_scene_global_state_preserved
+        - head_scale_lighting_shadow_color_integration
+        - head_scale_boundary_contact_reconstruction_consistent
+        - requested_head_scale_magnitude_match
+        - requested_complete_head_unit_coverage_match
+        - requested_uniform_isotropic_head_scaling_match
+        - requested_head_shape_aspect_ratio_match
+        - requested_internal_facial_geometry_preservation_match
+        - requested_hair_ear_head_unit_consistency_match
+        - head_scale_head_neck_attachment_anatomically_coherent
+        - head_scale_identity_landmark_consistency
+        - head_scale_artifact_sharpness_no_warp_mask
+      head_neck_attachment_or_background_reconstruction_broken:
+        detect_when: Head-neck attachment, hair/ear/background occlusion, shoulders, contact shadows, reconstructed background,
+          or head boundary becomes warped, haloed, duplicated, cut, floating, or anatomically implausible.
+        severity_guidance: Clear attachment/reconstruction issue must be at least severity 2. Floating head, broken neck anchor,
+          severe halo/warp, or impossible occlusion must be severity 3-5.
+        affected_l3:
+        - requested_head_placement_neck_anchor_match
+        - requested_hair_ear_head_unit_consistency_match
+        - head_scale_head_neck_attachment_anatomically_coherent
+        - head_scale_hair_ear_background_occlusion_consistent
+        - head_scale_pose_perspective_depth_consistent
+        - head_scale_lighting_shadow_color_integration
+        - head_scale_boundary_contact_reconstruction_consistent
+        - head_scale_artifact_sharpness_no_warp_mask
+        - requested_head_size_adjustment_operation_match
+        - requested_head_scale_direction_match
+        - requested_head_scale_magnitude_match
+        - requested_complete_head_unit_coverage_match
+        - requested_uniform_isotropic_head_scaling_match
+        - requested_head_shape_aspect_ratio_match
+        - requested_head_to_body_proportion_match
+        - requested_internal_facial_geometry_preservation_match
+        - requested_head_size_visibility_finish_match
+        - head_scale_edit_localized_to_head_and_blending_zone
+        - head_scale_identity_landmark_consistency
+        - head_scale_face_hair_skin_detail_realistic
+      identity_internal_geometry_or_head_shape_drift:
+        detect_when: Identity, expression, internal facial-feature geometry, head shape/aspect ratio, hairstyle design, skin/hair
+          detail, or source-specific face character changes beyond uniform head scaling.
+        severity_guidance: Minor texture/detail drift may be severity 1. Clear internal feature spacing, expression, hairstyle,
+          or head shape drift must be severity 2-3. Identity replacement, distorted head aspect ratio, or broad source-state
+          change must be severity 4-5.
+        affected_l3:
+        - requested_head_shape_aspect_ratio_match
+        - requested_internal_facial_geometry_preservation_match
+        - requested_hair_ear_head_unit_consistency_match
+        - head_scale_identity_landmark_consistency
+        - head_scale_expression_body_scene_global_state_preserved
+        - head_scale_face_hair_skin_detail_realistic
+        - head_scale_artifact_sharpness_no_warp_mask
+        - requested_head_size_adjustment_operation_match
+        - unrequested_body_camera_crop_properties_preserved
+        - head_scale_edit_localized_to_head_and_blending_zone
+        - head_scale_lighting_shadow_color_integration
+        - head_scale_boundary_contact_reconstruction_consistent
+      over_scaled_unrealistic_head_body_proportion:
+        detect_when: The head becomes cartoonishly small/large, childlike, doll-like, pinched, stretched, or implausible relative
+          to the unchanged body and camera perspective.
+        severity_guidance: Clear over-scaling must be at least severity 2. Cartoonish or anatomically implausible head-body
+          relation must be severity 3-5.
+        affected_l3:
+        - requested_head_scale_magnitude_match
+        - requested_head_shape_aspect_ratio_match
+        - requested_head_to_body_proportion_match
+        - requested_head_placement_neck_anchor_match
+        - requested_head_size_visibility_finish_match
+        - head_scale_head_neck_attachment_anatomically_coherent
+        - head_scale_pose_perspective_depth_consistent
+        - head_scale_artifact_sharpness_no_warp_mask
+        - requested_head_size_adjustment_operation_match
+        - requested_head_scale_direction_match
+        - requested_complete_head_unit_coverage_match
+        - requested_uniform_isotropic_head_scaling_match
+        - requested_internal_facial_geometry_preservation_match
+        - head_scale_edit_localized_to_head_and_blending_zone
+        - head_scale_hair_ear_background_occlusion_consistent
+        - head_scale_identity_landmark_consistency
+        - head_scale_face_hair_skin_detail_realistic
+        - head_scale_lighting_shadow_color_integration
+        - head_scale_boundary_contact_reconstruction_consistent
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Head-size adjustment changes the complete head unit relative to the unchanged body in the prompt
+    direction. It is not face narrowing, internal feature compression, body/camera scaling, crop/framing change, or global
+    image resize.
+  no_compensation_rule: If complete head-unit scale change is absent or substituted by crop/body/global scaling, preservation/background/photorealism
+    must not raise edit-dependent facets. If internal face geometry or identity changes, a smaller-looking head must not raise
+    source-preserving head-scale facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample follows the prompt direction by uniformly scaling the complete visible head unit
+    relative to the unchanged body while preserving identity, head shape, internal facial geometry, neck attachment, and scene.
+  success_gate_conditions:
+  - For 小头/reduction prompts, the complete head unit is visibly smaller relative to the body; for enlargement prompts, it
+    is visibly larger.
+  - Face, cranium, ears, hair, and hairstyle silhouette scale together rather than only one component changing.
+  - Head shape, internal facial geometry, expression, identity, hair design, and skin/hair detail remain stable.
+  - Neck attachment, shoulders/body, clothing, background reconstruction, pose, perspective, crop, and lighting remain plausible.
+  - No whole-image resize, body scaling, crop/camera substitute, floating head, halo, or over-scaled cartoon proportion is
+    present.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_head_size_adjustment_operation_match
+- requested_head_scale_direction_match
+- requested_head_scale_magnitude_match
+- requested_complete_head_unit_coverage_match
+- requested_uniform_isotropic_head_scaling_match
+- requested_head_shape_aspect_ratio_match
+- requested_head_to_body_proportion_match
+- requested_internal_facial_geometry_preservation_match
+- requested_head_placement_neck_anchor_match
+- requested_hair_ear_head_unit_consistency_match
+- requested_head_size_visibility_finish_match
+- unrequested_body_camera_crop_properties_preserved
+- head_scale_edit_localized_to_head_and_blending_zone
+- head_scale_head_neck_attachment_anatomically_coherent
+- head_scale_hair_ear_background_occlusion_consistent
+- head_scale_pose_perspective_depth_consistent
+- head_scale_identity_landmark_consistency
+- head_scale_expression_body_scene_global_state_preserved
+- head_scale_face_hair_skin_detail_realistic
+- head_scale_lighting_shadow_color_integration
+- head_scale_boundary_contact_reconstruction_consistent
+- head_scale_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_head_size_adjustment_operation_match: 0.18
+    requested_head_scale_direction_match: 0.14
+    requested_head_scale_magnitude_match: 0.08
+    requested_complete_head_unit_coverage_match: 0.09
+    requested_uniform_isotropic_head_scaling_match: 0.1
+    requested_head_shape_aspect_ratio_match: 0.07
+    requested_head_to_body_proportion_match: 0.08
+    requested_internal_facial_geometry_preservation_match: 0.08
+    requested_head_placement_neck_anchor_match: 0.06
+    requested_hair_ear_head_unit_consistency_match: 0.04
+    requested_head_size_visibility_finish_match: 0.04
+    unrequested_body_camera_crop_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    head_scale_edit_localized_to_head_and_blending_zone: 0.27
+    head_scale_head_neck_attachment_anatomically_coherent: 0.28
+    head_scale_hair_ear_background_occlusion_consistent: 0.23
+    head_scale_pose_perspective_depth_consistent: 0.22
+  Subject Preservation:
+    head_scale_identity_landmark_consistency: 0.8
+    head_scale_expression_body_scene_global_state_preserved: 0.2
+  Task Realism and Image Quality:
+    head_scale_face_hair_skin_detail_realistic: 0.27
+    head_scale_lighting_shadow_color_integration: 0.27
+    head_scale_boundary_contact_reconstruction_consistent: 0.24
+    head_scale_artifact_sharpness_no_warp_mask: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Head-Scale Operation:
+      requested_head_size_adjustment_operation_match:
+        title: Requested complete-head size-adjustment operation match
+        definition: Judge whether the complete visible head unit is genuinely scaled relative to the unchanged body and frame.
+          Do not credit face slimming, feature resizing, hair-only scaling, body enlargement, camera zoom, crop change, or
+          subject-distance change as the requested operation.
+        anchors:
+          0: The requested head-size operation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of complete-head scaling is visible.
+          2: A small relevant attempt exists, but the result is dominated by a substitute operation.
+          3: The head is weakly edited, but complete-head scaling is mostly wrong.
+          4: A recognizable size edit exists, yet a major part of the operation is replaced by face, body, crop, or camera
+            change.
+          5: The operation is partially correct, with several substantial substitution or completeness errors.
+          6: Complete-head scaling is mostly correct, but one clear operation error remains.
+          7: The requested operation is clearly achieved, with only a minor visible mismatch.
+          8: The operation is highly accurate, with only a tiny local imperfection.
+          9: The complete head unit is precisely scaled relative to an unchanged body, camera, and frame.
+        rubric: Judge whether the complete visible head unit is genuinely scaled relative to the unchanged body and frame.
+          Do not credit face slimming, feature resizing, hair-only scaling, body enlargement, camera zoom, crop change, or
+          subject-distance change as the requested operation. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_head_scale_direction_match:
+        title: Requested head-scale direction match
+        definition: Judge whether the complete head becomes smaller for reduction prompts and larger for enlargement prompts.
+          The direction must be determined from the current prompt.
+        anchors:
+          0: The head changes clearly in the opposite direction, is unrelated, or unusable.
+          1: Only a negligible trace of the correct direction is visible.
+          2: A small relevant change exists, but the net direction is severely wrong or ambiguous.
+          3: The direction is weakly attempted and remains largely incorrect.
+          4: The correct direction is recognizable, but a major contradictory or inconsistent change remains.
+          5: The direction is partially correct, with several visible inconsistencies.
+          6: The net direction is mostly correct, but one clear regional or proportional contradiction remains.
+          7: The complete head changes clearly in the correct direction, with only a minor inconsistency.
+          8: The direction is highly accurate and uniform, with only a tiny local issue.
+          9: The complete head changes unmistakably and coherently in the exact prompt-specified direction.
+        rubric: Judge whether the complete head becomes smaller for reduction prompts and larger for enlargement prompts.
+          The direction must be determined from the current prompt. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_head_scale_magnitude_match:
+        title: Requested head-scale magnitude match
+        definition: Judge whether the size change is clearly visible but remains believable and proportionate. Penalize negligible
+          change, excessive shrinkage or enlargement, and cartoon-like proportions.
+        anchors:
+          0: The requested magnitude is absent, destructive, reversed, or unusable.
+          1: Only a negligible size change is visible.
+          2: The amount is severely too weak, too strong, or inconsistent.
+          3: The magnitude is weakly attempted but clearly mismatched.
+          4: The effect is recognizable, but the amount has a major mismatch.
+          5: The magnitude is partially appropriate, with several visible intensity problems.
+          6: The amount is mostly correct, but one clear under- or over-scaling issue remains.
+          7: The requested magnitude is clearly achieved, with only a minor mismatch.
+          8: The magnitude is highly accurate, with only a tiny excess or residual.
+          9: The head-size change is exactly visible enough, believable, and source-appropriate.
+        rubric: Judge whether the size change is clearly visible but remains believable and proportionate. Penalize negligible
+          change, excessive shrinkage or enlargement, and cartoon-like proportions. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_complete_head_unit_coverage_match:
+        title: Requested complete-head unit coverage match
+        definition: Judge whether face, skull contour, ears, hair, and hairstyle silhouette participate in one coherent scale
+          change. Missed or independently scaled head components reduce this score.
+        anchors:
+          0: Complete-head coverage is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the head is scaled correctly.
+          2: A small region changes, but most head components remain untreated or contradictory.
+          3: Coverage is weak and major head components are missed.
+          4: The head unit is recognizable, but one major component such as hair, ears, face, or cranium is not coherently
+            included.
+          5: Coverage is partial, with several visible omissions or inconsistent components.
+          6: Coverage is mostly complete, but one clear head component or boundary region remains inconsistent.
+          7: The complete head is well covered, with only a minor local mismatch.
+          8: Coverage is highly complete and coherent, with only a tiny imperfection.
+          9: Face, cranium, ears, hair, and hairstyle silhouette all scale together as one complete head unit.
+        rubric: Judge whether face, skull contour, ears, hair, and hairstyle silhouette participate in one coherent scale
+          change. Missed or independently scaled head components reduce this score. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_uniform_isotropic_head_scaling_match:
+        title: Requested uniform isotropic head scaling match
+        definition: Judge whether horizontal and vertical head dimensions scale coherently without stretching, compression,
+          regional magnification, or different scale factors across the head.
+        anchors:
+          0: Uniform scaling is absent, reversed, unrelated, or unusable.
+          1: Only a negligible portion of the head follows coherent scaling.
+          2: A small attempt exists, but severe horizontal, vertical, or regional distortion dominates.
+          3: Scaling is weakly uniform and major anisotropic deformation remains.
+          4: The size change is recognizable, but a major width-height or regional-scale mismatch remains.
+          5: Uniformity is partial, with several substantial stretch or compression problems.
+          6: Scaling is mostly uniform, but one clear anisotropic or regional inconsistency remains.
+          7: Head scaling is coherent, with only a minor width-height or local-scale mismatch.
+          8: Scaling is highly uniform, with only a tiny local imperfection.
+          9: The complete head is scaled with one coherent factor and no visible anisotropic distortion.
+        rubric: Judge whether horizontal and vertical head dimensions scale coherently without stretching, compression, regional
+          magnification, or different scale factors across the head. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      requested_head_shape_aspect_ratio_match:
+        title: Requested head-shape and aspect-ratio match
+        definition: Judge whether the source skull silhouette, face outline, cranial height-width relationship, and characteristic
+          head shape remain stable after the size adjustment.
+        anchors:
+          0: Head shape is severely replaced, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the original head shape remains.
+          2: Major distortion affects skull, face outline, or aspect ratio.
+          3: The source shape is weakly preserved and remains clearly altered.
+          4: The subject is recognizable, but a major head-shape or aspect-ratio mismatch remains.
+          5: Shape preservation is partial, with several visible contour or proportion changes.
+          6: The source head shape is mostly preserved, but one clear distortion remains.
+          7: Head shape and aspect ratio are strong, with only a minor discrepancy.
+          8: The shape is nearly source-identical after scaling, with only a tiny local difference.
+          9: The original skull silhouette, face outline, and head aspect ratio are exactly preserved.
+        rubric: Judge whether the source skull silhouette, face outline, cranial height-width relationship, and characteristic
+          head shape remain stable after the size adjustment. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+    Proportion, Internal Geometry, and Non-target Control:
+      requested_head_to_body_proportion_match:
+        title: Requested head-to-body proportion match
+        definition: Judge whether the edited head size has the intended relationship to the unchanged shoulders and body,
+          without producing a bobble-head, pinhead, oversized body, or other implausible proportion.
+        anchors:
+          0: Head-to-body proportion is absent, reversed, unrelated, or unusable.
+          1: Only a negligible proportion improvement is visible.
+          2: A small relevant attempt exists, but the final proportion is severely implausible.
+          3: The relationship is weakly improved and remains clearly wrong.
+          4: The result is recognizable, but a major head-body proportion mismatch remains.
+          5: Proportion is partially appropriate, with several substantial problems.
+          6: Head-to-body proportion is mostly correct, but one clear imbalance remains.
+          7: The proportion is strong and believable, with only a minor mismatch.
+          8: The relationship is highly accurate, with only a tiny local or perceptual issue.
+          9: The head has the exact prompt-appropriate scale relative to the unchanged body and shoulders.
+        rubric: Judge whether the edited head size has the intended relationship to the unchanged shoulders and body, without
+          producing a bobble-head, pinhead, oversized body, or other implausible proportion. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_internal_facial_geometry_preservation_match:
+        title: Requested internal facial-geometry preservation match
+        definition: Judge normalized spacing and proportions among eyes, brows, nose, mouth, ears, jaw, and face outline.
+          All landmarks may change absolute pixel size with the head, but their relative geometry must remain stable.
+        anchors:
+          0: Internal facial geometry is severely changed, replaced, or unusable.
+          1: Only a negligible amount of source landmark geometry remains.
+          2: Several major facial-feature ratios or positions are altered.
+          3: One major or multiple obvious geometry changes remain.
+          4: The face is recognizable, but a clear important feature ratio or placement is changed.
+          5: Geometry preservation is moderate, with several visible relative-position differences.
+          6: Most internal geometry is preserved, but one clear change remains.
+          7: Facial landmark geometry is strong, with only a minor discrepancy.
+          8: Normalized facial geometry is nearly source-identical, with only a tiny difference.
+          9: All internal facial-feature ratios, spacing, and relative positions are source-identical after scaling.
+        rubric: Judge normalized spacing and proportions among eyes, brows, nose, mouth, ears, jaw, and face outline. All
+          landmarks may change absolute pixel size with the head, but their relative geometry must remain stable. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      requested_head_placement_neck_anchor_match:
+        title: Requested head placement and neck-anchor match
+        definition: Judge whether the scaled head remains naturally centered and attached to the original neck without arbitrary
+          translation, altered head pose, excessive neck exposure, or sinking into the shoulders.
+        anchors:
+          0: Head placement or neck anchoring is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct attachment remains.
+          2: The head is severely shifted, floating, sunken, or disconnected.
+          3: Placement is weakly corrected and major anchoring errors remain.
+          4: The attachment is recognizable, but a major translation, neck-length, or shoulder-intersection mismatch remains.
+          5: Placement is partial, with several substantial anchoring problems.
+          6: The head is mostly well placed, but one clear shift or attachment issue remains.
+          7: Placement and neck anchoring are strong, with only a minor mismatch.
+          8: The scaled head is nearly perfectly anchored, with only a tiny local discrepancy.
+          9: The head remains naturally positioned, pose-consistent, and perfectly attached to the unchanged neck.
+        rubric: Judge whether the scaled head remains naturally centered and attached to the original neck without arbitrary
+          translation, altered head pose, excessive neck exposure, or sinking into the shoulders. Apply this facet's 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      requested_hair_ear_head_unit_consistency_match:
+        title: Requested hair, ear, and head-unit consistency match
+        definition: Judge whether ears, hairline, hair volume, hairstyle silhouette, and cranial contour scale together while
+          preserving their source design, attachment, and relative positions.
+        anchors:
+          0: Hair-ear-head consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the source relationship remains.
+          2: Hair, ears, or cranium are severely detached or independently scaled.
+          3: Consistency is weakly attempted and major mismatches remain.
+          4: The head unit is recognizable, but one major hair, ear, hairline, or attachment error remains.
+          5: Consistency is partial, with several substantial visible differences.
+          6: The components mostly scale together, but one clear mismatch remains.
+          7: Hair, ears, and cranium are coherent, with only a minor discrepancy.
+          8: The relationship is highly accurate, with only a tiny local imperfection.
+          9: Hair, ears, hairline, and cranial contour remain perfectly coherent as one scaled head unit.
+        rubric: Judge whether ears, hairline, hair volume, hairstyle silhouette, and cranial contour scale together while
+          preserving their source design, attachment, and relative positions. Apply this facet's 0-9 anchors directly. If
+          a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      requested_head_size_visibility_finish_match:
+        title: Requested normal-view visibility and natural finish match
+        definition: Judge whether the size change is easy to perceive at normal portrait viewing size while remaining photorealistic,
+          natural, cleanly blended, and free of an obvious app mask.
+        anchors:
+          0: The requested visibility and finish are absent, reversed, unrelated, or unusable.
+          1: Only a negligible visible improvement is present.
+          2: A small relevant trace exists, but the result is severely too weak, excessive, or artificial.
+          3: The requested finish is weakly attempted and remains clearly mismatched.
+          4: The result is recognizable, but a major visibility or naturalness problem remains.
+          5: Visibility and finish are partially achieved, with several substantial issues.
+          6: The result is mostly correct, but one clear visibility or finish issue remains.
+          7: The requested presentation is strong, with only a minor mismatch.
+          8: Visibility and naturalness are highly accurate, with only a tiny local issue.
+          9: The size change is clearly visible, fully believable, photorealistic, and seamlessly finished.
+        rubric: Judge whether the size change is easy to perceive at normal portrait viewing size while remaining photorealistic,
+          natural, cleanly blended, and free of an obvious app mask. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      unrequested_body_camera_crop_properties_preserved:
+        title: Unrequested body, camera, and crop properties are preserved
+        definition: Preserve neck width, shoulder width, body size, body proportions, pose, clothing, subject distance, crop,
+          framing, camera angle, perspective, composition, aspect ratio, and resolution.
+        anchors:
+          0: Unrequested body, camera, or crop properties are severely changed or unusable.
+          1: Most listed non-target properties visibly drift.
+          2: Several major body, framing, camera, or crop changes are present.
+          3: One major or multiple obvious non-target changes remain.
+          4: The image is recognizable, but a clear important body, camera, or composition property is changed.
+          5: Preservation is moderate, with several visible differences.
+          6: Most properties are preserved, but one clear change remains.
+          7: Preservation is strong, with only a minor discrepancy.
+          8: Body, camera, crop, and composition are nearly source-identical, with only a tiny difference.
+          9: All unrequested body, camera, framing, composition, and resolution properties remain source-consistent.
+        rubric: Preserve neck width, shoulder width, body size, body proportions, pose, clothing, subject distance, crop,
+          framing, camera angle, perspective, composition, aspect ratio, and resolution. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+  Localization and Anatomical Integration:
+    Head Placement and Boundary Anatomy:
+      head_scale_edit_localized_to_head_and_blending_zone:
+        title: Head-scale editing is localized to the head and minimum blending zone
+        definition: Keep geometric changes within the complete head unit and minimum hair-background and head-neck transition
+          zones. Avoid resizing or warping neck, shoulders, torso, clothing, hands, and surrounding scene.
+        anchors:
+          0: Localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible part of the edit is correctly localized.
+          2: A small relevant attempt exists, but large non-target areas are altered.
+          3: Localization is weak and major spill remains.
+          4: The target is recognizable, but one major neck, shoulder, body, clothing, or scene region is changed.
+          5: Localization is partial, with several substantial spill or omission problems.
+          6: Localization is mostly correct, but one clear spill or missed transition remains.
+          7: The edit is well localized, with only a minor local spill.
+          8: Localization is highly accurate, with only a tiny imperfection.
+          9: Geometric editing is precisely confined to the complete head and minimum necessary blending zones.
+        rubric: Keep geometric changes within the complete head unit and minimum hair-background and head-neck transition
+          zones. Avoid resizing or warping neck, shoulders, torso, clothing, hands, and surrounding scene. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+      head_scale_head_neck_attachment_anatomically_coherent:
+        title: Head-neck attachment is anatomically coherent
+        definition: Judge continuity between jaw, skull base, hair, ears, neck, and shoulders after scaling, including plausible
+          neck insertion, visible neck length, skin contact, and head support.
+        anchors:
+          0: Head-neck anatomy is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of coherent attachment remains.
+          2: The head is severely detached, floating, sunken, or anatomically impossible.
+          3: Attachment is weakly attempted and major contradictions remain.
+          4: The anatomy is recognizable, but a major gap, shelf, stretched neck, or shoulder intersection remains.
+          5: Continuity is partial, with several substantial structural problems.
+          6: Head-neck anatomy is mostly coherent, but one clear transition error remains.
+          7: Attachment is strong and natural, with only a minor mismatch.
+          8: The connection is highly accurate, with only a tiny local imperfection.
+          9: The scaled head is perfectly and anatomically attached to the unchanged neck and shoulders.
+        rubric: Judge continuity between jaw, skull base, hair, ears, neck, and shoulders after scaling, including plausible
+          neck insertion, visible neck length, skin contact, and head support. Apply this facet's 0-9 anchors directly. If
+          a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      head_scale_hair_ear_background_occlusion_consistent:
+        title: Hair, ear, and background occlusion is consistent
+        definition: Judge hair strands, hairstyle silhouette, ears, accessories, and background exposure or occlusion around
+          the scaled head. Newly exposed or covered regions must remain physically plausible.
+        anchors:
+          0: Occlusion consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct layering remains.
+          2: Hair, ears, accessories, or background are severely distorted, erased, or wrongly layered.
+          3: Integration is weakly attempted and major overlap errors remain.
+          4: The relationships are recognizable, but a major penetration, gap, repeated background, or hair-boundary error
+            remains.
+          5: Integration is partial, with several substantial occlusion problems.
+          6: Occlusion is mostly correct, but one clear boundary or reconstruction issue remains.
+          7: Hair, ears, and background integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All hair, ear, accessory, and background exposure or occlusion relationships are physically coherent.
+        rubric: Judge hair strands, hairstyle silhouette, ears, accessories, and background exposure or occlusion around the
+          scaled head. Newly exposed or covered regions must remain physically plausible. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      head_scale_pose_perspective_depth_consistent:
+        title: Head pose, perspective, and depth are consistent
+        definition: Judge whether rotation, tilt, foreshortening, facial depth, ear visibility, lens perspective, and head-body
+          spatial relationship remain source-consistent after scaling.
+        anchors:
+          0: Pose and perspective consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of source-consistent depth remains.
+          2: The head has severe pose, perspective, or depth contradictions.
+          3: Consistency is weakly attempted and major spatial errors remain.
+          4: The result is recognizable, but a major rotation, tilt, foreshortening, or depth mismatch remains.
+          5: Consistency is partial, with several substantial perspective problems.
+          6: Pose and depth are mostly correct, but one clear spatial error remains.
+          7: Pose, perspective, and depth are strong, with only a minor mismatch.
+          8: The spatial relationship is highly accurate, with only a tiny local imperfection.
+          9: Head pose, perspective, depth, and relation to the unchanged body are fully source-consistent.
+        rubric: Judge whether rotation, tilt, foreshortening, facial depth, ear visibility, lens perspective, and head-body
+          spatial relationship remain source-consistent after scaling. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      head_scale_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare source and result as the same individual after global head scaling, not merely as a plausible
+          similar person. Judge normalized face outline, brows, eyes, nose, mouth, cheeks, chin, jaw, ears, hairline, age
+          impression, gender presentation, characteristic asymmetry, skin tone, stable marks, and same-person impression.
+        anchors:
+          0: The edited subject is effectively a different person, severely distorted, or unusable.
+          1: Identity correspondence is extremely weak; defining landmarks and the overall person impression are replaced.
+          2: Major identity drift affects several defining facial or cranial regions.
+          3: Substantial identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression.
+          5: The person remains recognizable, but multiple landmarks, proportions, age cues, or characteristic details drift.
+          6: The same person is mostly preserved, but one clear identity-affecting change remains.
+          7: Identity preservation is strong, with only a minor visible drift.
+          8: The face is nearly source-identical after normalized scaling, with only a tiny discrepancy.
+          9: The same identity, normalized landmark geometry, age impression, skin tone, and characteristic details are source-identical
+            apart from the intended head scale.
+        rubric: Compare source and result as the same individual after global head scaling, not merely as a plausible similar
+          person. Judge normalized face outline, brows, eyes, nose, mouth, cheeks, chin, jaw, ears, hairline, age impression,
+          gender presentation, characteristic asymmetry, skin tone, stable marks, and same-person impression. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+      head_scale_expression_body_scene_global_state_preserved:
+        title: Expression, body, scene, camera, color, and non-target state are preserved
+        definition: Preserve gaze, expression, mouth state, head pose, neck, shoulders, body proportions, clothing, accessories,
+          background hue and texture, white balance, brightness, contrast, saturation, lighting, framing, camera angle, composition,
+          aspect ratio, and resolution.
+        anchors:
+          0: Expression, body, scene, camera, or non-target state is severely changed or unusable.
+          1: Most listed non-target properties are clearly inconsistent with the source.
+          2: Several major changes affect expression, body, clothing, background, camera, or global image state.
+          3: One major or multiple obvious non-target changes are visible.
+          4: The image remains recognizable, but a clear important mismatch affects expression, body, scene, or camera.
+          5: Non-target preservation is moderate, with several visible differences.
+          6: Most non-target details are preserved, but one clear difference remains.
+          7: Non-target preservation is strong, with only a minor discrepancy.
+          8: Expression, body, scene, camera, and global color are nearly source-identical, with only a tiny discrepancy.
+          9: All non-target subject, body, scene, camera, lighting, color, composition, and resolution properties remain source-consistent.
+        rubric: Preserve gaze, expression, mouth state, head pose, neck, shoulders, body proportions, clothing, accessories,
+          background hue and texture, white balance, brightness, contrast, saturation, lighting, framing, camera angle, composition,
+          aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Head-Scale Rendering Quality:
+      head_scale_face_hair_skin_detail_realistic:
+        title: Face, hair, and skin detail are realistic
+        definition: Judge pores, fine lines, eyelashes, brows, facial hair, scalp hair, hair strands, skin microtexture, and
+          source resolution after scaling. Penalize blur, oversharpening, repeated texture, and loss of high-frequency detail.
+        anchors:
+          0: Detail realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of realistic source detail remains.
+          2: A small relevant attempt exists, but the head is severely blurred, plastic, repeated, or synthetic.
+          3: Realism is weakly attempted and major detail damage remains.
+          4: The head is recognizable, but a major blur, sharpening, texture, or hair-detail error remains.
+          5: Realism is partial, with several substantial visible problems.
+          6: Detail is mostly realistic, but one clear texture or hair issue remains.
+          7: Face, hair, and skin detail are strong, with only a minor mismatch.
+          8: Detail is highly realistic, with only a tiny local imperfection.
+          9: All face, hair, skin, and fine-detail structure are fully photorealistic and source-consistent.
+        rubric: Judge pores, fine lines, eyelashes, brows, facial hair, scalp hair, hair strands, skin microtexture, and source
+          resolution after scaling. Penalize blur, oversharpening, repeated texture, and loss of high-frequency detail. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      head_scale_lighting_shadow_color_integration:
+        title: Lighting, shadows, and color integrate with the source
+        definition: Judge facial shading, hair highlights, ear shadows, chin-neck contact shadow, skin tone, background lighting,
+          white balance, and global color consistency after scaling.
+        anchors:
+          0: Lighting and color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct illumination remains.
+          2: A small relevant attempt exists, but shadows or color are severely false or inconsistent.
+          3: Integration is weakly attempted and major lighting errors remain.
+          4: The lighting is recognizable, but a major halo, flat patch, missing shadow, or color mismatch remains.
+          5: Integration is partial, with several substantial shadow or color problems.
+          6: Lighting is mostly correct, but one clear local issue remains.
+          7: Shadow, lighting, and color integration are strong, with only a minor mismatch.
+          8: Integration is highly accurate, with only a tiny local imperfection.
+          9: All head, neck, hair, skin, and background illumination perfectly match the source.
+        rubric: Judge facial shading, hair highlights, ear shadows, chin-neck contact shadow, skin tone, background lighting,
+          white balance, and global color consistency after scaling. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      head_scale_boundary_contact_reconstruction_consistent:
+        title: Head boundaries, contact, and reconstructed regions are consistent
+        definition: Judge hair-background edges, ear boundaries, jaw-neck contact, accessories, shoulders, and newly exposed
+          or occluded background for clean but natural physical relationships.
+        anchors:
+          0: Boundary and reconstruction consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct contact or reconstruction remains.
+          2: A small relevant attempt exists, but major leakage, gaps, repeated background, or impossible overlap is visible.
+          3: Consistency is weakly attempted and major boundary errors remain.
+          4: The relationships are recognizable, but a major seam, cutout, overlap, or reconstruction error remains.
+          5: Consistency is partial, with several substantial visible problems.
+          6: Boundaries are mostly correct, but one clear contact or reconstruction issue remains.
+          7: Boundary and contact consistency are strong, with only a minor mismatch.
+          8: Consistency is highly accurate, with only a tiny local imperfection.
+          9: All head, hair, ear, neck, accessory, shoulder, and background boundaries are seamless and physically coherent.
+        rubric: Judge hair-background edges, ear boundaries, jaw-neck contact, accessories, shoulders, and newly exposed or
+          occluded background for clean but natural physical relationships. Apply this facet's 0-9 anchors directly. If a
+          task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism,
+          or attractiveness compensate for this facet.
+      head_scale_artifact_sharpness_no_warp_mask:
+        title: Artifact control, source sharpness, and absence of warp or mask
+        definition: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, cloned background, stretched hair,
+          warped neck or shoulders, mask-like transitions, and source-resolution consistency.
+        anchors:
+          0: Artifact control is absent, reversed, unrelated, or unusable.
+          1: Only a negligible artifact-free region remains.
+          2: A small relevant attempt exists, but severe warping, masking, blur, or duplication dominates.
+          3: Artifact control is weakly achieved and major defects remain.
+          4: The result is recognizable, but a major seam, warp, duplicate edge, mask, or sharpness mismatch remains.
+          5: Quality is partial, with several substantial visible artifacts.
+          6: The result is mostly clean, but one clear artifact or sharpness issue remains.
+          7: Artifact control is strong, with only a minor visible defect.
+          8: The result is nearly artifact-free, with only a tiny local imperfection.
+          9: The edited image is fully stable, source-sharp, seamless, and free of warping, masking, duplication, or background
+            deformation.
+        rubric: Judge halos, jagged edges, blur, over-sharpening, duplicate contours, cloned background, stretched hair, warped
+          neck or shoulders, mask-like transitions, and source-resolution consistency. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+identity_preservation_protocol:
+  purpose: Prevent successful head-size adjustment from hiding identity, internal landmark, body, camera, or background drift.
+    Identity is judged after normalizing for the intended global head scale.
+  comparison_checklist:
+  - complete source head silhouette after scale normalization
+  - forehead, hairline, and cranial shape
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, gaze, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position, lip geometry, teeth visibility, and expression
+  - cheek structure, chin, jaw, ears, and normalized face outline
+  - hairstyle design, hair volume distribution, and hair-to-head attachment
+  - head pose, rotation, tilt, and relation to the neck
+  - age impression, gender presentation, skin tone, stable marks, and facial texture
+  - neck width, shoulder width, body proportions, pose, and clothing
+  - background hue, texture, brightness, contrast, white balance, and composition
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the result is attractive, proportionate, or instruction-compliant.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Absolute landmark pixel distances may change with global head scale; normalized landmark ratios must remain stable.
+  - Head-size correctness, identity, expression, body, background, camera state, and boundary quality are independent.
+  task_specific_exception: only global scaling of the complete visible head unit and the minimum head-neck and hair-background
+    reconstruction zones

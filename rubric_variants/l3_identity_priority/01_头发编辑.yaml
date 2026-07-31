@@ -1,0 +1,1219 @@
+task_key: hair_edit
+task_title: Hair Editing
+task_title_zh: 头发编辑
+version: v1.2_fixed_22_l3_target_slot_mask_identity_constrained_l3_identity_priority
+language: English
+target_region: complete visible hair, scalp, roots, hairline, bangs, parting, sideburns, face-framing strands, hair lengths,
+  ends, silhouette, color, and necessary contact or occlusion boundaries
+target_action_summary: Transform the hair into the exact requested hairstyle, length, cut, texture, front-hair design, color,
+  and secondary details while preserving facial identity, head anatomy, non-target content, and photorealism.
+design_principle:
+  summary: Use exactly 22 fixed L3 outputs. Prompt Compliance is calculated only from instruction facets activated by the
+    extracted target specification, never from preservation boilerplate or generic quality language. Facial identity remains
+    a continuous multiplicative constraint, so identity drift cannot be compensated by instruction or realism scores.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9.
+  - No dynamic active-facet count and no N/A values.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add rank bonuses or external image metrics.
+  - Do not split clothing, background, collar, accessories, or camera framing into multiple easy preservation facets.
+  - A photorealistic but semantically wrong hairstyle must receive low instruction scores.
+  - A successful hairstyle must not compensate for facial identity drift.
+  - Public floating-point values use at most 3 decimal places.
+  - The judge still returns exactly 22 scores; applicability changes weights, not output length.
+  - Prompt Compliance is calculated only from explicitly requested or semantically implied hair attributes.
+  - Unrequested instruction facets remain in the fixed output vector but receive zero aggregation weight for that sample.
+  - Facial identity is applied as a smooth multiplicative factor and cannot be compensated by other L3 scores.
+  - Prompt applicability must be inferred only from the extracted target specification, not from the full raw prompt.
+  - Generic preservation, reconstruction, realism, lighting, and artifact-control clauses must never activate Prompt Compliance
+    facets.
+  - The phrase 'highlights and shadows' means image lighting unless an explicit hair-color pattern is stated in the target
+    specification.
+  - Inactive Prompt Compliance facets remain in the fixed 22-score output but are excluded from reward aggregation and weakest-facet
+    reporting.
+  - Named hairstyles may activate semantically required facets even when the corresponding attribute word is not repeated.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+    empty_target_after_template_removal: skip_sample_and_log_underspecified_target_spec
+    ambiguous_highlight_usage: resolve_as_lighting_unless_explicit_hair_color_pattern
+  conflict_examples:
+  - long hair and buzz cut as simultaneous final full-head states
+  - fully loose hair and a completely tied bun as the same final organization
+  - straight full-head hair and dense woolly curls over the same full region
+  - fully exposed forehead and heavy blunt bangs covering the forehead
+  - uniform full-head color and an incompatible split or gradient pattern with no regional explanation
+  additional_checks:
+  - Extract the target specification before generating the 12-value applicability mask.
+  - Reject a sample when only generic quality or preservation language remains after target extraction.
+  - Do not infer bangs, hairline, sideburns, volume, length, or color-pattern requirements from the generic reconstruction
+    sentence.
+  - Do not interpret generic image highlights and shadows as dyed hair highlights.
+identity_preservation_protocol:
+  weight_share: 0.15
+  strict_rules:
+  - Identity is judged directly against the source, not against generic attractiveness or photorealism.
+  - A changed-person impression must score 4 or below on hair_facial_identity_landmark_consistency.
+  - A clearly different face with only similar age or demographic appearance should normally score 0-2.
+  - A score of 7 requires a strong same-person match with only minor local landmark drift.
+  - Hair covering part of the face does not authorize changes to the underlying facial identity.
+  - Prompt compliance, realistic hair, clothing preservation, or background preservation cannot compensate for identity drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Compare the source image, prompt, and edited image. Return exactly one integer for every active_l3 item in
+    the listed order. Judge every facet by visual evidence, then apply failure_propagation caps before returning the final vector.
+  anti_saturation: Scores 0-3 indicate major failure; 4-5 indicate partial or mediocre satisfaction; 6 means mostly correct
+    with one clear issue; 7 means strong but visibly imperfect; 8 means nearly exact; 9 requires essentially complete and
+    exact satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is successful. Correct color cannot compensate for
+    wrong length; realistic strands cannot compensate for the wrong hairstyle; prompt compliance cannot compensate for identity
+    drift.
+  identity_constraint_rule: After calculating the ordinary base reward, multiply it by (hair_facial_identity_landmark_consistency
+    / 9.0) ** 0.35. This is continuous and monotonic, not a discrete cap or manual failure penalty.
+  mask_rule: Use target_spec and its 12-value applicability mask when interpreting Prompt Compliance. Do not treat preservation
+    or reconstruction boilerplate as requested hairstyle attributes.
+  reporting_rule: Only mask=1 Prompt Compliance facets may be reported as instruction weaknesses.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Hair Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Transform the hair into the exact requested hairstyle, length, cut, texture, front-hair design, color,
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - hair_requested_style_family_match
+          - hair_requested_structure_arrangement_match
+          - hair_requested_length_endpoint_match
+          - hair_requested_cut_layers_hemline_match
+          - hair_requested_silhouette_volume_density_match
+          - hair_requested_texture_curl_pattern_match
+          - hair_requested_strand_flow_direction_match
+          - hair_requested_bangs_parting_front_match
+          - hair_requested_hairline_sideburn_faceframing_match
+          - hair_requested_color_hue_tone_match
+          - hair_requested_color_pattern_placement_match
+          - hair_requested_secondary_details_and_completeness_match
+          - hair_edit_localized_to_hair_region
+          - hair_scalp_root_hairline_attachment
+          - hair_face_ear_neck_shoulder_occlusion
+          - hair_head_proportion_pose_balance
+          - hair_facial_identity_landmark_consistency
+          - hair_expression_gaze_body_scene_non_target_preservation
+          - hair_strand_material_texture_realism
+          - hair_structural_coherence_gravity
+          - hair_lighting_color_shadow_consistency
+          - hair_artifact_sharpness_background_stability
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Hair Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on complete visible hair, scalp, roots, hairline, bangs, parting, sideburns, face-framing strands, hair lengths,.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - hair_requested_style_family_match
+          - hair_requested_structure_arrangement_match
+          - hair_requested_length_endpoint_match
+          - hair_requested_cut_layers_hemline_match
+          - hair_requested_silhouette_volume_density_match
+          - hair_requested_texture_curl_pattern_match
+          - hair_requested_strand_flow_direction_match
+          - hair_requested_bangs_parting_front_match
+          - hair_requested_hairline_sideburn_faceframing_match
+          - hair_requested_color_hue_tone_match
+          - hair_requested_color_pattern_placement_match
+          - hair_requested_secondary_details_and_completeness_match
+          - hair_edit_localized_to_hair_region
+          - hair_scalp_root_hairline_attachment
+          - hair_face_ear_neck_shoulder_occlusion
+          - hair_head_proportion_pose_balance
+          - hair_facial_identity_landmark_consistency
+          - hair_expression_gaze_body_scene_non_target_preservation
+          - hair_artifact_sharpness_background_stability
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - hair_requested_structure_arrangement_match
+          - hair_requested_length_endpoint_match
+          - hair_requested_cut_layers_hemline_match
+          - hair_requested_silhouette_volume_density_match
+          - hair_requested_texture_curl_pattern_match
+          - hair_requested_strand_flow_direction_match
+          - hair_requested_bangs_parting_front_match
+          - hair_requested_hairline_sideburn_faceframing_match
+          - hair_requested_color_hue_tone_match
+          - hair_requested_color_pattern_placement_match
+          - hair_requested_secondary_details_and_completeness_match
+          - hair_edit_localized_to_hair_region
+          - hair_scalp_root_hairline_attachment
+          - hair_face_ear_neck_shoulder_occlusion
+          - hair_head_proportion_pose_balance
+          - hair_strand_material_texture_realism
+          - hair_structural_coherence_gravity
+          - hair_lighting_color_shadow_consistency
+          - hair_artifact_sharpness_background_stability
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of complete visible hair, scalp, roots, hairline, bangs, parting, sideburns, face-framing strands, hair lengths,, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - hair_requested_length_endpoint_match
+          - hair_requested_cut_layers_hemline_match
+          - hair_requested_silhouette_volume_density_match
+          - hair_requested_texture_curl_pattern_match
+          - hair_requested_strand_flow_direction_match
+          - hair_requested_bangs_parting_front_match
+          - hair_requested_hairline_sideburn_faceframing_match
+          - hair_requested_color_hue_tone_match
+          - hair_requested_color_pattern_placement_match
+          - hair_requested_secondary_details_and_completeness_match
+          - hair_edit_localized_to_hair_region
+          - hair_scalp_root_hairline_attachment
+          - hair_face_ear_neck_shoulder_occlusion
+          - hair_head_proportion_pose_balance
+          - hair_strand_material_texture_realism
+          - hair_structural_coherence_gravity
+          - hair_lighting_color_shadow_consistency
+          - hair_artifact_sharpness_background_stability
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - hair_requested_style_family_match
+          - hair_requested_structure_arrangement_match
+          - hair_requested_length_endpoint_match
+          - hair_requested_cut_layers_hemline_match
+          - hair_requested_silhouette_volume_density_match
+          - hair_requested_texture_curl_pattern_match
+          - hair_requested_strand_flow_direction_match
+          - hair_requested_bangs_parting_front_match
+          - hair_requested_hairline_sideburn_faceframing_match
+          - hair_requested_color_hue_tone_match
+          - hair_requested_color_pattern_placement_match
+          - hair_requested_secondary_details_and_completeness_match
+          - hair_edit_localized_to_hair_region
+          - hair_scalp_root_hairline_attachment
+          - hair_face_ear_neck_shoulder_occlusion
+          - hair_head_proportion_pose_balance
+          - hair_facial_identity_landmark_consistency
+          - hair_expression_gaze_body_scene_non_target_preservation
+          - hair_strand_material_texture_realism
+          - hair_structural_coherence_gravity
+          - hair_lighting_color_shadow_consistency
+          - hair_artifact_sharpness_background_stability
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - hair_edit_localized_to_hair_region
+          - hair_scalp_root_hairline_attachment
+          - hair_face_ear_neck_shoulder_occlusion
+          - hair_head_proportion_pose_balance
+          - hair_strand_material_texture_realism
+          - hair_structural_coherence_gravity
+          - hair_lighting_color_shadow_consistency
+          - hair_artifact_sharpness_background_stability
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally and return public values with at most 3 decimal places.
+active_l3:
+- hair_requested_style_family_match
+- hair_requested_structure_arrangement_match
+- hair_requested_length_endpoint_match
+- hair_requested_cut_layers_hemline_match
+- hair_requested_silhouette_volume_density_match
+- hair_requested_texture_curl_pattern_match
+- hair_requested_strand_flow_direction_match
+- hair_requested_bangs_parting_front_match
+- hair_requested_hairline_sideburn_faceframing_match
+- hair_requested_color_hue_tone_match
+- hair_requested_color_pattern_placement_match
+- hair_requested_secondary_details_and_completeness_match
+- hair_edit_localized_to_hair_region
+- hair_scalp_root_hairline_attachment
+- hair_face_ear_neck_shoulder_occlusion
+- hair_head_proportion_pose_balance
+- hair_facial_identity_landmark_consistency
+- hair_expression_gaze_body_scene_non_target_preservation
+- hair_strand_material_texture_realism
+- hair_structural_coherence_gravity
+- hair_lighting_color_shadow_consistency
+- hair_artifact_sharpness_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output facet names, evidence, explanations, summaries, or failure tags in the training path.
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 8
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 7
+    - 8
+    - 9
+    - 8
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    hair_requested_style_family_match: 0.14
+    hair_requested_structure_arrangement_match: 0.1
+    hair_requested_length_endpoint_match: 0.08
+    hair_requested_cut_layers_hemline_match: 0.07
+    hair_requested_silhouette_volume_density_match: 0.08
+    hair_requested_texture_curl_pattern_match: 0.08
+    hair_requested_strand_flow_direction_match: 0.07
+    hair_requested_bangs_parting_front_match: 0.08
+    hair_requested_hairline_sideburn_faceframing_match: 0.07
+    hair_requested_color_hue_tone_match: 0.08
+    hair_requested_color_pattern_placement_match: 0.07
+    hair_requested_secondary_details_and_completeness_match: 0.08
+  Localization and Anatomical Integration:
+    hair_edit_localized_to_hair_region: 0.27
+    hair_scalp_root_hairline_attachment: 0.28
+    hair_face_ear_neck_shoulder_occlusion: 0.25
+    hair_head_proportion_pose_balance: 0.2
+  Subject Preservation:
+    hair_facial_identity_landmark_consistency: 0.72
+    hair_expression_gaze_body_scene_non_target_preservation: 0.28
+  Task Realism and Image Quality:
+    hair_strand_material_texture_realism: 0.3
+    hair_structural_coherence_gravity: 0.26
+    hair_lighting_color_shadow_consistency: 0.24
+    hair_artifact_sharpness_background_stability: 0.2
+aggregation:
+  prompt_compliance: Masked weighted arithmetic mean over the first 12 Prompt Compliance L3 facets. The mask must be generated
+    from extracted target_spec only.
+  other_l1_blocks: Use the existing weighted arithmetic means for Localization, Subject Preservation, and Quality.
+  base_formula: base_reward = 0.60 * P_masked + 0.15 * L + 0.15 * S + 0.10 * Q
+  identity_score: I = score(hair_facial_identity_landmark_consistency) / 9.0
+  final_formula: reward = base_reward * (I ** 0.35)
+  properties:
+  - Fixed 22-score output.
+  - Fixed 12-value Prompt Compliance applicability mask.
+  - Unrequested and template-derived instruction facets cannot inflate Prompt Compliance.
+  - Inactive instruction facets cannot appear in weakest-facet reporting.
+  - Identity can only preserve or reduce the base reward; it can never increase it.
+  - Continuous and monotonic identity constraint.
+  - No hard cap, rank bonus, external metric, or discrete failure deduction.
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Keep full precision internally; return public values with at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Hairstyle Structure and Geometry:
+      hair_requested_style_family_match:
+        title: Requested hairstyle family and overall style identity match
+        definition: Judge the exact named or described hairstyle family, such as long straight hair, long wavy hair, bob,
+          pixie, buzz cut, ponytail, bun, braid, wolf cut, mullet, slick-back, pompadour, quiff, mohawk, dreadlocks, or another
+          explicit style. Also judge explicitly requested feminine, masculine, elegant, casual, polished, or other overall
+          styling character.
+        anchors:
+          0: 'requested hairstyle family and overall style identity match completely fails: the requested hairstyle family
+            is absent, opposite, or replaced by an unrelated hairstyle'
+          1: Only a negligible trace of requested hairstyle family and overall style identity match is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but requested hairstyle family and overall style identity match is severely
+            incorrect, incomplete, or directionally wrong.
+          3: requested hairstyle family and overall style identity match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested hairstyle family and overall style identity match is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: requested hairstyle family and overall style identity match is moderately achieved, with several substantial
+            visible problems.
+          6: requested hairstyle family and overall style identity match is mostly correct, but one clear and important issue
+            remains.
+          7: requested hairstyle family and overall style identity match is clearly successful, with only a minor visible
+            mismatch.
+          8: requested hairstyle family and overall style identity match is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: The exact requested hairstyle family and complete overall styling identity are fully and unmistakably realized.
+      hair_requested_structure_arrangement_match:
+        title: Requested hairstyle structure and arrangement match
+        definition: Judge loose versus tied organization, ponytail height and side, number of ponytails or buns, half-up organization,
+          braid type and routing, shaved or undercut regions, component connections, symmetry, and the topology of the final
+          hairstyle.
+        anchors:
+          0: 'requested hairstyle structure and arrangement match completely fails: the requested structural arrangement is
+            absent or replaced by an incompatible organization'
+          1: Only a negligible trace of requested hairstyle structure and arrangement match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested hairstyle structure and arrangement match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested hairstyle structure and arrangement match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested hairstyle structure and arrangement match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested hairstyle structure and arrangement match is moderately achieved, with several substantial visible
+            problems.
+          6: requested hairstyle structure and arrangement match is mostly correct, but one clear and important issue remains.
+          7: requested hairstyle structure and arrangement match is clearly successful, with only a minor visible mismatch.
+          8: requested hairstyle structure and arrangement match is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested structural component, connection, count, position, and arrangement is exact and complete.
+      hair_requested_length_endpoint_match:
+        title: Requested hair length and visible endpoint match
+        definition: Judge ultra-short, ear-, chin-, shoulder-, collarbone-, chest-, waist-, or other requested length; visible
+          endpoints at the front, sides, and back; and whether hair falls past the ears, jaw, shoulders, or other specified
+          landmark.
+        anchors:
+          0: 'requested hair length and visible endpoint match completely fails: hair length changes in the wrong direction
+            or the target endpoint is substantially incorrect'
+          1: Only a negligible trace of requested hair length and visible endpoint match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested hair length and visible endpoint match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested hair length and visible endpoint match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested hair length and visible endpoint match is recognizable, but a major mismatch, omission, excessive change,
+            or wrong regional behavior remains.
+          5: requested hair length and visible endpoint match is moderately achieved, with several substantial visible problems.
+          6: requested hair length and visible endpoint match is mostly correct, but one clear and important issue remains.
+          7: requested hair length and visible endpoint match is clearly successful, with only a minor visible mismatch.
+          8: requested hair length and visible endpoint match is highly accurate and complete, with only a tiny local imperfection.
+          9: Hair length and every visible endpoint exactly match the requested anatomical landmarks.
+      hair_requested_cut_layers_hemline_match:
+        title: Requested haircut, layers, ends, and hemline match
+        definition: Judge one-length, long layers, high layers, feathered or choppy layers, blunt ends, tapered ends, inward-curled
+          or outward-flipped ends, and U-, V-, rounded-, straight-, or asymmetric hemline details.
+        anchors:
+          0: 'requested haircut, layers, ends, and hemline match completely fails: the requested cut structure, layers, ends,
+            or hemline are absent or fundamentally wrong'
+          1: Only a negligible trace of requested haircut, layers, ends, and hemline match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested haircut, layers, ends, and hemline match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested haircut, layers, ends, and hemline match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested haircut, layers, ends, and hemline match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested haircut, layers, ends, and hemline match is moderately achieved, with several substantial visible problems.
+          6: requested haircut, layers, ends, and hemline match is mostly correct, but one clear and important issue remains.
+          7: requested haircut, layers, ends, and hemline match is clearly successful, with only a minor visible mismatch.
+          8: requested haircut, layers, ends, and hemline match is highly accurate and complete, with only a tiny local imperfection.
+          9: The haircut construction, layers, ends, and hemline exactly match every requested detail.
+      hair_requested_silhouette_volume_density_match:
+        title: Requested silhouette, volume, density, and width match
+        definition: Judge compact, rounded, narrow, wide, flat, sleek, airy, fluffy, lifted, voluminous, or dense appearance;
+          crown height; side fullness; lower-hair spread; and the overall outer silhouette.
+        anchors:
+          0: 'requested silhouette, volume, density, and width match completely fails: the requested silhouette or volume
+            is absent, opposite, or anatomically implausible'
+          1: Only a negligible trace of requested silhouette, volume, density, and width match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested silhouette, volume, density, and width match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested silhouette, volume, density, and width match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested silhouette, volume, density, and width match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested silhouette, volume, density, and width match is moderately achieved, with several substantial visible
+            problems.
+          6: requested silhouette, volume, density, and width match is mostly correct, but one clear and important issue remains.
+          7: requested silhouette, volume, density, and width match is clearly successful, with only a minor visible mismatch.
+          8: requested silhouette, volume, density, and width match is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Silhouette, width, density, crown height, and regional volume exactly match the requested design.
+      hair_requested_texture_curl_pattern_match:
+        title: Requested hair texture, wave, and curl pattern match
+        definition: Judge straightness, smoothness, natural waves, S-waves, water waves, egg-roll waves, large waves, vintage
+          curls, French curls, woolly curls, tight curls, coils, foil perm, wet-look, or other requested texture, including
+          curl diameter, density, and regularity.
+        anchors:
+          0: 'requested hair texture, wave, and curl pattern match completely fails: the requested texture or curl family
+            is absent or replaced by an incompatible texture'
+          1: Only a negligible trace of requested hair texture, wave, and curl pattern match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested hair texture, wave, and curl pattern match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested hair texture, wave, and curl pattern match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested hair texture, wave, and curl pattern match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested hair texture, wave, and curl pattern match is moderately achieved, with several substantial visible
+            problems.
+          6: requested hair texture, wave, and curl pattern match is mostly correct, but one clear and important issue remains.
+          7: requested hair texture, wave, and curl pattern match is clearly successful, with only a minor visible mismatch.
+          8: requested hair texture, wave, and curl pattern match is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: The exact requested texture family, curl diameter, density, regularity, and coverage are fully realized.
+    Front Hair, Color, and Completion:
+      hair_requested_strand_flow_direction_match:
+        title: Requested strand flow, direction, and movement match
+        definition: Judge center-part fall, side-swept flow, backward flow, face-framing direction, downward gravity, outward
+          movement, strand separation, curl direction, and continuity of hair flow from roots to ends.
+        anchors:
+          0: 'requested strand flow, direction, and movement match completely fails: strand flow is directionally wrong, chaotic,
+            or inconsistent with the requested hairstyle'
+          1: Only a negligible trace of requested strand flow, direction, and movement match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested strand flow, direction, and movement match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested strand flow, direction, and movement match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested strand flow, direction, and movement match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested strand flow, direction, and movement match is moderately achieved, with several substantial visible
+            problems.
+          6: requested strand flow, direction, and movement match is mostly correct, but one clear and important issue remains.
+          7: requested strand flow, direction, and movement match is clearly successful, with only a minor visible mismatch.
+          8: requested strand flow, direction, and movement match is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: All visible strands follow the exact requested direction, movement, continuity, and gravity.
+      hair_requested_bangs_parting_front_match:
+        title: Requested bangs, parting, and front-hair design match
+        definition: Judge French, airy, blunt, baby, curtain, curved, side-swept, irregular, or eye-covering bangs; center,
+          side, or 7:3 parting; forehead exposure; front-hair density; length; width; and placement.
+        anchors:
+          0: 'requested bangs, parting, and front-hair design match completely fails: the requested bangs or parting are absent,
+            opposite, or replaced by an incompatible front design'
+          1: Only a negligible trace of requested bangs, parting, and front-hair design match is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but requested bangs, parting, and front-hair design match is severely incorrect,
+            incomplete, or directionally wrong.
+          3: requested bangs, parting, and front-hair design match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested bangs, parting, and front-hair design match is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: requested bangs, parting, and front-hair design match is moderately achieved, with several substantial visible
+            problems.
+          6: requested bangs, parting, and front-hair design match is mostly correct, but one clear and important issue remains.
+          7: requested bangs, parting, and front-hair design match is clearly successful, with only a minor visible mismatch.
+          8: requested bangs, parting, and front-hair design match is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Bangs, parting, forehead exposure, front-hair length, density, and placement exactly match the prompt.
+      hair_requested_hairline_sideburn_faceframing_match:
+        title: Requested hairline, sideburn, and face-framing details match
+        definition: Judge front hairline shape and exposure, baby hairs, sideburn length and thickness, ear-side strands,
+          princess-cut side locks, face-framing pieces, temple coverage, and their connection to the main hairstyle.
+        anchors:
+          0: 'requested hairline, sideburn, and face-framing details match completely fails: requested hairline, sideburn,
+            or face-framing details are absent, misplaced, or structurally wrong'
+          1: Only a negligible trace of requested hairline, sideburn, and face-framing details match is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but requested hairline, sideburn, and face-framing details match is severely
+            incorrect, incomplete, or directionally wrong.
+          3: requested hairline, sideburn, and face-framing details match is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: requested hairline, sideburn, and face-framing details match is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: requested hairline, sideburn, and face-framing details match is moderately achieved, with several substantial
+            visible problems.
+          6: requested hairline, sideburn, and face-framing details match is mostly correct, but one clear and important issue
+            remains.
+          7: requested hairline, sideburn, and face-framing details match is clearly successful, with only a minor visible
+            mismatch.
+          8: requested hairline, sideburn, and face-framing details match is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: Every requested hairline, sideburn, temple, and face-framing detail is exact and naturally connected.
+      hair_requested_color_hue_tone_match:
+        title: Requested hair color, hue, undertone, depth, and saturation match
+        definition: Judge the named color and color family, including warm, cool, neutral, ash, golden, copper, chestnut,
+          chocolate, black, brown, blond, gray, pastel, vivid, muted, light, dark, bright, or low-saturation requirements.
+        anchors:
+          0: 'requested hair color, hue, undertone, depth, and saturation match completely fails: the dominant hair color
+            family, undertone, depth, or saturation is substantially wrong'
+          1: Only a negligible trace of requested hair color, hue, undertone, depth, and saturation match is visible; the
+            central requirement is essentially unmet.
+          2: A weak related attempt is present, but requested hair color, hue, undertone, depth, and saturation match is severely
+            incorrect, incomplete, or directionally wrong.
+          3: requested hair color, hue, undertone, depth, and saturation match is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: requested hair color, hue, undertone, depth, and saturation match is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: requested hair color, hue, undertone, depth, and saturation match is moderately achieved, with several substantial
+            visible problems.
+          6: requested hair color, hue, undertone, depth, and saturation match is mostly correct, but one clear and important
+            issue remains.
+          7: requested hair color, hue, undertone, depth, and saturation match is clearly successful, with only a minor visible
+            mismatch.
+          8: requested hair color, hue, undertone, depth, and saturation match is highly accurate and complete, with only
+            a tiny local imperfection.
+          9: Hue, undertone, depth, brightness, and saturation exactly match the requested hair color.
+      hair_requested_color_pattern_placement_match:
+        title: Requested hair-color pattern, coverage, and placement match
+        definition: Judge uniform full-head dye, roots, tips, dip dye, ombre, gradient, highlights, streaks, face-framing
+          color, ear-side dye, underlayer color, split dye, two-tone, multicolor, or rainbow placement, including transition
+          width and regional coverage.
+        anchors:
+          0: 'requested hair-color pattern, coverage, and placement match completely fails: the requested color pattern is
+            absent, misplaced, or distributed across incorrect regions'
+          1: Only a negligible trace of requested hair-color pattern, coverage, and placement match is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but requested hair-color pattern, coverage, and placement match is severely
+            incorrect, incomplete, or directionally wrong.
+          3: requested hair-color pattern, coverage, and placement match is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: requested hair-color pattern, coverage, and placement match is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: requested hair-color pattern, coverage, and placement match is moderately achieved, with several substantial
+            visible problems.
+          6: requested hair-color pattern, coverage, and placement match is mostly correct, but one clear and important issue
+            remains.
+          7: requested hair-color pattern, coverage, and placement match is clearly successful, with only a minor visible
+            mismatch.
+          8: requested hair-color pattern, coverage, and placement match is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: Every requested color region, transition, coverage pattern, and placement is exact and complete.
+      hair_requested_secondary_details_and_completeness_match:
+        title: All requested secondary hair details and edit completeness match
+        definition: Judge whether every remaining explicitly requested detail is completed, including small braids, shaved
+          patches, decorative hair elements, hair-attached clips, ribbons, beads, flowers, special asymmetries, exact counts,
+          minor regional instructions, and the requested edit visibility. Do not reward an attractive result that omits a
+          specified secondary feature.
+        anchors:
+          0: 'all requested secondary hair details and edit completeness match completely fails: one or more central requested
+            details are missing, or the edit is too weak to be visibly complete'
+          1: Only a negligible trace of all requested secondary hair details and edit completeness match is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but all requested secondary hair details and edit completeness match is severely
+            incorrect, incomplete, or directionally wrong.
+          3: all requested secondary hair details and edit completeness match is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: all requested secondary hair details and edit completeness match is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: all requested secondary hair details and edit completeness match is moderately achieved, with several substantial
+            visible problems.
+          6: all requested secondary hair details and edit completeness match is mostly correct, but one clear and important
+            issue remains.
+          7: all requested secondary hair details and edit completeness match is clearly successful, with only a minor visible
+            mismatch.
+          8: all requested secondary hair details and edit completeness match is highly accurate and complete, with only a
+            tiny local imperfection.
+          9: Every primary and secondary requested hair detail is present, clearly visible, and fully completed.
+  Localization and Anatomical Integration:
+    Scalp, Boundaries, Occlusion, and Head Fit:
+      hair_edit_localized_to_hair_region:
+        title: The transformation is localized to the intended hair region
+        definition: Changes must remain within the hair, scalp, hairline, and minimum contact zones required for natural overlap.
+          Do not alter facial anatomy, skin outside hair boundaries, ears, neck, shoulders, body, or unrelated scene regions.
+        anchors:
+          0: 'the transformation is localized to the intended hair region completely fails: large non-hair facial, body, or
+            scene regions are regenerated or deformed'
+          1: Only a negligible trace of the transformation is localized to the intended hair region is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but the transformation is localized to the intended hair region is severely
+            incorrect, incomplete, or directionally wrong.
+          3: the transformation is localized to the intended hair region is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: the transformation is localized to the intended hair region is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: the transformation is localized to the intended hair region is moderately achieved, with several substantial
+            visible problems.
+          6: the transformation is localized to the intended hair region is mostly correct, but one clear and important issue
+            remains.
+          7: the transformation is localized to the intended hair region is clearly successful, with only a minor visible
+            mismatch.
+          8: the transformation is localized to the intended hair region is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: The edit is precisely localized to the intended hair regions with no visible non-target spill.
+      hair_scalp_root_hairline_attachment:
+        title: Scalp, roots, parting, and hairline attachment are anatomically natural
+        definition: Judge root direction, follicle emergence, scalp coverage, parting continuity, hairline contact, temple
+          attachment, absence of floating hair, bald gaps, pasted caps, or hair penetrating the forehead.
+        anchors:
+          0: 'scalp, roots, parting, and hairline attachment are anatomically natural completely fails: hair is detached,
+            floating, incorrectly rooted, or anatomically incompatible with the scalp'
+          1: Only a negligible trace of scalp, roots, parting, and hairline attachment are anatomically natural is visible;
+            the central requirement is essentially unmet.
+          2: A weak related attempt is present, but scalp, roots, parting, and hairline attachment are anatomically natural
+            is severely incorrect, incomplete, or directionally wrong.
+          3: scalp, roots, parting, and hairline attachment are anatomically natural is partially attempted, but one or more
+            primary requirements are missing or contradictory.
+          4: scalp, roots, parting, and hairline attachment are anatomically natural is recognizable, but a major mismatch,
+            omission, excessive change, or wrong regional behavior remains.
+          5: scalp, roots, parting, and hairline attachment are anatomically natural is moderately achieved, with several
+            substantial visible problems.
+          6: scalp, roots, parting, and hairline attachment are anatomically natural is mostly correct, but one clear and
+            important issue remains.
+          7: scalp, roots, parting, and hairline attachment are anatomically natural is clearly successful, with only a minor
+            visible mismatch.
+          8: scalp, roots, parting, and hairline attachment are anatomically natural is highly accurate and complete, with
+            only a tiny local imperfection.
+          9: All hair is naturally rooted, attached, and continuous with the scalp, parting, temples, and hairline.
+      hair_face_ear_neck_shoulder_occlusion:
+        title: Hair occlusion over the face, ears, neck, and shoulders is physically correct
+        definition: Judge front strands crossing the forehead or eyes, hair covering or revealing ears, contact with cheeks
+          and jaw, overlap with neck, shoulders, clothing, accessories, and correct foreground/background ordering.
+        anchors:
+          0: 'hair occlusion over the face, ears, neck, and shoulders is physically correct completely fails: hair leaks,
+            penetrates, floats, or occludes facial and body regions incorrectly'
+          1: Only a negligible trace of hair occlusion over the face, ears, neck, and shoulders is physically correct is visible;
+            the central requirement is essentially unmet.
+          2: A weak related attempt is present, but hair occlusion over the face, ears, neck, and shoulders is physically
+            correct is severely incorrect, incomplete, or directionally wrong.
+          3: hair occlusion over the face, ears, neck, and shoulders is physically correct is partially attempted, but one
+            or more primary requirements are missing or contradictory.
+          4: hair occlusion over the face, ears, neck, and shoulders is physically correct is recognizable, but a major mismatch,
+            omission, excessive change, or wrong regional behavior remains.
+          5: hair occlusion over the face, ears, neck, and shoulders is physically correct is moderately achieved, with several
+            substantial visible problems.
+          6: hair occlusion over the face, ears, neck, and shoulders is physically correct is mostly correct, but one clear
+            and important issue remains.
+          7: hair occlusion over the face, ears, neck, and shoulders is physically correct is clearly successful, with only
+            a minor visible mismatch.
+          8: hair occlusion over the face, ears, neck, and shoulders is physically correct is highly accurate and complete,
+            with only a tiny local imperfection.
+          9: Every hair-face-ear-neck-shoulder overlap and occlusion is physically correct and naturally integrated.
+      hair_head_proportion_pose_balance:
+        title: Hairstyle-to-head proportion and pose-aware balance are coherent
+        definition: Judge head size, skull proportion, left-right balance, crown position, visible-side fullness, perspective,
+          head tilt, and whether the hairstyle fits the source face and camera angle without stretching the skull.
+        anchors:
+          0: 'hairstyle-to-head proportion and pose-aware balance are coherent completely fails: the hairstyle is disproportionate,
+            perspective-inconsistent, or creates an altered skull/head shape'
+          1: Only a negligible trace of hairstyle-to-head proportion and pose-aware balance are coherent is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but hairstyle-to-head proportion and pose-aware balance are coherent is severely
+            incorrect, incomplete, or directionally wrong.
+          3: hairstyle-to-head proportion and pose-aware balance are coherent is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: hairstyle-to-head proportion and pose-aware balance are coherent is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: hairstyle-to-head proportion and pose-aware balance are coherent is moderately achieved, with several substantial
+            visible problems.
+          6: hairstyle-to-head proportion and pose-aware balance are coherent is mostly correct, but one clear and important
+            issue remains.
+          7: hairstyle-to-head proportion and pose-aware balance are coherent is clearly successful, with only a minor visible
+            mismatch.
+          8: hairstyle-to-head proportion and pose-aware balance are coherent is highly accurate and complete, with only a
+            tiny local imperfection.
+          9: The hairstyle is ideally proportioned and perfectly balanced for the source head pose and perspective.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      hair_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare the source and edited face as the same individual. Judge face outline, forehead, eyebrows, eye
+          shape and spacing, nose geometry, mouth position and shape, cheeks, jaw, chin, age impression, gender presentation,
+          skin tone, characteristic asymmetries, and overall same-person impression. Hair may cover a requested portion of
+          the face, but the underlying facial identity must not change.
+        anchors:
+          0: 'facial identity and defining landmark geometry are preserved completely fails: the edited face appears to be
+            a different person or multiple defining facial landmarks are replaced'
+          1: Only a negligible trace of facial identity and defining landmark geometry are preserved is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but facial identity and defining landmark geometry are preserved is severely
+            incorrect, incomplete, or directionally wrong.
+          3: facial identity and defining landmark geometry are preserved is partially attempted, but one or more primary
+            requirements are missing or contradictory.
+          4: facial identity and defining landmark geometry are preserved is recognizable, but a major mismatch, omission,
+            excessive change, or wrong regional behavior remains.
+          5: facial identity and defining landmark geometry are preserved is moderately achieved, with several substantial
+            visible problems.
+          6: facial identity and defining landmark geometry are preserved is mostly correct, but one clear and important issue
+            remains.
+          7: facial identity and defining landmark geometry are preserved is clearly successful, with only a minor visible
+            mismatch.
+          8: facial identity and defining landmark geometry are preserved is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: The same person's face, landmark geometry, feature spacing, age impression, and characteristic details are source-identical
+            apart from requested hair occlusion.
+      hair_expression_gaze_body_scene_non_target_preservation:
+        title: Expression, gaze, body, scene, and unrequested hairstyle properties are preserved
+        definition: Preserve expression, gaze direction, head pose, skin detail, facial hair, makeup, ears, neck, body pose,
+          clothing, accessories, background, lighting, camera angle, framing, and all hair properties not requested to change.
+          These are judged together rather than split into easy items.
+        anchors:
+          0: 'expression, gaze, body, scene, and unrequested hairstyle properties are preserved completely fails: multiple
+            important non-target facial, body, scene, or unrequested hair properties are altered'
+          1: Only a negligible trace of expression, gaze, body, scene, and unrequested hairstyle properties are preserved
+            is visible; the central requirement is essentially unmet.
+          2: A weak related attempt is present, but expression, gaze, body, scene, and unrequested hairstyle properties are
+            preserved is severely incorrect, incomplete, or directionally wrong.
+          3: expression, gaze, body, scene, and unrequested hairstyle properties are preserved is partially attempted, but
+            one or more primary requirements are missing or contradictory.
+          4: expression, gaze, body, scene, and unrequested hairstyle properties are preserved is recognizable, but a major
+            mismatch, omission, excessive change, or wrong regional behavior remains.
+          5: expression, gaze, body, scene, and unrequested hairstyle properties are preserved is moderately achieved, with
+            several substantial visible problems.
+          6: expression, gaze, body, scene, and unrequested hairstyle properties are preserved is mostly correct, but one
+            clear and important issue remains.
+          7: expression, gaze, body, scene, and unrequested hairstyle properties are preserved is clearly successful, with
+            only a minor visible mismatch.
+          8: expression, gaze, body, scene, and unrequested hairstyle properties are preserved is highly accurate and complete,
+            with only a tiny local imperfection.
+          9: Expression, gaze, pose, scene, and every unrequested hairstyle property remain source-consistent.
+  Task Realism and Image Quality:
+    Hair Rendering and Artifact Control:
+      hair_strand_material_texture_realism:
+        title: Individual strands and hair material are photorealistic
+        definition: Judge strand thickness, root-to-end continuity, strand grouping, flyaways, curl fibers, density variation,
+          translucency, softness, specular response, and absence of wig-like plastic, painted masses, or textureless hair.
+        anchors:
+          0: 'individual strands and hair material are photorealistic completely fails: hair material is painted, plastic,
+            blurred, textureless, or dominated by malformed strands'
+          1: Only a negligible trace of individual strands and hair material are photorealistic is visible; the central requirement
+            is essentially unmet.
+          2: A weak related attempt is present, but individual strands and hair material are photorealistic is severely incorrect,
+            incomplete, or directionally wrong.
+          3: individual strands and hair material are photorealistic is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: individual strands and hair material are photorealistic is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: individual strands and hair material are photorealistic is moderately achieved, with several substantial visible
+            problems.
+          6: individual strands and hair material are photorealistic is mostly correct, but one clear and important issue
+            remains.
+          7: individual strands and hair material are photorealistic is clearly successful, with only a minor visible mismatch.
+          8: individual strands and hair material are photorealistic is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Individual strands, clumps, flyaways, density variation, and material response are fully photorealistic.
+      hair_structural_coherence_gravity:
+        title: Hairstyle construction, geometry, and gravity are coherent
+        definition: Judge braid construction, ponytail and bun attachment, curl continuity, layered structure, hair mass support,
+          weight, gravity, tension, connection between components, and absence of melted or impossible geometry.
+        anchors:
+          0: 'hairstyle construction, geometry, and gravity are coherent completely fails: the hairstyle is structurally broken,
+            unsupported, or physically impossible'
+          1: Only a negligible trace of hairstyle construction, geometry, and gravity are coherent is visible; the central
+            requirement is essentially unmet.
+          2: A weak related attempt is present, but hairstyle construction, geometry, and gravity are coherent is severely
+            incorrect, incomplete, or directionally wrong.
+          3: hairstyle construction, geometry, and gravity are coherent is partially attempted, but one or more primary requirements
+            are missing or contradictory.
+          4: hairstyle construction, geometry, and gravity are coherent is recognizable, but a major mismatch, omission, excessive
+            change, or wrong regional behavior remains.
+          5: hairstyle construction, geometry, and gravity are coherent is moderately achieved, with several substantial visible
+            problems.
+          6: hairstyle construction, geometry, and gravity are coherent is mostly correct, but one clear and important issue
+            remains.
+          7: hairstyle construction, geometry, and gravity are coherent is clearly successful, with only a minor visible mismatch.
+          8: hairstyle construction, geometry, and gravity are coherent is highly accurate and complete, with only a tiny
+            local imperfection.
+          9: All hairstyle components are structurally coherent, correctly connected, and physically plausible under gravity.
+      hair_lighting_color_shadow_consistency:
+        title: Hair lighting, color variation, highlights, and shadows match the source
+        definition: Judge root shadows, internal occlusion, strand highlights, color variation, reflections, cast shadows
+          on face and shoulders, and consistency with the original illumination and white balance.
+        anchors:
+          0: 'hair lighting, color variation, highlights, and shadows match the source completely fails: hair lighting or
+            color response contradicts the source or produces flat pasted appearance'
+          1: Only a negligible trace of hair lighting, color variation, highlights, and shadows match the source is visible;
+            the central requirement is essentially unmet.
+          2: A weak related attempt is present, but hair lighting, color variation, highlights, and shadows match the source
+            is severely incorrect, incomplete, or directionally wrong.
+          3: hair lighting, color variation, highlights, and shadows match the source is partially attempted, but one or more
+            primary requirements are missing or contradictory.
+          4: hair lighting, color variation, highlights, and shadows match the source is recognizable, but a major mismatch,
+            omission, excessive change, or wrong regional behavior remains.
+          5: hair lighting, color variation, highlights, and shadows match the source is moderately achieved, with several
+            substantial visible problems.
+          6: hair lighting, color variation, highlights, and shadows match the source is mostly correct, but one clear and
+            important issue remains.
+          7: hair lighting, color variation, highlights, and shadows match the source is clearly successful, with only a minor
+            visible mismatch.
+          8: hair lighting, color variation, highlights, and shadows match the source is highly accurate and complete, with
+            only a tiny local imperfection.
+          9: All hair highlights, shadows, color variation, and cast shadows are physically consistent with the source.
+      hair_artifact_sharpness_background_stability:
+        title: Artifacts, sharpness loss, and nearby background deformation are controlled
+        definition: Penalize duplicated strands, broken braids, melted curls, repeated textures, smearing, halos, jagged masks,
+          excessive blur, over-sharpening, warped ears or shoulders, bent background lines, and generation artifacts.
+        anchors:
+          0: 'artifacts, sharpness loss, and nearby background deformation are controlled completely fails: severe artifacts,
+            blur, warping, or background deformation dominate the result'
+          1: Only a negligible trace of artifacts, sharpness loss, and nearby background deformation are controlled is visible;
+            the central requirement is essentially unmet.
+          2: A weak related attempt is present, but artifacts, sharpness loss, and nearby background deformation are controlled
+            is severely incorrect, incomplete, or directionally wrong.
+          3: artifacts, sharpness loss, and nearby background deformation are controlled is partially attempted, but one or
+            more primary requirements are missing or contradictory.
+          4: artifacts, sharpness loss, and nearby background deformation are controlled is recognizable, but a major mismatch,
+            omission, excessive change, or wrong regional behavior remains.
+          5: artifacts, sharpness loss, and nearby background deformation are controlled is moderately achieved, with several
+            substantial visible problems.
+          6: artifacts, sharpness loss, and nearby background deformation are controlled is mostly correct, but one clear
+            and important issue remains.
+          7: artifacts, sharpness loss, and nearby background deformation are controlled is clearly successful, with only
+            a minor visible mismatch.
+          8: artifacts, sharpness loss, and nearby background deformation are controlled is highly accurate and complete,
+            with only a tiny local imperfection.
+          9: The edit is clean, sharply resolved, artifact-free, and leaves all nearby background and non-target edges stable.
+prompt_applicability:
+  purpose: Keep the judge output fixed at 22 scores while preventing unrequested or template-derived hair attributes from
+    contributing easy high scores.
+  activation_source: target_spec_only
+  raw_prompt_usage: The raw prompt may be used by the visual judge for preservation and quality evaluation, but it must not
+    be scanned directly to activate the first 12 Prompt Compliance facets.
+  mask_length: 12
+  mask_values:
+    '1': Explicitly requested or semantically required by the extracted target specification.
+    '0': Not requested by the target specification; excluded from Prompt Compliance aggregation.
+  prompt_facet_order:
+  - hair_requested_style_family_match
+  - hair_requested_structure_arrangement_match
+  - hair_requested_length_endpoint_match
+  - hair_requested_cut_layers_hemline_match
+  - hair_requested_silhouette_volume_density_match
+  - hair_requested_texture_curl_pattern_match
+  - hair_requested_strand_flow_direction_match
+  - hair_requested_bangs_parting_front_match
+  - hair_requested_hairline_sideburn_faceframing_match
+  - hair_requested_color_hue_tone_match
+  - hair_requested_color_pattern_placement_match
+  - hair_requested_secondary_details_and_completeness_match
+  always_applicable:
+  - hair_requested_style_family_match
+  - hair_requested_secondary_details_and_completeness_match
+  activation_rules:
+    hair_requested_style_family_match:
+      activate_when:
+      - Any concrete named or described target hairstyle is present.
+      - Any explicit feminine, masculine, elegant, polished, casual, retro, or other requested overall style character is
+        present.
+      do_not_activate_from:
+      - generic statements that the edit should be human-centric, obvious, realistic, or photorealistic
+    hair_requested_structure_arrangement_match:
+      activate_when:
+      - ponytail, pigtail, bun, updo, braid, braided, half-up, tied, loose-versus-tied organization
+      - slick-back, mohawk, mullet, undercut, shaved side, dreadlocks, box braids, crown braid, fishtail braid
+      - explicit component count, connection, side, height, routing, or asymmetrical organization
+      semantic_implications:
+      - ponytail, bun, braid, updo, half-up, mohawk, mullet, undercut, and dreadlocks imply a structural arrangement requirement
+      do_not_activate_from:
+      - generic scalp coverage or generic hair reconstruction language
+    hair_requested_length_endpoint_match:
+      activate_when:
+      - ultra-short, short, ear-length, chin-length, jaw-length, shoulder-length, collarbone-length
+      - long, very long, chest-length, waist-length, past the shoulders, below the shoulders
+      - any explicit endpoint relative to ears, jaw, neck, shoulders, chest, or waist
+      semantic_implications:
+      - buzz cut, pixie cut, and bob imply a characteristic length category
+      - long straight hair and long wavy hair explicitly imply long length
+      do_not_activate_from:
+      - the words 'hair length' appearing only in the generic reconstruction clause
+      - generic occlusion over ears or shoulders
+    hair_requested_cut_layers_hemline_match:
+      activate_when:
+      - layer, layered, one-length, blunt, choppy, feathered, tapered, trimmed ends
+      - U-shaped, V-shaped, rounded, straight, or asymmetrical hemline
+      - inward-curled ends, outward-flipped ends, specific end treatment
+      semantic_implications:
+      - bob, blunt bob, pixie, wolf cut, mullet, princess cut, and layered cut imply haircut or hemline structure
+      do_not_activate_from:
+      - generic clean boundaries or artifact-free language
+    hair_requested_silhouette_volume_density_match:
+      activate_when:
+      - voluminous, high-volume, fluffy, airy, lifted roots, crown volume, fuller sides
+      - flat, compact, sleek, dense, sparse, thick, thin, wide, narrow, rounded silhouette
+      - explicit regional fullness or crown-height requirement
+      semantic_implications:
+      - afro, pompadour, quiff, rounded buzz, and explicitly fluffy or high-crown styles imply silhouette requirements
+      do_not_activate_from:
+      - the exact generic phrase 'natural hair volume'
+      - generic realism or integration language
+    hair_requested_texture_curl_pattern_match:
+      activate_when:
+      - straight, smooth straight, wavy, wave, curly, curl, coily, perm, woolly
+      - S-wave, water wave, egg-roll wave, French curl, vintage curl, wet-look
+      - explicit curl diameter, curl density, texture regularity, or full-head texture
+      semantic_implications:
+      - long straight hair implies straight texture
+      - long wavy hair implies wavy texture
+      - curly bob and woolly curls imply the corresponding curl family
+      do_not_activate_from:
+      - the exact generic phrase 'realistic strand texture'
+      - generic photorealism language
+    hair_requested_strand_flow_direction_match:
+      activate_when:
+      - falling naturally, flowing downward, side-swept, swept backward, slicked back
+      - outward, inward, root-to-tip direction, face-framing direction, curl direction
+      - explicit strand movement, gravity direction, or flow continuity
+      do_not_activate_from:
+      - the words 'strand flow' appearing only in the generic reconstruction clause
+    hair_requested_bangs_parting_front_match:
+      activate_when:
+      - bangs, fringe, curtain bangs, blunt bangs, airy bangs, baby bangs, side-swept bangs
+      - center part, middle part, side part, 7:3 part, explicit forehead exposure
+      - front hair partially covering the eyes, front hair covering the forehead, explicit front-hair design
+      do_not_activate_from:
+      - the word 'bangs' appearing only in the generic reconstruction clause
+      - generic instruction to rebuild front boundaries
+    hair_requested_hairline_sideburn_faceframing_match:
+      activate_when:
+      - lower, raise, round, straighten, densify, or otherwise explicitly change the hairline
+      - baby hairs, sideburn length or thickness, temple hair, face-framing strands
+      - princess-cut side locks, ear-side strands, explicit temple coverage or sideburn connection
+      do_not_activate_from:
+      - the exact generic phrase 'clean hairline detail'
+      - hairline, sideburn, or face-framing words appearing only in the generic reconstruction clause
+      - front hair partially covering the eyes unless face-framing or hairline details are separately requested
+    hair_requested_color_hue_tone_match:
+      activate_when:
+      - a named target hair color or color family
+      - black, brown, chocolate brown, chestnut, blond, blonde, red, copper, gray, silver, white
+      - blue, green, purple, pink, warm, cool, ash, golden, dark, light, vivid, muted, pastel
+      do_not_activate_from:
+      - generic lighting, highlights, shadows, white balance, or photorealism clauses
+    hair_requested_color_pattern_placement_match:
+      activate_when:
+      - hair highlights, colored highlights, streaks, ombre, gradient, balayage, split dye, two-tone
+      - underlayer dye, root dye, colored tips, dip dye, face-framing color, ear-side dye, rainbow
+      - explicit color-placement region, density, width, count, or transition
+      disambiguation:
+      - The phrase 'highlights and shadows' in a rendering or reconstruction clause is lighting and must produce mask=0.
+      - The word 'highlights' activates this facet only when it clearly describes dyed hair sections, a color, or a placement
+        pattern.
+      do_not_activate_from:
+      - generic image highlights and shadows
+      - strand highlights caused by illumination
+    hair_requested_secondary_details_and_completeness_match:
+      activate_when:
+      - Always active.
+      - Evaluate completion of all target-spec attributes that are not already fully represented by another applicable facet.
+      - Include explicit small braids, shaved patches, hair-attached ornaments, counts, asymmetries, or special local details.
+      do_not_activate_from:
+      - generic preservation, realism, lighting, reconstruction, or artifact-control clauses
+  named_style_semantic_mapping:
+    bob:
+    - hair_requested_style_family_match
+    - hair_requested_length_endpoint_match
+    - hair_requested_cut_layers_hemline_match
+    pixie cut:
+    - hair_requested_style_family_match
+    - hair_requested_length_endpoint_match
+    - hair_requested_cut_layers_hemline_match
+    buzz cut:
+    - hair_requested_style_family_match
+    - hair_requested_length_endpoint_match
+    - hair_requested_cut_layers_hemline_match
+    wolf cut:
+    - hair_requested_style_family_match
+    - hair_requested_cut_layers_hemline_match
+    - hair_requested_silhouette_volume_density_match
+    mullet:
+    - hair_requested_style_family_match
+    - hair_requested_structure_arrangement_match
+    - hair_requested_cut_layers_hemline_match
+    ponytail:
+    - hair_requested_style_family_match
+    - hair_requested_structure_arrangement_match
+    bun:
+    - hair_requested_style_family_match
+    - hair_requested_structure_arrangement_match
+    braid:
+    - hair_requested_style_family_match
+    - hair_requested_structure_arrangement_match
+    long straight hair:
+    - hair_requested_style_family_match
+    - hair_requested_length_endpoint_match
+    - hair_requested_texture_curl_pattern_match
+    long wavy hair:
+    - hair_requested_style_family_match
+    - hair_requested_length_endpoint_match
+    - hair_requested_texture_curl_pattern_match
+  mask_generation_procedure:
+  - Initialize a 12-value zero mask in prompt_facet_order.
+  - Set the two always-applicable facets to 1.
+  - Scan target_spec only for explicit activation rules.
+  - Apply named-style semantic mapping.
+  - Resolve ambiguous words using the do_not_activate_from and disambiguation rules.
+  - Do not scan preservation or generic reconstruction text.
+  - Return exactly 12 binary values without changing the 22-score output contract.
+  example_raw_prompt: 'Please perform a strong human-centric hair edit on the main character: change the hairstyle into a
+    feminine long wavy hairstyle in chocolate brown, featuring long waves falling naturally past the shoulders and front hair
+    partially covering the eyes, realistic strand texture, natural hair volume, and clean hairline detail. Keep the character
+    identity, face shape, facial features, expression, body pose, clothing, accessories, background, lighting, camera angle,
+    and all non-hair regions unchanged. Rebuild the bangs, hairline, sideburn or face-framing strands, hair length, strand
+    flow, scalp coverage, occlusion over the ears or shoulders, highlights, shadows, and clean hair boundaries so the hair
+    edit is obvious, photorealistic, naturally integrated, and artifact-free.'
+  example_extracted_target_spec: feminine long wavy hairstyle in chocolate brown, featuring long waves falling naturally past
+    the shoulders and front hair partially covering the eyes
+  example_mask:
+  - 1
+  - 0
+  - 1
+  - 0
+  - 0
+  - 1
+  - 1
+  - 1
+  - 0
+  - 1
+  - 0
+  - 1
+  aggregation_rule: P = sum_i(base_weight_i * mask_i * normalized_score_i) / sum_i(base_weight_i * mask_i), over the 12 Prompt
+    Compliance facets.
+  fallback_rule: If no external parser mask is supplied, first extract target_spec using target_spec_extraction, then apply
+    the rules above. Never infer the mask from the complete raw prompt.
+target_spec_extraction:
+  purpose: Separate the actual requested hairstyle attributes from template boilerplate before mask generation.
+  input: raw user editing prompt
+  output: target_spec
+  procedure:
+  - Normalize whitespace but preserve the original wording.
+  - Locate the hairstyle-change request, normally beginning with phrases such as 'change the hairstyle into', 'change only
+    the hairstyle to', 'transform the hair into', or 'make the hair'.
+  - Keep the actual target style, color, feature, placement, and explicitly requested secondary-detail clauses.
+  - Stop before the first preservation or non-target clause.
+  - Remove generic quality clauses and the generic reconstruction sentence listed below.
+  - Generate the 12-value applicability mask only from target_spec.
+  preferred_start_markers:
+  - change the hairstyle into
+  - change only the hairstyle to
+  - change the hairstyle to
+  - transform the hairstyle into
+  - transform the hair into
+  - make the hair
+  - edit the hair into
+  stop_markers:
+  - Keep the character identity
+  - Keep the same person
+  - Keep identity
+  - Preserve the character identity
+  - Preserve identity
+  - Do not alter any non-hair region
+  - Do not change any non-hair region
+  - Keep all non-hair regions unchanged
+  - Rebuild the bangs, hairline, sideburn or face-framing strands
+  remove_exact_or_semantically_equivalent_generic_clauses:
+  - realistic strand texture
+  - natural hair volume
+  - clean hairline detail
+  - the hair edit is obvious
+  - the hair edit is photorealistic
+  - the hair edit is naturally integrated
+  - the hair edit is artifact-free
+  - preserve identity
+  - preserve face shape
+  - preserve facial features
+  - preserve expression
+  - preserve body pose
+  - preserve clothing
+  - preserve accessories
+  - preserve background
+  - preserve lighting
+  - preserve camera angle
+  - preserve all non-hair regions
+  ignore_entire_generic_reconstruction_clause: 'Ignore template clauses equivalent to: ''Rebuild the bangs, hairline, sideburn
+    or face-framing strands, hair length, strand flow, scalp coverage, occlusion over the ears or shoulders, highlights, shadows,
+    and clean hair boundaries so the hair edit is obvious, photorealistic, naturally integrated, and artifact-free.'''
+  regex_reference:
+    remove_preservation_tail: (?is)\b(?:keep|preserve|do not alter|do not change)\b.*$
+    remove_generic_rebuild_tail: (?is)\brebuild the bangs,\s*hairline,\s*sideburn or face-framing strands\b.*$
+    remove_generic_quality_phrases:
+    - (?i),?\s*realistic strand texture
+    - (?i),?\s*natural hair volume
+    - (?i),?\s*(?:and\s+)?clean hairline detail
+    - (?i),?\s*(?:obvious|photorealistic|naturally integrated|artifact-free)\b
+  fallback: When no standard marker exists, retain only clauses that positively describe the desired final hair. Discard clauses
+    about preserving non-target regions, realism, artifacts, lighting, camera, identity, or generic reconstruction.
+reporting_policy:
+  weakest_facet_candidates: Applicable Prompt Compliance facets (mask=1) plus all Localization, Subject Preservation, and
+    Quality facets.
+  excluded_from_weakest_reporting: Prompt Compliance facets with mask=0, even if their diagnostic integer score is numerically
+    low.
+  reason_limit: 3
+  ranking_rule: Rank weaknesses by effective weighted contribution after applicability masking. Do not report template-derived
+    or inactive hair attributes as failure reasons.
+  diagnostic_inactive_scores: Inactive Prompt Compliance scores may remain in the fixed 22-value vector for schema compatibility,
+    but they are diagnostic-only and have zero reward weight.

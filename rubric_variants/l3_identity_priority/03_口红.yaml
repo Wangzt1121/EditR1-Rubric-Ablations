@@ -1,0 +1,875 @@
+task_key: lipstick_edit
+task_title: Lipstick Editing
+task_title_zh: 口红编辑
+version: v35_fixed_22_l3_lipstick_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority
+target_region: visible upper and lower lip surfaces, cupid’s bow, lip corners, inner lip boundary, lipstick highlights, and
+  product material
+target_action_summary: Apply or modify the requested lipstick color, finish, opacity, spatial application, and edge treatment
+  without changing lip anatomy.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add extra rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial identity must remain one dedicated, high-impact L3 facet rather than being diluted across easy preservation checks.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for facial
+    identity drift.
+evaluation_notes:
+- Lipstick editing does not authorize lip enlargement, reduction, filler-like reshaping, or mouth-expression changes.
+- Softly diffused edges must remain controlled and inside the natural lip boundary.
+- A beautiful but wrong shade or finish must score low.
+- Full-lip coverage excludes teeth, gums, tongue, and surrounding skin.
+- A realistic but wrong lipstick color family, undertone, finish, or opacity must score low on the relevant Prompt Compliance
+  facets.
+- Correct lip color cannot compensate for changed identity, altered lip anatomy, changed mouth expression, or background color
+  drift.
+- Background color, white balance, brightness, contrast, and saturation must remain source-consistent unless explicitly requested.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction.
+  no_cross_compensation: Do not increase one facet because another facet is good. A correct color cannot compensate for wrong
+    geometry, and realistic rendering cannot compensate for a missing requested component.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited face against the source as the same individual. A plausible or attractive face is not
+    sufficient. Visible drift in landmark geometry, feature spacing, face outline, age impression, gender presentation, or
+    characteristic details must lower the identity score.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  lipstick_color_finish_disambiguation_rule: Treat lipstick color family, undertone, depth, saturation, opacity, and finish
+    as separate non-compensable requirements. A plausible substitute color or finish must not receive high Prompt Compliance.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct lipstick edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  anti_template_rule: Do not default to all 7s or mostly 7s. If visible defects exist, assign lower scores to the affected
+    L3 facets and use the full 0-9 scale.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Lipstick Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Apply or modify the requested lipstick color, finish, opacity, spatial application, and edge treatment
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_lipstick_operation_style_match
+          - requested_lipstick_color_family_match
+          - requested_lipstick_undertone_depth_saturation_match
+          - requested_lipstick_finish_material_match
+          - requested_lipstick_application_pattern_match
+          - requested_upper_lower_lip_distribution_match
+          - requested_lipstick_opacity_intensity_match
+          - requested_lipstick_edge_definition_softness_match
+          - requested_cupid_bow_corner_detail_match
+          - requested_lipstick_highlight_gloss_particle_match
+          - requested_lipstick_coverage_evenness_match
+          - unrequested_lipstick_properties_preserved
+          - lipstick_edit_localized_to_lip_surface
+          - lipstick_natural_contour_following
+          - lipstick_inner_mouth_teeth_skin_separation
+          - lipstick_bilateral_balance_motion_integration
+          - lipstick_facial_identity_landmark_consistency
+          - lipstick_mouth_expression_teeth_adjacent_face_preserved
+          - lipstick_lip_texture_wrinkles_preserved
+          - lipstick_product_material_light_response
+          - lipstick_color_layer_depth_realistic
+          - lipstick_artifact_sharpness_no_bleeding
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Lipstick Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on visible upper and lower lip surfaces, cupid’s bow, lip corners, inner lip boundary, lipstick highlights, and.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_lipstick_operation_style_match
+          - requested_lipstick_color_family_match
+          - requested_lipstick_undertone_depth_saturation_match
+          - requested_lipstick_finish_material_match
+          - requested_lipstick_application_pattern_match
+          - requested_upper_lower_lip_distribution_match
+          - requested_lipstick_opacity_intensity_match
+          - requested_lipstick_edge_definition_softness_match
+          - requested_cupid_bow_corner_detail_match
+          - requested_lipstick_highlight_gloss_particle_match
+          - requested_lipstick_coverage_evenness_match
+          - unrequested_lipstick_properties_preserved
+          - lipstick_edit_localized_to_lip_surface
+          - lipstick_natural_contour_following
+          - lipstick_inner_mouth_teeth_skin_separation
+          - lipstick_bilateral_balance_motion_integration
+          - lipstick_facial_identity_landmark_consistency
+          - lipstick_mouth_expression_teeth_adjacent_face_preserved
+          - lipstick_artifact_sharpness_no_bleeding
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_lipstick_color_family_match
+          - requested_lipstick_undertone_depth_saturation_match
+          - requested_lipstick_finish_material_match
+          - requested_lipstick_application_pattern_match
+          - requested_upper_lower_lip_distribution_match
+          - requested_lipstick_opacity_intensity_match
+          - requested_lipstick_edge_definition_softness_match
+          - requested_cupid_bow_corner_detail_match
+          - requested_lipstick_highlight_gloss_particle_match
+          - requested_lipstick_coverage_evenness_match
+          - unrequested_lipstick_properties_preserved
+          - lipstick_edit_localized_to_lip_surface
+          - lipstick_natural_contour_following
+          - lipstick_inner_mouth_teeth_skin_separation
+          - lipstick_bilateral_balance_motion_integration
+          - lipstick_lip_texture_wrinkles_preserved
+          - lipstick_product_material_light_response
+          - lipstick_color_layer_depth_realistic
+          - lipstick_artifact_sharpness_no_bleeding
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of visible upper and lower lip surfaces, cupid’s bow, lip corners, inner lip boundary, lipstick highlights, and, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_lipstick_undertone_depth_saturation_match
+          - requested_lipstick_finish_material_match
+          - requested_lipstick_application_pattern_match
+          - requested_upper_lower_lip_distribution_match
+          - requested_lipstick_opacity_intensity_match
+          - requested_lipstick_edge_definition_softness_match
+          - requested_cupid_bow_corner_detail_match
+          - requested_lipstick_highlight_gloss_particle_match
+          - requested_lipstick_coverage_evenness_match
+          - unrequested_lipstick_properties_preserved
+          - lipstick_edit_localized_to_lip_surface
+          - lipstick_natural_contour_following
+          - lipstick_inner_mouth_teeth_skin_separation
+          - lipstick_bilateral_balance_motion_integration
+          - lipstick_lip_texture_wrinkles_preserved
+          - lipstick_product_material_light_response
+          - lipstick_color_layer_depth_realistic
+          - lipstick_artifact_sharpness_no_bleeding
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_lipstick_operation_style_match
+          - requested_lipstick_color_family_match
+          - requested_lipstick_undertone_depth_saturation_match
+          - requested_lipstick_finish_material_match
+          - requested_lipstick_application_pattern_match
+          - requested_upper_lower_lip_distribution_match
+          - requested_lipstick_opacity_intensity_match
+          - requested_lipstick_edge_definition_softness_match
+          - requested_cupid_bow_corner_detail_match
+          - requested_lipstick_highlight_gloss_particle_match
+          - requested_lipstick_coverage_evenness_match
+          - unrequested_lipstick_properties_preserved
+          - lipstick_edit_localized_to_lip_surface
+          - lipstick_natural_contour_following
+          - lipstick_inner_mouth_teeth_skin_separation
+          - lipstick_bilateral_balance_motion_integration
+          - lipstick_facial_identity_landmark_consistency
+          - lipstick_mouth_expression_teeth_adjacent_face_preserved
+          - lipstick_lip_texture_wrinkles_preserved
+          - lipstick_product_material_light_response
+          - lipstick_color_layer_depth_realistic
+          - lipstick_artifact_sharpness_no_bleeding
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - lipstick_edit_localized_to_lip_surface
+          - lipstick_natural_contour_following
+          - lipstick_inner_mouth_teeth_skin_separation
+          - lipstick_bilateral_balance_motion_integration
+          - lipstick_lip_texture_wrinkles_preserved
+          - lipstick_product_material_light_response
+          - lipstick_color_layer_depth_realistic
+          - lipstick_artifact_sharpness_no_bleeding
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_lipstick_operation_style_match
+- requested_lipstick_color_family_match
+- requested_lipstick_undertone_depth_saturation_match
+- requested_lipstick_finish_material_match
+- requested_lipstick_application_pattern_match
+- requested_upper_lower_lip_distribution_match
+- requested_lipstick_opacity_intensity_match
+- requested_lipstick_edge_definition_softness_match
+- requested_cupid_bow_corner_detail_match
+- requested_lipstick_highlight_gloss_particle_match
+- requested_lipstick_coverage_evenness_match
+- unrequested_lipstick_properties_preserved
+- lipstick_edit_localized_to_lip_surface
+- lipstick_natural_contour_following
+- lipstick_inner_mouth_teeth_skin_separation
+- lipstick_bilateral_balance_motion_integration
+- lipstick_facial_identity_landmark_consistency
+- lipstick_mouth_expression_teeth_adjacent_face_preserved
+- lipstick_lip_texture_wrinkles_preserved
+- lipstick_product_material_light_response
+- lipstick_color_layer_depth_realistic
+- lipstick_artifact_sharpness_no_bleeding
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_lipstick_operation_style_match: 0.08
+    requested_lipstick_color_family_match: 0.13
+    requested_lipstick_undertone_depth_saturation_match: 0.1
+    requested_lipstick_finish_material_match: 0.12
+    requested_lipstick_application_pattern_match: 0.11
+    requested_upper_lower_lip_distribution_match: 0.07
+    requested_lipstick_opacity_intensity_match: 0.09
+    requested_lipstick_edge_definition_softness_match: 0.08
+    requested_cupid_bow_corner_detail_match: 0.06
+    requested_lipstick_highlight_gloss_particle_match: 0.06
+    requested_lipstick_coverage_evenness_match: 0.06
+    unrequested_lipstick_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    lipstick_edit_localized_to_lip_surface: 0.28
+    lipstick_natural_contour_following: 0.27
+    lipstick_inner_mouth_teeth_skin_separation: 0.25
+    lipstick_bilateral_balance_motion_integration: 0.2
+  Subject Preservation:
+    lipstick_facial_identity_landmark_consistency: 0.78
+    lipstick_mouth_expression_teeth_adjacent_face_preserved: 0.22
+  Task Realism and Image Quality:
+    lipstick_lip_texture_wrinkles_preserved: 0.26
+    lipstick_product_material_light_response: 0.28
+    lipstick_color_layer_depth_realistic: 0.24
+    lipstick_artifact_sharpness_no_bleeding: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Color, Finish, and Application:
+      requested_lipstick_operation_style_match:
+        title: Requested lipstick operation and overall style match
+        definition: Judge add, replace, recolor, remove, or restyle lipstick together with the requested natural, everyday,
+          romantic, bold, evening, editorial, or other explicit appearance.
+        anchors:
+          0: the requested lipstick operation and overall style is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick operation and overall style is visible; the central lipstick
+            operation or style is essentially unmet.
+          2: A small relevant attempt is present, but the requested lipstick operation and overall style is severely incorrect
+            or incomplete.
+          3: the requested lipstick operation and overall style is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested lipstick operation and overall style is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested lipstick operation and overall style is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick operation and overall style is mostly correct, but one clear and important issue remains.
+          7: the requested lipstick operation and overall style is clearly successful, with only a minor visible mismatch.
+          8: the requested lipstick operation and overall style is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact lipstick operation and intended overall appearance are fully achieved.
+      requested_lipstick_color_family_match:
+        title: Requested lipstick color family match
+        definition: Judge the exact requested lipstick color family and visible hue category, such as red, rose, pink, coral,
+          orange, nude, beige, brown, berry, plum, purple, black, gray, or natural tint. A realistic but wrong color family
+          is a failure on this facet.
+        anchors:
+          0: the requested lipstick color family is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick color family is visible; the dominant lipstick family is wrong.
+          2: A small relevant attempt is present, but the requested lipstick color family is severely incorrect or incomplete.
+          3: the requested lipstick color family is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested lipstick color family is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested lipstick color family is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick color family is mostly correct, but one clear and important issue remains.
+          7: Strong result, but still visibly imperfect; only minor local deviations are allowed. Do not use 7 as a default
+            score.
+          8: Near-perfect match with only a tiny local issue and no visible non-target drift.
+          9: 'Essentially exact and rare: fully satisfies this facet with no visible defect.'
+      requested_lipstick_undertone_depth_saturation_match:
+        title: Requested undertone, depth, brightness, and saturation match
+        definition: Judge undertone, depth, darkness/lightness, saturation, warmth/coolness, brightness, and vividness independently
+          from generic color plausibility. A similar but visibly different undertone or intensity must be penalized.
+        anchors:
+          0: the requested lipstick undertone and tonal depth is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick undertone and tonal depth is visible; the shade nuance is substantially
+            wrong.
+          2: A small relevant attempt is present, but the requested lipstick undertone and tonal depth is severely incorrect
+            or incomplete.
+          3: the requested lipstick undertone and tonal depth is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested lipstick undertone and tonal depth is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested lipstick undertone and tonal depth is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick undertone and tonal depth is mostly correct, but one clear and important issue remains.
+          7: the requested lipstick undertone and tonal depth is clearly successful, with only a minor visible mismatch.
+          8: the requested lipstick undertone and tonal depth is highly accurate and complete, with only a tiny local imperfection.
+          9: Undertone, depth, brightness, and saturation exactly match the requested shade semantics.
+      requested_lipstick_finish_material_match:
+        title: Requested lipstick finish and material match
+        definition: 'Judge the exact requested lipstick material and finish: matte, satin, creamy, velvet, glossy, wet gloss,
+          metallic, pearl, glitter, sheer tint, or liner effect. A realistic substitute finish must not receive high credit.'
+        anchors:
+          0: the requested lipstick finish and material is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick finish and material is visible; the dominant finish is wrong
+            or opposite.
+          2: A small relevant attempt is present, but the requested lipstick finish and material is severely incorrect or
+            incomplete.
+          3: the requested lipstick finish and material is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested lipstick finish and material is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested lipstick finish and material is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick finish and material is mostly correct, but one clear and important issue remains.
+          7: Strong result, but still visibly imperfect; only minor local deviations are allowed. Do not use 7 as a default
+            score.
+          8: Near-perfect match with only a tiny local issue and no visible non-target drift.
+          9: 'Essentially exact and rare: fully satisfies this facet with no visible defect.'
+      requested_lipstick_application_pattern_match:
+        title: Requested lipstick application pattern match
+        definition: Judge full-lip, gradient, ombre, lip-liner, blurred edge, center-focused tint, upper-only, lower-only,
+          two-tone, or other requested application pattern. Extra unrequested makeup patterns must lower the score.
+        anchors:
+          0: the requested lipstick application pattern is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick application pattern is visible; the defining application pattern
+            is mostly wrong.
+          2: A small relevant attempt is present, but the requested lipstick application pattern is severely incorrect or
+            incomplete.
+          3: the requested lipstick application pattern is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested lipstick application pattern is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested lipstick application pattern is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick application pattern is mostly correct, but one clear and important issue remains.
+          7: the requested lipstick application pattern is clearly successful, with only a minor visible mismatch.
+          8: the requested lipstick application pattern is highly accurate and complete, with only a tiny local imperfection.
+          9: The application pattern, direction, and transition exactly match the prompt.
+      requested_upper_lower_lip_distribution_match:
+        title: Requested upper/lower lip distribution match
+        definition: Judge upper-versus-lower color depth, coverage, highlight balance, relative strength, and any explicitly
+          different treatment between the two lips.
+        anchors:
+          0: the requested upper/lower lip distribution is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested upper/lower lip distribution is visible; upper/lower distribution is
+            materially wrong.
+          2: A small relevant attempt is present, but the requested upper/lower lip distribution is severely incorrect or
+            incomplete.
+          3: the requested upper/lower lip distribution is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested upper/lower lip distribution is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested upper/lower lip distribution is moderately achieved, with several substantial visible problems.
+          6: the requested upper/lower lip distribution is mostly correct, but one clear and important issue remains.
+          7: the requested upper/lower lip distribution is clearly successful, with only a minor visible mismatch.
+          8: the requested upper/lower lip distribution is highly accurate and complete, with only a tiny local imperfection.
+          9: Upper and lower lip color, coverage, and optical balance exactly match the instruction.
+    Coverage and Edge Details:
+      requested_lipstick_opacity_intensity_match:
+        title: Requested lipstick opacity and intensity match
+        definition: Judge sheer, translucent, lightweight, richly pigmented, opaque, thin everyday, clear, bold, or intense
+          evening strength.
+        anchors:
+          0: the requested lipstick opacity and intensity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick opacity and intensity is visible; the lipstick is far too weak,
+            opaque, sheer, or intense.
+          2: A small relevant attempt is present, but the requested lipstick opacity and intensity is severely incorrect or
+            incomplete.
+          3: the requested lipstick opacity and intensity is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested lipstick opacity and intensity is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested lipstick opacity and intensity is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick opacity and intensity is mostly correct, but one clear and important issue remains.
+          7: the requested lipstick opacity and intensity is clearly successful, with only a minor visible mismatch.
+          8: the requested lipstick opacity and intensity is highly accurate and complete, with only a tiny local imperfection.
+          9: Opacity, pigment strength, and visible presence exactly match the request.
+      requested_lipstick_edge_definition_softness_match:
+        title: Requested lip-edge definition or softness match
+        definition: Judge whether the lip boundary, cupid bow, lip corners, liner edge, feathering, and softness match the
+          prompt exactly without bleeding onto skin or becoming unnaturally sharp.
+        anchors:
+          0: the requested lipstick edge treatment is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick edge treatment is visible; edge treatment is substantially
+            wrong or uncontrolled.
+          2: A small relevant attempt is present, but the requested lipstick edge treatment is severely incorrect or incomplete.
+          3: the requested lipstick edge treatment is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested lipstick edge treatment is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested lipstick edge treatment is moderately achieved, with several substantial visible problems.
+          6: the requested lipstick edge treatment is mostly correct, but one clear and important issue remains.
+          7: Strong result, but still visibly imperfect; only minor local deviations are allowed. Do not use 7 as a default
+            score.
+          8: Near-perfect match with only a tiny local issue and no visible non-target drift.
+          9: 'Essentially exact and rare: fully satisfies this facet with no visible defect.'
+      requested_cupid_bow_corner_detail_match:
+        title: Requested cupid’s bow and lip-corner detail match
+        definition: Judge natural cupid’s bow precision, upper-lip peaks, lower-lip center, mouth corners, and corner blending
+          without reshaping the lips.
+        anchors:
+          0: the requested cupid’s bow and corner details is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested cupid’s bow and corner details is visible; major contour or corner details
+            are wrong.
+          2: A small relevant attempt is present, but the requested cupid’s bow and corner details is severely incorrect or
+            incomplete.
+          3: the requested cupid’s bow and corner details is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested cupid’s bow and corner details is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested cupid’s bow and corner details is moderately achieved, with several substantial visible problems.
+          6: the requested cupid’s bow and corner details is mostly correct, but one clear and important issue remains.
+          7: the requested cupid’s bow and corner details is clearly successful, with only a minor visible mismatch.
+          8: the requested cupid’s bow and corner details is highly accurate and complete, with only a tiny local imperfection.
+          9: Cupid’s bow, lip corners, and local contour details exactly match the prompt and natural anatomy.
+      requested_lipstick_highlight_gloss_particle_match:
+        title: Requested highlight, gloss, and shimmer behavior match
+        definition: Judge central gloss, glass-like speculars, wet shine, satin sheen, metallic particles, pearlescence, particle
+          scale, and placement.
+        anchors:
+          0: the requested lipstick highlight and particle behavior is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick highlight and particle behavior is visible; the optical accent
+            or particle behavior is wrong.
+          2: A small relevant attempt is present, but the requested lipstick highlight and particle behavior is severely incorrect
+            or incomplete.
+          3: the requested lipstick highlight and particle behavior is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: the requested lipstick highlight and particle behavior is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested lipstick highlight and particle behavior is moderately achieved, with several substantial visible
+            problems.
+          6: the requested lipstick highlight and particle behavior is mostly correct, but one clear and important issue remains.
+          7: the requested lipstick highlight and particle behavior is clearly successful, with only a minor visible mismatch.
+          8: the requested lipstick highlight and particle behavior is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: All requested highlights, gloss, sheen, and particles are exact and physically coherent.
+      requested_lipstick_coverage_evenness_match:
+        title: Requested coverage completeness and evenness match
+        definition: Judge whether lipstick coverage is even or intentionally varied according to the prompt, with no missing
+          patches, unintended blotches, overpainted skin, or undercovered lip regions.
+        anchors:
+          0: the requested lipstick coverage completeness and evenness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested lipstick coverage completeness and evenness is visible; large patches,
+            buildup, or incomplete coverage remain.
+          2: A small relevant attempt is present, but the requested lipstick coverage completeness and evenness is severely
+            incorrect or incomplete.
+          3: the requested lipstick coverage completeness and evenness is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: the requested lipstick coverage completeness and evenness is recognizable, but a major mismatch, omission, or
+            excessive change remains.
+          5: the requested lipstick coverage completeness and evenness is moderately achieved, with several substantial visible
+            problems.
+          6: the requested lipstick coverage completeness and evenness is mostly correct, but one clear and important issue
+            remains.
+          7: the requested lipstick coverage completeness and evenness is clearly successful, with only a minor visible mismatch.
+          8: the requested lipstick coverage completeness and evenness is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Coverage is complete, even, and exactly matched to the requested opacity and pattern.
+      unrequested_lipstick_properties_preserved:
+        title: Unrequested lipstick properties are preserved
+        definition: Preserve unrequested lipstick attributes, natural lip anatomy, surrounding skin, existing makeup outside
+          the requested change, and source-consistent image tone unless explicitly requested.
+        anchors:
+          0: the preservation of unrequested lipstick properties is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the preservation of unrequested lipstick properties is visible; unrequested lipstick
+            properties are extensively altered.
+          2: A small relevant attempt is present, but the preservation of unrequested lipstick properties is severely incorrect
+            or incomplete.
+          3: the preservation of unrequested lipstick properties is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the preservation of unrequested lipstick properties is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of unrequested lipstick properties is moderately achieved, with several substantial visible
+            problems.
+          6: the preservation of unrequested lipstick properties is mostly correct, but one clear and important issue remains.
+          7: the preservation of unrequested lipstick properties is clearly successful, with only a minor visible mismatch.
+          8: the preservation of unrequested lipstick properties is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested lipstick attributes remain source-consistent.
+  Localization and Anatomical Integration:
+    Lip Localization and Integration:
+      lipstick_edit_localized_to_lip_surface:
+        title: The lipstick edit is localized to the lip surface
+        definition: Keep lipstick changes strictly on the visible lip surface and minimal intended boundary zones. Penalize
+          color spill onto teeth, gums, chin, nose, cheeks, facial skin, hair, clothing, or background.
+        anchors:
+          0: lipstick localization to the lip surface is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of lipstick localization to the lip surface is visible; large skin or mouth regions are
+            contaminated.
+          2: A small relevant attempt is present, but lipstick localization to the lip surface is severely incorrect or incomplete.
+          3: lipstick localization to the lip surface is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: lipstick localization to the lip surface is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: lipstick localization to the lip surface is moderately achieved, with several substantial visible problems.
+          6: lipstick localization to the lip surface is mostly correct, but one clear and important issue remains.
+          7: Strong result, but still visibly imperfect; only minor local deviations are allowed. Do not use 7 as a default
+            score.
+          8: Near-perfect match with only a tiny local issue and no visible non-target drift.
+          9: 'Essentially exact and rare: fully satisfies this facet with no visible defect.'
+      lipstick_natural_contour_following:
+        title: Lipstick follows the natural lip contour
+        definition: Judge natural lip outline, cupid’s bow, lower-lip curve, corner tapering, and no unrequested overlining
+          or geometric reshaping.
+        anchors:
+          0: natural contour following is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of natural contour following is visible; lip contour is substantially overdrawn, shifted,
+            or distorted.
+          2: A small relevant attempt is present, but natural contour following is severely incorrect or incomplete.
+          3: natural contour following is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: natural contour following is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: natural contour following is moderately achieved, with several substantial visible problems.
+          6: natural contour following is mostly correct, but one clear and important issue remains.
+          7: natural contour following is clearly successful, with only a minor visible mismatch.
+          8: natural contour following is highly accurate and complete, with only a tiny local imperfection.
+          9: The lipstick follows the exact natural contour with ideal edge placement and no reshaping.
+      lipstick_inner_mouth_teeth_skin_separation:
+        title: Inner mouth, teeth, gums, and skin remain cleanly separated
+        definition: Preserve clean separation between lipstick, inner mouth, teeth, gums, lip wetline, and surrounding skin.
+          Lipstick must not recolor teeth, mouth cavity, or non-lip skin.
+        anchors:
+          0: clean separation from inner mouth, teeth, gums, and skin is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of clean separation from inner mouth, teeth, gums, and skin is visible; lipstick leaks
+            substantially into mouth or skin.
+          2: A small relevant attempt is present, but clean separation from inner mouth, teeth, gums, and skin is severely
+            incorrect or incomplete.
+          3: clean separation from inner mouth, teeth, gums, and skin is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: clean separation from inner mouth, teeth, gums, and skin is recognizable, but a major mismatch, omission, or
+            excessive change remains.
+          5: clean separation from inner mouth, teeth, gums, and skin is moderately achieved, with several substantial visible
+            problems.
+          6: clean separation from inner mouth, teeth, gums, and skin is mostly correct, but one clear and important issue
+            remains.
+          7: clean separation from inner mouth, teeth, gums, and skin is clearly successful, with only a minor visible mismatch.
+          8: clean separation from inner mouth, teeth, gums, and skin is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: All non-lip surfaces remain perfectly clean and naturally separated.
+      lipstick_bilateral_balance_motion_integration:
+        title: Lipstick remains balanced with mouth pose and motion
+        definition: Judge left-right distribution, smile or mouth opening, foreshortening, and corner behavior relative to
+          the source expression.
+        anchors:
+          0: pose-aware lipstick balance and mouth integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of pose-aware lipstick balance and mouth integration is visible; major asymmetry or expression-inconsistent
+            placement is visible.
+          2: A small relevant attempt is present, but pose-aware lipstick balance and mouth integration is severely incorrect
+            or incomplete.
+          3: pose-aware lipstick balance and mouth integration is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: pose-aware lipstick balance and mouth integration is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: pose-aware lipstick balance and mouth integration is moderately achieved, with several substantial visible problems.
+          6: pose-aware lipstick balance and mouth integration is mostly correct, but one clear and important issue remains.
+          7: pose-aware lipstick balance and mouth integration is clearly successful, with only a minor visible mismatch.
+          8: pose-aware lipstick balance and mouth integration is highly accurate and complete, with only a tiny local imperfection.
+          9: Color, edges, and material are perfectly balanced for the source mouth pose and expression.
+  Subject Preservation:
+    Facial Identity and Mouth Preservation:
+      lipstick_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare the source and edited face as the same individual, not merely as a plausible similar person. Preserve
+          face outline, eyes, brows, nose, mouth position, lip anatomy, jaw, cheeks, age impression, skin tone, facial texture,
+          and characteristic details outside the requested lipstick change.
+        anchors:
+          0: The edited face is effectively a different person, severely distorted, or no longer identity-consistent with
+            the source.
+          1: Identity correspondence is extremely weak; multiple defining facial landmarks and the overall person impression
+            are replaced.
+          2: Major identity drift affects several defining regions such as face outline, eyes, nose, mouth, jaw, or feature
+            spacing.
+          3: Substantial facial-identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression at normal viewing
+            size.
+          5: The person remains recognizable, but multiple facial landmarks, proportions, age cues, or characteristic details
+            visibly drift.
+          6: The same person is mostly preserved, but one clear identity-affecting geometric or appearance change remains.
+          7: Strong result, but still visibly imperfect; only minor local deviations are allowed. Do not use 7 as a default
+            score.
+          8: Near-perfect match with only a tiny local issue and no visible non-target drift.
+          9: 'Essentially exact and rare: fully satisfies this facet with no visible defect.'
+      lipstick_mouth_expression_teeth_adjacent_face_preserved:
+        title: Mouth expression, teeth, background color, and non-target image details are preserved
+        definition: Preserve mouth opening, expression, smile/frown state, teeth, gums, lip shape, philtrum, adjacent skin,
+          face color, background color, global white balance, brightness, contrast, saturation, and lighting mood. The lipstick
+          edit must not change identity, mouth geometry, teeth color, skin texture, or background tone.
+        anchors:
+          0: lip geometry, expression, teeth, and adjacent facial details is severely changed, replaced, or unusable.
+          1: Most of lip geometry, expression, teeth, and adjacent facial details is clearly inconsistent with the source.
+          2: Several major changes substantially alter lip geometry, expression, teeth, and adjacent facial details.
+          3: One major or multiple obvious changes affect lip geometry, expression, teeth, and adjacent facial details.
+          4: lip geometry, expression, teeth, and adjacent facial details remains recognizable but contains a clear important
+            mismatch.
+          5: lip geometry, expression, teeth, and adjacent facial details is only moderately preserved, with several visible
+            differences.
+          6: Most of lip geometry, expression, teeth, and adjacent facial details is preserved, but one clear difference remains.
+          7: Strong result, but still visibly imperfect; only minor local deviations are allowed. Do not use 7 as a default
+            score.
+          8: Near-perfect match with only a tiny local issue and no visible non-target drift.
+          9: 'Essentially exact and rare: fully satisfies this facet with no visible defect.'
+  Task Realism and Image Quality:
+    Lipstick Rendering:
+      lipstick_lip_texture_wrinkles_preserved:
+        title: Natural lip texture and wrinkles are preserved
+        definition: Judge fine vertical lip lines, natural micro-relief, dryness/hydration cues, and absence of waxy smoothing.
+        anchors:
+          0: natural lip texture preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of natural lip texture preservation is visible; lips are excessively smoothed, waxy,
+            or textureless.
+          2: A small relevant attempt is present, but natural lip texture preservation is severely incorrect or incomplete.
+          3: natural lip texture preservation is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: natural lip texture preservation is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: natural lip texture preservation is moderately achieved, with several substantial visible problems.
+          6: natural lip texture preservation is mostly correct, but one clear and important issue remains.
+          7: natural lip texture preservation is clearly successful, with only a minor visible mismatch.
+          8: natural lip texture preservation is highly accurate and complete, with only a tiny local imperfection.
+          9: Fine lip texture remains fully realistic and appropriately visible beneath the product.
+      lipstick_product_material_light_response:
+        title: Product material and light response are realistic
+        definition: Judge product thickness, matte diffusion, satin sheen, gloss curvature, specular shape, shimmer response,
+          and source illumination.
+        anchors:
+          0: lipstick material and light response is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of lipstick material and light response is visible; material or reflectivity is physically
+            inconsistent.
+          2: A small relevant attempt is present, but lipstick material and light response is severely incorrect or incomplete.
+          3: lipstick material and light response is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: lipstick material and light response is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: lipstick material and light response is moderately achieved, with several substantial visible problems.
+          6: lipstick material and light response is mostly correct, but one clear and important issue remains.
+          7: lipstick material and light response is clearly successful, with only a minor visible mismatch.
+          8: lipstick material and light response is highly accurate and complete, with only a tiny local imperfection.
+          9: The lipstick material responds perfectly to lip curvature and source lighting.
+      lipstick_color_layer_depth_realistic:
+        title: Color layering and optical depth are realistic
+        definition: Judge translucent versus opaque layering, local tonal variation, gradient depth, upper/lower dimensionality,
+          and non-flat color deposition.
+        anchors:
+          0: lipstick color-layer depth realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of lipstick color-layer depth realism is visible; the lipstick looks like flat paint
+            or artificial overlay.
+          2: A small relevant attempt is present, but lipstick color-layer depth realism is severely incorrect or incomplete.
+          3: lipstick color-layer depth realism is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: lipstick color-layer depth realism is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: lipstick color-layer depth realism is moderately achieved, with several substantial visible problems.
+          6: lipstick color-layer depth realism is mostly correct, but one clear and important issue remains.
+          7: lipstick color-layer depth realism is clearly successful, with only a minor visible mismatch.
+          8: lipstick color-layer depth realism is highly accurate and complete, with only a tiny local imperfection.
+          9: Color layers, tonal variation, and optical depth are fully natural and product-consistent.
+      lipstick_artifact_sharpness_no_bleeding:
+        title: Artifacts, blur, bleeding, and masking errors are controlled
+        definition: Judge blur, over-smoothing, painted-mask appearance, color bleeding, jagged edges, duplicated highlights,
+          unnatural halos, resolution loss, and texture destruction around the lips.
+        anchors:
+          0: lipstick artifact control and sharpness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of lipstick artifact control and sharpness is visible; strong artifacts, blur, or color
+            bleeding dominate.
+          2: A small relevant attempt is present, but lipstick artifact control and sharpness is severely incorrect or incomplete.
+          3: lipstick artifact control and sharpness is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: lipstick artifact control and sharpness is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: lipstick artifact control and sharpness is moderately achieved, with several substantial visible problems.
+          6: lipstick artifact control and sharpness is mostly correct, but one clear and important issue remains.
+          7: lipstick artifact control and sharpness is clearly successful, with only a minor visible mismatch.
+          8: lipstick artifact control and sharpness is highly accurate and complete, with only a tiny local imperfection.
+          9: The edit is clean, sharply resolved, artifact-free, and contains no unintended bleeding.
+identity_preservation_protocol:
+  purpose: Prevent successful target editing from hiding facial-identity drift. Identity is judged by source-to-result correspondence,
+    not by whether the edited face is attractive or realistic.
+  comparison_checklist:
+  - overall face outline and width/length relationship
+  - forehead and hair-independent face contour
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position and natural geometry
+  - cheek, jaw, and chin structure
+  - age impression and gender presentation
+  - skin tone, stable characteristic marks, and facial texture
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase an identity score because the target edit is attractive or instruction-compliant.
+  - Do not treat a photorealistic but different-looking face as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - The task target region may be excluded only where explicitly necessary; unrelated facial landmarks remain fully constrained.
+  - Identity, expression, and adjacent-face scores are independent of clothing and background preservation.
+  task_specific_exception: requested lipstick color, finish, opacity, and application only
+judge_role: You are a strict expert evaluator specializing in human lipstick and lip-makeup image editing. Judge the edited
+  image against the exact requested lipstick color, finish, opacity, lip coverage, edge treatment, and preservation constraints,
+  not against generic attractiveness or realism.
+judge_instructions: '- First infer the exact requested lipstick edit from the prompt: operation, color family, undertone,
+  depth, saturation, finish/material, opacity, application pattern, upper/lower lip distribution, edge softness, cupid''s
+  bow/corner shape, highlights, and coverage evenness.
+
+  - Treat lipstick colors and finishes as mutually distinct unless the prompt explicitly allows alternatives. Red, rose, pink,
+  coral, nude, brown, berry, plum, purple, orange, black, gray, and natural lip tint are not interchangeable.
+
+  - Treat finishes as mutually distinct: matte, satin, creamy, glossy, wet gloss, metallic, glitter, pearl, sheer tint, and
+  lip liner effects must not substitute for each other.
+
+  - Do not let photorealism, smooth rendering, or attractive makeup compensate for the wrong color family, wrong undertone,
+  wrong finish, wrong opacity, wrong lip region, wrong edge treatment, or extra unrequested makeup.
+
+  - If the requested lipstick color family is wrong, color-related Prompt Compliance facets should normally be 0-5 even if
+  the result is realistic.
+
+  - If the finish/material is wrong, requested_lipstick_finish_material_match and related highlight/material facets should
+  normally be 0-5.
+
+  - If lipstick leaks onto teeth, gums, skin, nose, chin, background, or non-lip regions, localization and non-target preservation
+  must be lowered.
+
+  - If the edit changes lip anatomy, mouth opening, teeth, expression, jaw, face shape, identity, skin texture, or age impression,
+  Subject Preservation should be 0-6.
+
+  - If background hue, white balance, saturation, brightness, contrast, or lighting mood changes visibly, non-target preservation
+  should be 0-6.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong lipstick hue, wrong undertone, wrong
+  saturation, wrong finish, wrong opacity, uneven coverage, missing upper/lower lip distribution, bleeding edges, changed
+  lip contour, changed mouth expression, identity drift, background color shift, blur, smoothing, or mask-like artifacts.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a
+  minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all color, finish,
+  localization, identity, and background preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but
+  visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a
+  recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant
+  trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.'

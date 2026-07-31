@@ -1,0 +1,687 @@
+task_key: eye_vertical_position_adjustment
+task_title: Eye Vertical Position Adjustment
+task_title_zh: 眼睛上下调整（眼睛整体位置上移）
+version: v48_fixed_integer_22_l3_eye_vertical_position_adjustment_deep_review_compact_l3_identity_priority
+target_region: both eyes, eyelids, and the minimal surrounding orbital skin needed to move the visible eye position upward
+  naturally
+target_action_summary: Move both eyes to sit noticeably higher in the face while preserving gaze, eye size unless only minimal
+  blending is needed, expression, identity, facial features, body, background, and perspective.
+judge_role: You are a strict expert evaluator for vertical eye-position editing, orbital anatomy, gaze preservation, identity
+  preservation, and source-state consistency. Judge upward placement of the eyes, not eye enlargement or eyelid aperture increase.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit first. Compare the original eye centers, vertical eye position relative to brows/nose/face outline, eyelids,
+  iris/pupil, gaze, expression, identity, skin texture, lighting, background, and camera state.
+
+
+  2) Target definition. The requested edit is to make both eyes sit noticeably higher while preserving gaze. The primary evidence
+  is upward relocation of both eye regions relative to the face, not merely making eyes taller, larger, brighter, or more
+  open.
+
+
+  3) Reject substitutes. Eye enlargement, vertical aperture increase, iris translation, makeup/lash change, face scaling,
+  nose/forehead shifting, crop/camera change, or generic beautification is not successful eye-position adjustment.
+
+
+  4) Primary failure gates. If eye position is unchanged, too weak, downward, one-sided, or mostly an eye-size/aperture substitute,
+  activate target_absent_or_wrong_operation. If gaze, expression, identity, eye color, nose, brows, face outline, background,
+  or camera state changes, activate source_state_not_preserved. If orbital anatomy, eyelid/iris/sclera boundaries, or local
+  texture breaks, activate anatomy_boundary_or_artifact_failure.
+
+
+  5) Failure propagation. Before outputting the final score_vector, detect failures in global_scoring_policy.failure_propagation,
+  estimate severity 0-5, apply cap_by_severity to affected L3, and output adjusted scores.
+
+
+  6) Score calibration. 9 is rare; 8 is near-perfect; 7 is strong but imperfect; 6 has one clear issue; 5 is partial; 4 is
+  a major mismatch; 3 is weak; 2 is a small trace; 1 is negligible; 0 is absent/reversed/unusable. Do not use 7 as default.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+design_principle:
+  summary: Exactly 22 L3 facets evaluate upward eye-position movement, not eye aperture enlargement, while preserving gaze,
+    expression, identity, and non-target regions.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - Only YAML-level rubric guidance is used; L3 remains integer 0-9 with bottom-up aggregation.
+evaluation_notes:
+- The prompt asks eyes to sit noticeably higher, not to become larger or more vertically open.
+- A correct result moves both eye regions upward in a believable, pose-aware way while preserving gaze and expression.
+- Eye enlargement, aperture increase, makeup changes, face scaling, or camera/crop shifts are substitutes.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. A 7 requires strong visible evidence after failure propagation;
+    8 requires near-exact source-preserving success; 9 is rare.
+  no_cross_compensation: Do not raise one facet because another is good. Bigger eyes, prettier makeup, or preserved background
+    cannot compensate for unchanged or wrongly moved eye position.
+  task_disambiguation_rule: Eye vertical-position adjustment means both eyes sit noticeably higher in the face. It is not
+    eye enlargement, vertical aperture increase, iris-only movement, makeup/lash change, global face scaling, or camera/crop
+    change.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited result as the same individual. Eye position may shift upward, but gaze, expression, eye
+    color, facial landmarks, age impression, and same-person impression must remain stable.
+  identity_no_compensation_rule: Do not raise identity-related scores because the result is attractive or more symmetrical.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, lighting mood,
+    crop, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Include detected failure names and severity
+      in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_wrong_operation:
+        detect_when: Eyes are unchanged, moved downward, only one eye moves, the effect is too weak, or the result mainly
+          changes eye size/aperture rather than upward position.
+        severity_guidance: Tiny but real upward movement may be severity 1. Clear but weak/partial upward movement may be
+          severity 2. Mostly unchanged or aperture-substitute result must be severity 3. Absent, reversed, or unusable movement
+          must be severity 4-5.
+        affected_l3:
+        - eye_position_primary_upward_shift_match
+        - eye_position_vertical_center_height_match
+        - eye_position_requested_magnitude_match
+        - eye_position_bilateral_completeness_balance_match
+        - eye_position_gaze_direction_preservation_match
+        - eye_position_eye_size_shape_preservation_match
+        - eye_position_eyelid_surrounding_integration_match
+        - eye_position_no_horizontal_spacing_or_nose_change_match
+        - eye_position_pose_aware_symmetry_match
+        - eye_position_normal_view_visibility_match
+        - eye_position_natural_finish_match
+        - unrequested_face_scene_properties_preserved
+        - eye_position_edit_localized_to_eye_region
+        - eye_position_orbital_anatomy_perspective_consistent
+        - eye_position_identity_landmark_consistency
+        - eye_position_expression_gaze_scene_preserved
+        - eye_position_artifact_sharpness_no_warp_mask
+      source_state_not_preserved:
+        detect_when: Gaze, expression, identity, eye color, brows, nose, face outline, skin tone, lighting, background, camera/crop,
+          or non-target regions change.
+        severity_guidance: Minor local drift may be severity 1. Clear gaze/expression/lighting/background drift should be
+          severity 2-3. Identity, camera/crop, or broad source-state replacement must be severity 4-5.
+        affected_l3:
+        - eye_position_primary_upward_shift_match
+        - eye_position_gaze_direction_preservation_match
+        - eye_position_eye_size_shape_preservation_match
+        - eye_position_no_horizontal_spacing_or_nose_change_match
+        - eye_position_pose_aware_symmetry_match
+        - unrequested_face_scene_properties_preserved
+        - eye_position_brow_nose_bridge_skin_boundary_consistent
+        - eye_position_identity_landmark_consistency
+        - eye_position_expression_gaze_scene_preserved
+        - eye_position_skin_eye_texture_realistic
+        - eye_position_lighting_shadow_color_integration
+        - eye_position_boundary_background_reconstruction_consistent
+        - eye_position_artifact_sharpness_no_warp_mask
+      anatomy_boundary_or_artifact_failure:
+        detect_when: Orbital anatomy, eyelid contour, iris/pupil/sclera relation, lashes, brow/nose-bridge skin, local shadows,
+          or boundaries become warped, masked, blurred, duplicated, or physically impossible.
+        severity_guidance: Small local seam may be severity 1. Clear eye/orbital boundary damage should be severity 2-3. Strong
+          warping, broken gaze, impossible anatomy, or unusable reconstruction must be severity 4-5.
+        affected_l3:
+        - eye_position_primary_upward_shift_match
+        - eye_position_eye_size_shape_preservation_match
+        - eye_position_eyelid_surrounding_integration_match
+        - eye_position_natural_finish_match
+        - eye_position_edit_localized_to_eye_region
+        - eye_position_orbital_anatomy_perspective_consistent
+        - eye_position_iris_pupil_sclera_lash_occlusion_consistent
+        - eye_position_brow_nose_bridge_skin_boundary_consistent
+        - eye_position_skin_eye_texture_realistic
+        - eye_position_lighting_shadow_color_integration
+        - eye_position_boundary_background_reconstruction_consistent
+        - eye_position_artifact_sharpness_no_warp_mask
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Avoid many-1s/many-9s
+    split unless visual evidence truly supports both extremes.
+  no_high_score_example_rule: Do not use positive examples or high-score templates. Scores 8-9 are allowed only when the exact
+    L3 has concrete visible evidence and no applicable failure cap.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first.
+  success_gate_definition: A positive sample moves both eyes noticeably higher in a natural, pose-aware way while preserving
+    gaze, eye size/shape except minimal blending, expression, identity, lighting, background, and camera state.
+  success_gate_conditions:
+  - Both eyes visibly sit higher relative to the source face at normal viewing size.
+  - The result is not merely larger eyes, wider vertical aperture, changed makeup/lashes, or iris-only movement.
+  - Gaze direction, eye color, expression, identity, brows, nose, face outline, and non-target regions remain source-consistent.
+  - Eyelids, orbital skin, iris/sclera/lash boundaries, shadows, and local texture are anatomically coherent.
+  - No detected failure has severity 2 or higher; at most tiny local imperfections remain.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When upward eye-position editing is absent or mainly a substitute operation,
+    do not automatically assign 8-9 to all preservation or quality facets.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- eye_position_primary_upward_shift_match
+- eye_position_vertical_center_height_match
+- eye_position_requested_magnitude_match
+- eye_position_bilateral_completeness_balance_match
+- eye_position_gaze_direction_preservation_match
+- eye_position_eye_size_shape_preservation_match
+- eye_position_eyelid_surrounding_integration_match
+- eye_position_no_horizontal_spacing_or_nose_change_match
+- eye_position_pose_aware_symmetry_match
+- eye_position_normal_view_visibility_match
+- eye_position_natural_finish_match
+- unrequested_face_scene_properties_preserved
+- eye_position_edit_localized_to_eye_region
+- eye_position_orbital_anatomy_perspective_consistent
+- eye_position_iris_pupil_sclera_lash_occlusion_consistent
+- eye_position_brow_nose_bridge_skin_boundary_consistent
+- eye_position_identity_landmark_consistency
+- eye_position_expression_gaze_scene_preserved
+- eye_position_skin_eye_texture_realistic
+- eye_position_lighting_shadow_color_integration
+- eye_position_boundary_background_reconstruction_consistent
+- eye_position_artifact_sharpness_no_warp_mask
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    eye_position_primary_upward_shift_match: 0.15
+    eye_position_vertical_center_height_match: 0.11
+    eye_position_requested_magnitude_match: 0.08
+    eye_position_bilateral_completeness_balance_match: 0.09
+    eye_position_gaze_direction_preservation_match: 0.08
+    eye_position_eye_size_shape_preservation_match: 0.08
+    eye_position_eyelid_surrounding_integration_match: 0.07
+    eye_position_no_horizontal_spacing_or_nose_change_match: 0.09
+    eye_position_pose_aware_symmetry_match: 0.06
+    eye_position_normal_view_visibility_match: 0.07
+    eye_position_natural_finish_match: 0.06
+    unrequested_face_scene_properties_preserved: 0.06
+  Localization and Anatomical Integration:
+    eye_position_edit_localized_to_eye_region: 0.3
+    eye_position_orbital_anatomy_perspective_consistent: 0.28
+    eye_position_iris_pupil_sclera_lash_occlusion_consistent: 0.22
+    eye_position_brow_nose_bridge_skin_boundary_consistent: 0.2
+  Subject Preservation:
+    eye_position_identity_landmark_consistency: 0.65
+    eye_position_expression_gaze_scene_preserved: 0.35
+  Task Realism and Image Quality:
+    eye_position_skin_eye_texture_realistic: 0.25
+    eye_position_lighting_shadow_color_integration: 0.25
+    eye_position_boundary_background_reconstruction_consistent: 0.22
+    eye_position_artifact_sharpness_no_warp_mask: 0.28
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Requested Eye Position Operation:
+      eye_position_primary_upward_shift_match:
+        title: Primary upward eye-position outcome match
+        definition: Judge whether both eyes genuinely sit higher in the face, rather than becoming merely larger, brighter,
+          or more open.
+        anchors:
+          0: upward eye-position outcome is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct upward eye-position outcome is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: upward eye-position outcome is weakly attempted and major visible errors remain.
+          4: upward eye-position outcome is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: upward eye-position outcome is partially correct, with several substantial issues.
+          6: upward eye-position outcome is mostly correct, but one clear issue remains.
+          7: upward eye-position outcome is strong, with only a minor visible mismatch.
+          8: upward eye-position outcome is highly accurate, with only a tiny imperfection.
+          9: Both eyes naturally sit higher with no substitute operation.
+        rubric: Judge whether both eyes genuinely sit higher in the face, rather than becoming merely larger, brighter, or
+          more open. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_vertical_center_height_match:
+        title: Vertical eye-center height match
+        definition: Judge whether the visible eye centers move upward relative to brows, nose, cheeks, and face outline while
+          facial structure remains stable.
+        anchors:
+          0: eye-center height is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct eye-center height is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: eye-center height is weakly attempted and major visible errors remain.
+          4: eye-center height is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: eye-center height is partially correct, with several substantial issues.
+          6: eye-center height is mostly correct, but one clear issue remains.
+          7: eye-center height is strong, with only a minor visible mismatch.
+          8: eye-center height is highly accurate, with only a tiny imperfection.
+          9: Eye centers are precisely and naturally higher.
+        rubric: Judge whether the visible eye centers move upward relative to brows, nose, cheeks, and face outline while
+          facial structure remains stable. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      eye_position_requested_magnitude_match:
+        title: Requested vertical-position magnitude match
+        definition: Judge whether the upward movement is noticeable yet believable, matching the prompt's visible but natural
+          intensity.
+        anchors:
+          0: vertical movement magnitude is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct vertical movement magnitude is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: vertical movement magnitude is weakly attempted and major visible errors remain.
+          4: vertical movement magnitude is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: vertical movement magnitude is partially correct, with several substantial issues.
+          6: vertical movement magnitude is mostly correct, but one clear issue remains.
+          7: vertical movement magnitude is strong, with only a minor visible mismatch.
+          8: vertical movement magnitude is highly accurate, with only a tiny imperfection.
+          9: Upward movement strength is exact, visible, and believable.
+        rubric: Judge whether the upward movement is noticeable yet believable, matching the prompt's visible but natural
+          intensity. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_bilateral_completeness_balance_match:
+        title: Bilateral completeness and balance match
+        definition: Judge whether both eyes are moved consistently according to source pose and natural asymmetry.
+        anchors:
+          0: bilateral balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct bilateral balance is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: bilateral balance is weakly attempted and major visible errors remain.
+          4: bilateral balance is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: bilateral balance is partially correct, with several substantial issues.
+          6: bilateral balance is mostly correct, but one clear issue remains.
+          7: bilateral balance is strong, with only a minor visible mismatch.
+          8: bilateral balance is highly accurate, with only a tiny imperfection.
+          9: Both eyes are moved completely and pose-consistently.
+        rubric: Judge whether both eyes are moved consistently according to source pose and natural asymmetry. Apply this
+          facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do
+          not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_gaze_direction_preservation_match:
+        title: Gaze direction preservation match
+        definition: Preserve gaze direction, eye contact, pupil/iris orientation, and attention target while moving the eye
+          region.
+        anchors:
+          0: gaze preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct gaze preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: gaze preservation is weakly attempted and major visible errors remain.
+          4: gaze preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: gaze preservation is partially correct, with several substantial issues.
+          6: gaze preservation is mostly correct, but one clear issue remains.
+          7: gaze preservation is strong, with only a minor visible mismatch.
+          8: gaze preservation is highly accurate, with only a tiny imperfection.
+          9: Gaze direction remains fully source-consistent.
+        rubric: Preserve gaze direction, eye contact, pupil/iris orientation, and attention target while moving the eye region.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_eye_size_shape_preservation_match:
+        title: Eye size and shape preservation match
+        definition: Preserve horizontal eye width, eye shape, iris/pupil size, and natural eyelid opening unless minimal blending
+          is necessary.
+        anchors:
+          0: eye size/shape preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct eye size/shape preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: eye size/shape preservation is weakly attempted and major visible errors remain.
+          4: eye size/shape preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: eye size/shape preservation is partially correct, with several substantial issues.
+          6: eye size/shape preservation is mostly correct, but one clear issue remains.
+          7: eye size/shape preservation is strong, with only a minor visible mismatch.
+          8: eye size/shape preservation is highly accurate, with only a tiny imperfection.
+          9: Eye size and shape remain source-consistent while position changes.
+        rubric: Preserve horizontal eye width, eye shape, iris/pupil size, and natural eyelid opening unless minimal blending
+          is necessary. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+    Eye Relation, Preservation, and Finish:
+      eye_position_eyelid_surrounding_integration_match:
+        title: Eyelid and surrounding integration match
+        definition: Judge whether upper/lower eyelids and nearby orbital skin integrate naturally after the upward move.
+        anchors:
+          0: eyelid integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct eyelid integration is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: eyelid integration is weakly attempted and major visible errors remain.
+          4: eyelid integration is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: eyelid integration is partially correct, with several substantial issues.
+          6: eyelid integration is mostly correct, but one clear issue remains.
+          7: eyelid integration is strong, with only a minor visible mismatch.
+          8: eyelid integration is highly accurate, with only a tiny imperfection.
+          9: Eyelids and surrounding skin integrate seamlessly.
+        rubric: Judge whether upper/lower eyelids and nearby orbital skin integrate naturally after the upward move. Apply
+          this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps.
+          Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_no_horizontal_spacing_or_nose_change_match:
+        title: No horizontal spacing, nose, or face-shape change match
+        definition: Preserve inter-eye distance, nose bridge, brow relation, face outline, and all non-target facial geometry.
+        anchors:
+          0: non-target facial geometry preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct non-target facial geometry preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: non-target facial geometry preservation is weakly attempted and major visible errors remain.
+          4: non-target facial geometry preservation is recognizable, but one major requirement is missing, substituted, or
+            source-damaging.
+          5: non-target facial geometry preservation is partially correct, with several substantial issues.
+          6: non-target facial geometry preservation is mostly correct, but one clear issue remains.
+          7: non-target facial geometry preservation is strong, with only a minor visible mismatch.
+          8: non-target facial geometry preservation is highly accurate, with only a tiny imperfection.
+          9: Eye spacing, nose, and face geometry remain unchanged.
+        rubric: Preserve inter-eye distance, nose bridge, brow relation, face outline, and all non-target facial geometry.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_pose_aware_symmetry_match:
+        title: Pose-aware symmetry match
+        definition: Judge upward movement according to head rotation, tilt, foreshortening, and source asymmetry rather than
+          raw mirror symmetry.
+        anchors:
+          0: pose-aware symmetry is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct pose-aware symmetry is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: pose-aware symmetry is weakly attempted and major visible errors remain.
+          4: pose-aware symmetry is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: pose-aware symmetry is partially correct, with several substantial issues.
+          6: pose-aware symmetry is mostly correct, but one clear issue remains.
+          7: pose-aware symmetry is strong, with only a minor visible mismatch.
+          8: pose-aware symmetry is highly accurate, with only a tiny imperfection.
+          9: Eye position remains perfectly pose-aware and balanced.
+        rubric: Judge upward movement according to head rotation, tilt, foreshortening, and source asymmetry rather than raw
+          mirror symmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_normal_view_visibility_match:
+        title: Normal-view visibility match
+        definition: Judge whether the upward eye-position change is visible at normal portrait viewing size without looking
+          artificial.
+        anchors:
+          0: normal-view visibility is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct normal-view visibility is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: normal-view visibility is weakly attempted and major visible errors remain.
+          4: normal-view visibility is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: normal-view visibility is partially correct, with several substantial issues.
+          6: normal-view visibility is mostly correct, but one clear issue remains.
+          7: normal-view visibility is strong, with only a minor visible mismatch.
+          8: normal-view visibility is highly accurate, with only a tiny imperfection.
+          9: The position change is clearly visible and natural.
+        rubric: Judge whether the upward eye-position change is visible at normal portrait viewing size without looking artificial.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_natural_finish_match:
+        title: Natural finish match
+        definition: Judge whether the edit is clean, realistic, and integrated without beauty-filter or pasted-eye appearance.
+        anchors:
+          0: natural finish is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct natural finish is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: natural finish is weakly attempted and major visible errors remain.
+          4: natural finish is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: natural finish is partially correct, with several substantial issues.
+          6: natural finish is mostly correct, but one clear issue remains.
+          7: natural finish is strong, with only a minor visible mismatch.
+          8: natural finish is highly accurate, with only a tiny imperfection.
+          9: The edit is photorealistic and seamlessly finished.
+        rubric: Judge whether the edit is clean, realistic, and integrated without beauty-filter or pasted-eye appearance.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      unrequested_face_scene_properties_preserved:
+        title: Unrequested face and scene properties preserved
+        definition: Preserve expression, brows, nose, mouth, hair, skin tone, clothing, body, background, lighting, crop,
+          camera, and all unrelated regions.
+        anchors:
+          0: non-target preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct non-target preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: non-target preservation is weakly attempted and major visible errors remain.
+          4: non-target preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: non-target preservation is partially correct, with several substantial issues.
+          6: non-target preservation is mostly correct, but one clear issue remains.
+          7: non-target preservation is strong, with only a minor visible mismatch.
+          8: non-target preservation is highly accurate, with only a tiny imperfection.
+          9: All unrelated face and scene properties remain source-consistent.
+        rubric: Preserve expression, brows, nose, mouth, hair, skin tone, clothing, body, background, lighting, crop, camera,
+          and all unrelated regions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Localization and Anatomical Integration:
+    Eye Placement and Orbital Anatomy:
+      eye_position_edit_localized_to_eye_region:
+        title: Edit localized to eye region
+        definition: Keep changes within both eyes, eyelids, and minimal surrounding orbital blending zones.
+        anchors:
+          0: eye-region localization is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct eye-region localization is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: eye-region localization is weakly attempted and major visible errors remain.
+          4: eye-region localization is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: eye-region localization is partially correct, with several substantial issues.
+          6: eye-region localization is mostly correct, but one clear issue remains.
+          7: eye-region localization is strong, with only a minor visible mismatch.
+          8: eye-region localization is highly accurate, with only a tiny imperfection.
+          9: The edit is precisely localized to the eye region.
+        rubric: Keep changes within both eyes, eyelids, and minimal surrounding orbital blending zones. Apply this facet's
+          0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let
+          unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_orbital_anatomy_perspective_consistent:
+        title: Orbital anatomy and perspective consistency
+        definition: Judge orbital placement, eyelid support, brow-eye relation, facial depth, head pose, and perspective after
+          the upward move.
+        anchors:
+          0: orbital anatomy consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct orbital anatomy consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: orbital anatomy consistency is weakly attempted and major visible errors remain.
+          4: orbital anatomy consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: orbital anatomy consistency is partially correct, with several substantial issues.
+          6: orbital anatomy consistency is mostly correct, but one clear issue remains.
+          7: orbital anatomy consistency is strong, with only a minor visible mismatch.
+          8: orbital anatomy consistency is highly accurate, with only a tiny imperfection.
+          9: Orbital anatomy and perspective are fully coherent.
+        rubric: Judge orbital placement, eyelid support, brow-eye relation, facial depth, head pose, and perspective after
+          the upward move. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_iris_pupil_sclera_lash_occlusion_consistent:
+        title: Iris, pupil, sclera, lash, and occlusion consistency
+        definition: Judge iris/pupil/sclera relation, lashes, eyelid overlap, catchlights, and eye-boundary occlusion after
+          movement.
+        anchors:
+          0: ocular component consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct ocular component consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: ocular component consistency is weakly attempted and major visible errors remain.
+          4: ocular component consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: ocular component consistency is partially correct, with several substantial issues.
+          6: ocular component consistency is mostly correct, but one clear issue remains.
+          7: ocular component consistency is strong, with only a minor visible mismatch.
+          8: ocular component consistency is highly accurate, with only a tiny imperfection.
+          9: All ocular components and occlusions remain physically coherent.
+        rubric: Judge iris/pupil/sclera relation, lashes, eyelid overlap, catchlights, and eye-boundary occlusion after movement.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_brow_nose_bridge_skin_boundary_consistent:
+        title: Brow, nose bridge, and skin boundary consistency
+        definition: Judge brow relation, nose bridge skin, eyelid crease, local shadows, and surrounding skin boundaries for
+          natural reconstruction.
+        anchors:
+          0: local boundary consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct local boundary consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: local boundary consistency is weakly attempted and major visible errors remain.
+          4: local boundary consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: local boundary consistency is partially correct, with several substantial issues.
+          6: local boundary consistency is mostly correct, but one clear issue remains.
+          7: local boundary consistency is strong, with only a minor visible mismatch.
+          8: local boundary consistency is highly accurate, with only a tiny imperfection.
+          9: Brow, nose-bridge, and skin boundaries are seamless.
+        rubric: Judge brow relation, nose bridge skin, eyelid crease, local shadows, and surrounding skin boundaries for natural
+          reconstruction. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target State Preservation:
+      eye_position_identity_landmark_consistency:
+        title: Identity and landmark consistency
+        definition: Compare source and result as the same person; only vertical eye position may change.
+        anchors:
+          0: identity preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct identity preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: identity preservation is weakly attempted and major visible errors remain.
+          4: identity preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: identity preservation is partially correct, with several substantial issues.
+          6: identity preservation is mostly correct, but one clear issue remains.
+          7: identity preservation is strong, with only a minor visible mismatch.
+          8: identity preservation is highly accurate, with only a tiny imperfection.
+          9: The subject remains exactly the same person with stable landmarks.
+        rubric: Compare source and result as the same person; only vertical eye position may change. Apply this facet's 0-9
+          anchors directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated
+          preservation, realism, or attractiveness compensate for this facet.
+      eye_position_expression_gaze_scene_preserved:
+        title: Expression, gaze, and scene state preserved
+        definition: Preserve expression, gaze intent, face state, lighting, color, crop, background, clothing, and camera
+          state.
+        anchors:
+          0: expression/scene preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct expression/scene preservation is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: expression/scene preservation is weakly attempted and major visible errors remain.
+          4: expression/scene preservation is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: expression/scene preservation is partially correct, with several substantial issues.
+          6: expression/scene preservation is mostly correct, but one clear issue remains.
+          7: expression/scene preservation is strong, with only a minor visible mismatch.
+          8: expression/scene preservation is highly accurate, with only a tiny imperfection.
+          9: Expression, gaze state, and scene remain source-identical.
+        rubric: Preserve expression, gaze intent, face state, lighting, color, crop, background, clothing, and camera state.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Eye-Position Rendering Quality:
+      eye_position_skin_eye_texture_realistic:
+        title: Skin and eye texture realism
+        definition: Judge eyelid skin, pores, lashes, iris detail, sclera texture, focus, and source-level sharpness after
+          movement.
+        anchors:
+          0: texture realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct texture realism is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: texture realism is weakly attempted and major visible errors remain.
+          4: texture realism is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: texture realism is partially correct, with several substantial issues.
+          6: texture realism is mostly correct, but one clear issue remains.
+          7: texture realism is strong, with only a minor visible mismatch.
+          8: texture realism is highly accurate, with only a tiny imperfection.
+          9: Skin and eye texture remain realistic and source-sharp.
+        rubric: Judge eyelid skin, pores, lashes, iris detail, sclera texture, focus, and source-level sharpness after movement.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_lighting_shadow_color_integration:
+        title: Lighting, shadow, and color integration
+        definition: Judge eyelid shadows, catchlights, iris/sclera brightness, skin tone, white balance, and local/global
+          lighting consistency.
+        anchors:
+          0: lighting/color integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct lighting/color integration is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: lighting/color integration is weakly attempted and major visible errors remain.
+          4: lighting/color integration is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: lighting/color integration is partially correct, with several substantial issues.
+          6: lighting/color integration is mostly correct, but one clear issue remains.
+          7: lighting/color integration is strong, with only a minor visible mismatch.
+          8: lighting/color integration is highly accurate, with only a tiny imperfection.
+          9: Lighting, shadows, and color remain physically integrated.
+        rubric: Judge eyelid shadows, catchlights, iris/sclera brightness, skin tone, white balance, and local/global lighting
+          consistency. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_boundary_background_reconstruction_consistent:
+        title: Boundary and background reconstruction consistency
+        definition: Judge local eye/skin boundaries and any nearby reconstructed texture or background for clean natural relationships.
+        anchors:
+          0: boundary consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct boundary consistency is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: boundary consistency is weakly attempted and major visible errors remain.
+          4: boundary consistency is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: boundary consistency is partially correct, with several substantial issues.
+          6: boundary consistency is mostly correct, but one clear issue remains.
+          7: boundary consistency is strong, with only a minor visible mismatch.
+          8: boundary consistency is highly accurate, with only a tiny imperfection.
+          9: Boundaries and reconstructed areas are seamless.
+        rubric: Judge local eye/skin boundaries and any nearby reconstructed texture or background for clean natural relationships.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      eye_position_artifact_sharpness_no_warp_mask:
+        title: Artifact, sharpness, no-warp, no-mask quality
+        definition: Judge halos, jagged edges, blur, over-sharpening, duplicated eyes, warped eyelids, mask seams, liquify
+          waves, and source-resolution consistency.
+        anchors:
+          0: artifact-free quality is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of correct artifact-free quality is visible.
+          2: A small relevant trace exists, but major requirements are wrong or dominated by a substitute operation.
+          3: artifact-free quality is weakly attempted and major visible errors remain.
+          4: artifact-free quality is recognizable, but one major requirement is missing, substituted, or source-damaging.
+          5: artifact-free quality is partially correct, with several substantial issues.
+          6: artifact-free quality is mostly correct, but one clear issue remains.
+          7: artifact-free quality is strong, with only a minor visible mismatch.
+          8: artifact-free quality is highly accurate, with only a tiny imperfection.
+          9: The image is source-sharp and free of warping, masking, blur, or artifacts.
+        rubric: Judge halos, jagged edges, blur, over-sharpening, duplicated eyes, warped eyelids, mask seams, liquify waves,
+          and source-resolution consistency. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.

@@ -1,0 +1,763 @@
+task_key: eye_spacing_adjustment
+task_title: Eye Spacing Adjustment
+task_title_zh: 眼距调整
+version: v48_fixed_integer_22_l3_eye_spacing_adjustment_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator for inward eye-spacing adjustment, orbital/nose-bridge anatomy, identity preservation,
+  and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare interocular distance, both eye centers, eye size/shape/orientation, gaze, iris/pupil structure,
+  eyelids/lashes/brows, nose bridge/inner corners, face angle, facial proportion, identity, expression, skin/makeup, hair,
+  clothing, lighting, background, and camera angle.
+
+
+  2) Task target. A successful edit moves both eye units inward so the eyes are noticeably closer together while preserving
+  eye size, shape, orientation, gaze, iris/pupil structure, eyelids, brows, nose geometry, expression, identity, face shape
+  outside target, and the scene. It is not eye enlargement, nose movement, face narrowing, global scaling, or generic beautification.
+
+
+  3) Task-specific failures. Treat absent/wrong-direction spacing change, substitute eye/face/nose edits, over-moved unnatural
+  spacing, broken orbital/nose-bridge/gaze anatomy, and non-target source drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear inward-spacing evidence. If eyes are unchanged or the effect comes from face/nose/eye-size
+  changes, preservation/quality must not lift affected facets.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 100
+  unique_prompt_templates: 10
+  template_frequency: Each template appears 10 times.
+  direction_distribution:
+    explicit_move_eyes_closer: 100
+    explicit_move_eyes_farther_apart: 0
+    source_adaptive_balance_request: 0
+  recurring_requirements:
+  - slightly adjust eye spacing toward a more balanced facial proportion
+  - make the result visible while keeping it believable
+  - preserve identity, age impression, expression, and head pose
+  - preserve eye appearance and all unrelated facial features
+  - retain pores, skin texture, shadows, lighting, camera angle, and photographic style
+  - avoid plastic skin, warped edges, duplicated anatomy, and background deformation
+  data_note: The current prompt explicitly requests making the eyes noticeably closer together. Judge the direction as inward/closer-together
+    rather than source-adaptive outward/minimal balancing.
+target_region: The horizontal placement of both visible eye units within the orbital region. Each eye unit includes the eye
+  aperture, eyelids, lashes, iris, pupil, and minimum adjacent skin needed for seamless repositioning. Eye size, shape, rotation,
+  gaze, brows, nose, and surrounding facial structure remain non-target.
+target_action_summary: Move both eye units inward so the eyes are noticeably closer together while still producing a natural
+  interocular relationship. Preserve eye size, shape, orientation, gaze, iris and pupil structure, eyelids, brows, nose geometry,
+  expression, identity, face shape, skin tone, lighting, camera angle, and scene.
+task_boundary:
+  allowed:
+  - small horizontal repositioning of the complete eye units
+  - minimal local skin, eyelid, lash, brow-adjacent, and shadow reconstruction
+  - perspective-aware asymmetric displacement when required by head rotation
+  not_equivalent_tasks:
+  - enlarging or shrinking the eyes
+  - changing eye shape, eyelid type, iris size, pupil size, or gaze
+  - moving or reshaping the nose, brows, temples, cheeks, or whole face
+  - globally widening or narrowing the face
+  - using camera, crop, or head-pose changes to simulate different eye spacing
+direction_resolution_protocol:
+  principle: Because the prompt explicitly requests closer-together eyes, the valid direction is inward. Reward movement only
+    when the final eye spacing is visibly closer while remaining identity-preserving.
+  rules:
+  - The edited image should reduce the apparent horizontal distance between the two complete eye units.
+  - Outward movement, unchanged spacing, or a merely source-adaptive minimal refinement should receive low direction and primary-outcome
+    scores for this prompt.
+  - Do not give credit for an apparent closer spacing produced by face narrowing, nose deformation, camera angle change, crop/zoom
+    change, or head-pose change.
+  - Do not use a rigid one-eye-width canon as an absolute rule; account for identity, ethnicity, age, perspective, and facial
+    asymmetry.
+  - For rotated faces, judge projected spacing and perspective rather than forcing equal screen-space displacement.
+  - Moving only one eye is acceptable only when perspective or visible asymmetry requires it; otherwise it is an error.
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate source-adaptive spacing compliance, orbital integration, identity preservation,
+    and rendering quality. Do not reward generic facial beautification when the actual interocular placement is unchanged
+    or when eye shape, size, gaze, nose, or face width is altered.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not invent hidden anatomy.
+  - For this task item, use inward/closer-together movement as the requested direction.
+  - Do not reward eye enlargement, eye-shape edits, nose movement, face reshaping, or global scaling.
+  - Perspective-aware balance is required; do not force mirror symmetry.
+  - One severe gaze, anatomy, identity, or non-target error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request adjustment of the horizontal spacing or distance between the eyes, either
+    explicitly or toward a more balanced proportion.
+  wrong_task_examples:
+  - only enlarging the eyes
+  - changing eye shape, eyelids, gaze, iris, or eye color
+  - moving or reshaping the nose or eyebrows without an eye-spacing target
+  - globally narrowing or widening the face
+  conflict_examples:
+  - move the eyes both closer together and farther apart
+  - preserve exact eye positions while requiring visible spacing adjustment
+  - change eye spacing while requiring the complete orbital region to remain pixel-identical
+  visibility_failures:
+  - both eyes are outside the frame or fully occluded
+  - one eye is absent and the intended two-eye spacing cannot be inferred
+  - image quality prevents reliable identification of eye centers, inner corners, and face orientation
+  partial_visibility_rule: When one eye is partially occluded but both eye centers remain inferable, score visible geometry
+    cautiously. Skip the sample when reliable interocular comparison is impossible.
+anatomy_preservation_protocol:
+  strict_rules:
+  - Move each complete eye unit coherently; do not separate iris, pupil, eyelids, lashes, or corners.
+  - Preserve eye width, height, rotation, aperture, eyelid contour, iris size, pupil size, and gaze.
+  - Preserve eyebrow shape and position unless subpixel blending is unavoidable.
+  - Preserve nose bridge width, nose position, temples, cheeks, forehead, and face outline.
+  - Maintain plausible medial and lateral canthus relationships with surrounding skin.
+  - Reconstruct local skin texture, shadows, and makeup without duplicate or stretched patterns.
+  - Do not create crossed eyes, wall-eyed gaze, detached eyelids, duplicated lashes, or warped nose bridges.
+identity_preservation_protocol:
+  target_exemptions:
+  - Only the horizontal placement of the eye units and minimum local transition pixels may change.
+  strict_rules:
+  - Preserve the same person, age impression, facial character, and natural asymmetry.
+  - Preserve expression, gaze, head pose, face shape, skin tone, and all non-target features.
+  - Preserve hairstyle, clothing, background, lighting, framing, and photographic style.
+  - The intended small eye-position change must not itself be treated as identity drift.
+  - Excessive movement that changes the person's recognizable facial identity must be penalized.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: Good realism, preserved background, or attractive eyes cannot compensate for unchanged/wrong eye
+    spacing, substitute eye-size/nose/face edits, crossed/cramped relation, broken orbital anatomy, or identity/source drift.
+  eye_spacing_disambiguation_rule: Reward only source-preserving interocular-distance change. Penalize eye-size/shape edits,
+    nose/face reshaping, iris/makeup changes, camera/crop scaling, over-movement, and gaze/identity drift.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: Interocular distance is unchanged, barely changed, moved outward/opposite, or the inward eye movement
+          is too weak to satisfy the prompt.
+        severity_guidance: Tiny but correct interocular-distance change may be severity 1. Correct but weak/partial spacing
+          adjustment should be severity 2. Mostly unchanged spacing at normal viewing size must be severity 3. Wrong direction,
+          absent target, or increased spacing when closer eyes are requested must be severity 4-5.
+        affected_l3:
+        - eye_spacing_primary_adjustment_outcome_match
+        - eye_spacing_source_adaptive_direction_match
+        - eye_spacing_magnitude_intensity_match
+        - eye_spacing_final_facial_proportion_balance_match
+        - eye_spacing_interocular_distance_consistency_match
+        - eye_spacing_bilateral_position_balance_match
+        - eye_spacing_normal_view_visibility_match
+        - eye_spacing_requested_finish_style_match
+        - eye_spacing_edit_localized_to_orbital_region
+        - eye_spacing_eye_shape_size_orientation_preservation
+        - eye_spacing_subject_identity_facial_proportion_preservation
+        - eye_spacing_non_target_facial_feature_preservation
+        - eye_spacing_expression_gaze_head_pose_preservation
+        - eye_spacing_skin_tone_texture_makeup_preservation
+        - eye_spacing_hair_clothing_scene_camera_preservation
+        - eye_spacing_artifact_background_stability
+      substitute_eye_size_shape_nose_face_or_global_scaling:
+        detect_when: The closer-eye appearance comes from changing eye size/shape/orientation, gaze, iris/pupil, nose bridge
+          geometry, face width, head scale, crop/camera, makeup, or generic beauty retouching instead of moving eye units
+          inward.
+        severity_guidance: Minor substitute cue with genuine spacing change may be severity 1-2. If eye-size/shape, nose/face,
+          makeup/iris, crop/camera, or global scaling contributes substantially, severity 3. If substitute is the main visible
+          edit or changes identity/gaze/camera, severity 4-5.
+        affected_l3:
+        - eye_spacing_primary_adjustment_outcome_match
+        - eye_spacing_source_adaptive_direction_match
+        - eye_spacing_eye_shape_size_orientation_preservation
+        - eye_spacing_gaze_pupil_iris_alignment_consistency
+        - eye_spacing_nose_bridge_inner_corner_transition_quality
+        - eye_spacing_face_angle_perspective_anatomy_consistency
+        - eye_spacing_subject_identity_facial_proportion_preservation
+        - eye_spacing_non_target_facial_feature_preservation
+        - eye_spacing_magnitude_intensity_match
+        - eye_spacing_final_facial_proportion_balance_match
+        - eye_spacing_interocular_distance_consistency_match
+        - eye_spacing_bilateral_position_balance_match
+        - eye_spacing_normal_view_visibility_match
+        - eye_spacing_requested_finish_style_match
+        - eye_spacing_edit_localized_to_orbital_region
+        - eye_spacing_expression_gaze_head_pose_preservation
+        - eye_spacing_skin_tone_texture_makeup_preservation
+        - eye_spacing_hair_clothing_scene_camera_preservation
+        - eye_spacing_artifact_background_stability
+      over_moved_crossed_or_unnatural_interocular_relation:
+        detect_when: Eyes become too close, crossed-looking, asymmetric, cramped, unnatural for the face angle, or incompatible
+          with natural facial proportion.
+        severity_guidance: Slight over-movement may be severity 1-2. Clear crossed, cramped, asymmetric, or proportionally
+          unnatural spacing should be severity 3. Identity-changing, severely crossed, or impossible orbital relation must
+          be severity 4-5.
+        affected_l3:
+        - eye_spacing_magnitude_intensity_match
+        - eye_spacing_final_facial_proportion_balance_match
+        - eye_spacing_interocular_distance_consistency_match
+        - eye_spacing_bilateral_position_balance_match
+        - eye_spacing_face_angle_perspective_anatomy_consistency
+        - eye_spacing_subject_identity_facial_proportion_preservation
+        - eye_spacing_primary_adjustment_outcome_match
+        - eye_spacing_source_adaptive_direction_match
+        - eye_spacing_normal_view_visibility_match
+        - eye_spacing_requested_finish_style_match
+        - eye_spacing_edit_localized_to_orbital_region
+        - eye_spacing_eye_shape_size_orientation_preservation
+        - eye_spacing_gaze_pupil_iris_alignment_consistency
+        - eye_spacing_eyelid_lash_brow_orbital_integration
+        - eye_spacing_nose_bridge_inner_corner_transition_quality
+        - eye_spacing_local_skin_texture_edge_realism
+        - eye_spacing_local_lighting_shadow_color_consistency
+        - eye_spacing_artifact_background_stability
+      orbital_gaze_nose_bridge_or_boundary_broken:
+        detect_when: Gaze, pupil/iris alignment, eyelids/lashes/brows, nose bridge/inner-corner transition, face perspective,
+          local skin texture, edges, lighting, or color becomes warped, pasted, haloed, misaligned, or anatomically implausible.
+        severity_guidance: Tiny inner-corner/skin blend defect may be severity 1. Clear gaze, nose-bridge, eyelid/canthus,
+          orbital boundary, or skin/makeup integration issue should be severity 2-3. Misaligned gaze, pasted eye region, broken
+          nose-eye anatomy, or severe boundary failure must be severity 4-5.
+        affected_l3:
+        - eye_spacing_gaze_pupil_iris_alignment_consistency
+        - eye_spacing_eyelid_lash_brow_orbital_integration
+        - eye_spacing_nose_bridge_inner_corner_transition_quality
+        - eye_spacing_face_angle_perspective_anatomy_consistency
+        - eye_spacing_local_skin_texture_edge_realism
+        - eye_spacing_local_lighting_shadow_color_consistency
+        - eye_spacing_artifact_background_stability
+        - eye_spacing_primary_adjustment_outcome_match
+        - eye_spacing_source_adaptive_direction_match
+        - eye_spacing_magnitude_intensity_match
+        - eye_spacing_final_facial_proportion_balance_match
+        - eye_spacing_interocular_distance_consistency_match
+        - eye_spacing_bilateral_position_balance_match
+        - eye_spacing_normal_view_visibility_match
+        - eye_spacing_requested_finish_style_match
+        - eye_spacing_edit_localized_to_orbital_region
+        - eye_spacing_eye_shape_size_orientation_preservation
+        - eye_spacing_subject_identity_facial_proportion_preservation
+      identity_expression_non_target_or_scene_drift:
+        detect_when: Identity, facial proportion outside target, non-target facial features, expression, gaze/head pose, skin/makeup,
+          hair, clothing, lighting, background, crop, or camera state changes beyond interocular spacing adjustment.
+        severity_guidance: Minor local blend drift may be severity 1. Clear expression/gaze/skin/makeup/lighting/background
+          drift should be severity 2-3. Identity, facial proportion, head pose, crop, camera, or broad non-target face change
+          must be severity 4-5.
+        affected_l3:
+        - eye_spacing_subject_identity_facial_proportion_preservation
+        - eye_spacing_non_target_facial_feature_preservation
+        - eye_spacing_expression_gaze_head_pose_preservation
+        - eye_spacing_skin_tone_texture_makeup_preservation
+        - eye_spacing_hair_clothing_scene_camera_preservation
+        - eye_spacing_local_lighting_shadow_color_consistency
+        - eye_spacing_artifact_background_stability
+        - eye_spacing_primary_adjustment_outcome_match
+        - eye_spacing_source_adaptive_direction_match
+        - eye_spacing_edit_localized_to_orbital_region
+        - eye_spacing_local_skin_texture_edge_realism
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Eye-spacing adjustment changes the distance between complete eye units while preserving eye size/shape,
+    gaze, nose bridge, face shape, identity, and camera. It is not eye-size editing, nose reshaping, iris/makeup editing,
+    face scaling, crop change, or generic beauty retouching.
+  no_compensation_rule: If eye spacing is absent/wrong direction or achieved by substitute operations, preservation/background/photorealism
+    must not raise edit-dependent facets. A prettier face or eyes must not compensate for unchanged spacing, crossed eyes,
+    nose/face distortion, or source-state drift.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample moves both eye units inward so the eyes are naturally closer together while preserving
+    eye size/shape/orientation, gaze, nose bridge, identity, expression, and scene.
+  success_gate_conditions:
+  - Interocular distance is visibly reduced in the requested inward direction at normal viewing size.
+  - Both eye units remain balanced, with natural final facial proportion and no crossed/cramped appearance.
+  - Eye shape, size, orientation, gaze, iris/pupil structure, eyelids/lashes/brows, and nose-bridge/inner-corner relation
+    remain plausible.
+  - The result is not eye enlargement, eye-shape editing, gaze change, nose movement, face narrowing, head scaling, crop/camera
+    change, or beauty retouching.
+  - Identity, expression, skin/makeup, hair, clothing, lighting, background, and camera state remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- eye_spacing_primary_adjustment_outcome_match
+- eye_spacing_source_adaptive_direction_match
+- eye_spacing_magnitude_intensity_match
+- eye_spacing_final_facial_proportion_balance_match
+- eye_spacing_interocular_distance_consistency_match
+- eye_spacing_bilateral_position_balance_match
+- eye_spacing_normal_view_visibility_match
+- eye_spacing_requested_finish_style_match
+- eye_spacing_edit_localized_to_orbital_region
+- eye_spacing_eye_shape_size_orientation_preservation
+- eye_spacing_gaze_pupil_iris_alignment_consistency
+- eye_spacing_eyelid_lash_brow_orbital_integration
+- eye_spacing_nose_bridge_inner_corner_transition_quality
+- eye_spacing_face_angle_perspective_anatomy_consistency
+- eye_spacing_subject_identity_facial_proportion_preservation
+- eye_spacing_non_target_facial_feature_preservation
+- eye_spacing_expression_gaze_head_pose_preservation
+- eye_spacing_skin_tone_texture_makeup_preservation
+- eye_spacing_hair_clothing_scene_camera_preservation
+- eye_spacing_local_skin_texture_edge_realism
+- eye_spacing_local_lighting_shadow_color_consistency
+- eye_spacing_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    eye_spacing_primary_adjustment_outcome_match: 0.18
+    eye_spacing_source_adaptive_direction_match: 0.18
+    eye_spacing_magnitude_intensity_match: 0.15
+    eye_spacing_final_facial_proportion_balance_match: 0.16
+    eye_spacing_interocular_distance_consistency_match: 0.11
+    eye_spacing_bilateral_position_balance_match: 0.09
+    eye_spacing_normal_view_visibility_match: 0.07
+    eye_spacing_requested_finish_style_match: 0.06
+  Localization and Anatomical Integration:
+    eye_spacing_edit_localized_to_orbital_region: 0.19
+    eye_spacing_eye_shape_size_orientation_preservation: 0.18
+    eye_spacing_gaze_pupil_iris_alignment_consistency: 0.19
+    eye_spacing_eyelid_lash_brow_orbital_integration: 0.14
+    eye_spacing_nose_bridge_inner_corner_transition_quality: 0.14
+    eye_spacing_face_angle_perspective_anatomy_consistency: 0.16
+  Subject Preservation:
+    eye_spacing_subject_identity_facial_proportion_preservation: 0.26
+    eye_spacing_non_target_facial_feature_preservation: 0.22
+    eye_spacing_expression_gaze_head_pose_preservation: 0.19
+    eye_spacing_skin_tone_texture_makeup_preservation: 0.16
+    eye_spacing_hair_clothing_scene_camera_preservation: 0.17
+  Task Realism and Image Quality:
+    eye_spacing_local_skin_texture_edge_realism: 0.34
+    eye_spacing_local_lighting_shadow_color_consistency: 0.32
+    eye_spacing_artifact_background_stability: 0.34
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt in this dataset.
+  other_l1_blocks: Use the listed within-L1 weights for Localization and Anatomical Integration, Subject Preservation, and
+    Task Realism and Image Quality.
+  base_formula: base_reward = 0.55 * P + 0.20 * L + 0.18 * S + 0.07 * Q
+  anatomy_score: A = score(eye_spacing_face_angle_perspective_anatomy_consistency) / 9.0
+  identity_score: I = score(eye_spacing_subject_identity_facial_proportion_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.22) * (I ** 0.20)
+taxonomy:
+  Prompt Compliance:
+    Requested Eye Spacing Adjustment:
+      eye_spacing_primary_adjustment_outcome_match:
+        title: Primary eye-spacing outcome
+        definition: Whether both complete eye units are visibly moved closer together relative to the source, not merely made
+          prettier, enlarged, or globally warped. Do not give credit for apparent closer spacing caused by camera angle, crop/zoom,
+          face-width change, nose-bridge deformation, or eye-shape distortion.
+        anchors:
+          0: No visible inward eye-spacing edit, outward movement, unchanged spacing, or a different task.
+          3: Very weak or doubtful inward movement; spacing remains substantially like the source.
+          5: Visible partial inward movement, but balance, localization, or identity is materially imperfect.
+          7: Clearly closer eye spacing with one visible issue in balance, localization, or naturalness.
+          9: Both eyes are cleanly and noticeably closer together exactly as requested, with eye shape, gaze, nose bridge,
+            identity, and camera angle preserved.
+        rubric: Whether both complete eye units are visibly moved closer together relative to the source, not merely made
+          prettier, enlarged, or globally warped. Do not give credit for apparent closer spacing caused by camera angle, crop/zoom,
+          face-width change, nose-bridge deformation, or eye-shape distortion. Apply this facet's 0-9 anchors directly. If
+          any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      eye_spacing_source_adaptive_direction_match:
+        title: Requested inward movement direction
+        definition: Whether the eyes move inward/closer together as explicitly requested by the prompt. For this task item,
+          outward movement, no movement, or a generic source-adaptive refinement is not the requested direction.
+        anchors:
+          0: Eyes move outward, do not move, or the apparent direction is created by global face/camera distortion.
+          3: Inward direction is barely visible, ambiguous, or inconsistent across the two eyes.
+          5: Mostly inward but weak, asymmetric, or partly produced by surrounding facial distortion.
+          7: Correct inward direction with one minor visible inconsistency.
+          9: Precise inward movement that makes the eyes closer together without non-target distortion.
+        rubric: Whether the eyes move inward/closer together as explicitly requested by the prompt. For this task item, outward
+          movement, no movement, or a generic source-adaptive refinement is not the requested direction. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_magnitude_intensity_match:
+        title: Spacing-change magnitude and intensity
+        definition: Whether the closer-together displacement is clearly visible but natural. Too subtle, excessive, asymmetric,
+          or identity-changing spacing edits should not receive high scores.
+        anchors:
+          0: No useful inward movement, opposite direction, or extreme destructive displacement.
+          3: Barely visible, highly uneven, or clearly insufficient closer-together effect.
+          5: Noticeable but underdone, overdone, asymmetric, or not well matched to the face.
+          7: Good closer-together magnitude with one minor naturalness or proportion issue.
+          9: Clearly visible, natural, source-appropriate closer-together magnitude.
+        rubric: Whether the closer-together displacement is clearly visible but natural. Too subtle, excessive, asymmetric,
+          or identity-changing spacing edits should not receive high scores. Apply this facet's 0-9 anchors directly. If any
+          global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      eye_spacing_final_facial_proportion_balance_match:
+        title: Final facial-proportion balance
+        definition: Whether the final eye spacing harmonizes with eye width, nose bridge, face width, and identity under the
+          source perspective.
+        anchors:
+          0: Final proportions are clearly implausible or less balanced.
+          3: Strong proportional mismatch remains or is introduced.
+          5: Some improvement exists but the face still appears noticeably unbalanced.
+          7: Balanced result with one minor proportion issue.
+          9: Final spacing is fully harmonious and identity-consistent.
+        rubric: Whether the final eye spacing harmonizes with eye width, nose bridge, face width, and identity under the source
+          perspective. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_interocular_distance_consistency_match:
+        title: Interocular-distance consistency
+        definition: Whether inner-corner, pupil-center, and outer-corner relationships change coherently rather than through
+          local stretching.
+        anchors:
+          0: Distance is unchanged, contradictory, or created through severe eye distortion.
+          3: Major inconsistency among eye centers, corners, or widths.
+          5: General spacing change exists with one clear geometric inconsistency.
+          7: Coherent distance change with one minor issue.
+          9: All interocular measurements change coherently and naturally.
+        rubric: Whether inner-corner, pupil-center, and outer-corner relationships change coherently rather than through local
+          stretching. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_bilateral_position_balance_match:
+        title: Bilateral position balance
+        definition: Whether both eye units are repositioned coherently while respecting head rotation, perspective, and natural
+          asymmetry.
+        anchors:
+          0: One eye is misplaced, one side is missed, or severe imbalance is created.
+          3: Major asymmetric or perspective-incompatible movement.
+          5: Both eyes are adjusted but visibly mismatched.
+          7: Balanced with one minor position difference.
+          9: Both eye units are perfectly balanced for the source perspective.
+        rubric: Whether both eye units are repositioned coherently while respecting head rotation, perspective, and natural
+          asymmetry. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_normal_view_visibility_match:
+        title: Normal-viewing-size visibility
+        definition: Whether the intended proportional improvement can be noticed at ordinary portrait viewing size without
+          appearing artificial.
+        anchors:
+          0: No visible spacing improvement or only unrelated changes.
+          3: Change is almost undetectable or visually confusing.
+          5: Visible only weakly or inconsistently.
+          7: Clearly visible with one minor issue.
+          9: Improvement is easy to perceive and remains fully believable.
+        rubric: Whether the intended proportional improvement can be noticed at ordinary portrait viewing size without appearing
+          artificial. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_requested_finish_style_match:
+        title: Requested finish and retouching style
+        definition: Whether the result matches the prompt's studio, editorial, commercial, social-media, premium, or maximum-realistic
+          finish.
+        anchors:
+          0: Opposite, absent, or destructive finish.
+          3: Severely mismatched, plastic, or exaggerated styling.
+          5: General finish is recognizable but clearly inaccurate.
+          7: Appropriate finish with one minor mismatch.
+          9: Finish and intensity precisely match the prompt and remain photorealistic.
+        rubric: Whether the result matches the prompt's studio, editorial, commercial, social-media, premium, or maximum-realistic
+          finish. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Anatomical Integration:
+    Orbital Placement and Facial Anatomy:
+      eye_spacing_edit_localized_to_orbital_region:
+        title: Edit localization
+        definition: Whether changes remain within the eye units and minimum necessary local transition regions.
+        anchors:
+          0: Broad face, nose, brow, temple, or scene editing.
+          3: Significant spill into non-target facial regions.
+          5: Mostly localized with one clear extra alteration.
+          7: Localized with one minor spill.
+          9: Precisely confined to the permitted orbital region.
+        rubric: Whether changes remain within the eye units and minimum necessary local transition regions. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_eye_shape_size_orientation_preservation:
+        title: Eye shape, size, and orientation preservation
+        definition: Whether eye width, height, aperture, rotation, eyelid contour, and apparent scale remain unchanged while
+          positions move.
+        anchors:
+          0: Major eye enlargement, shrinkage, shape change, or rotation.
+          3: Strong geometry or size drift.
+          5: Mostly preserved with one clear shape or scale alteration.
+          7: Preserved with one minor difference.
+          9: Eye shape, size, and orientation remain fully unchanged.
+        rubric: Whether eye width, height, aperture, rotation, eyelid contour, and apparent scale remain unchanged while positions
+          move. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_gaze_pupil_iris_alignment_consistency:
+        title: Gaze, pupil, and iris alignment
+        definition: Whether pupils and irises move with the complete eyes while preserving gaze direction, binocular alignment,
+          and internal geometry.
+        anchors:
+          0: Crossed, wall-eyed, detached, or severely malformed gaze.
+          3: Major pupil, iris, or binocular alignment error.
+          5: Generally plausible with one clear internal alignment issue.
+          7: Coherent with one minor issue.
+          9: Gaze, pupils, and irises remain perfectly aligned and source-consistent.
+        rubric: Whether pupils and irises move with the complete eyes while preserving gaze direction, binocular alignment,
+          and internal geometry. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+      eye_spacing_eyelid_lash_brow_orbital_integration:
+        title: Eyelid, lash, brow, and orbital integration
+        definition: Whether eyelids, lashes, brows, sockets, and nearby skin retain natural relationships after repositioning.
+        anchors:
+          0: Detached eyelids, duplicated lashes, broken brows, or impossible sockets.
+          3: Major boundary, occlusion, or orbital integration error.
+          5: Broadly integrated with one obvious inconsistency.
+          7: Natural with one minor issue.
+          9: All orbital and surrounding-feature relationships remain seamless.
+        rubric: Whether eyelids, lashes, brows, sockets, and nearby skin retain natural relationships after repositioning.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_nose_bridge_inner_corner_transition_quality:
+        title: Nose-bridge and inner-corner transition
+        definition: Whether the space between the inner eye corners and unchanged nose bridge is reconstructed without stretching,
+          pinching, or nose deformation.
+        anchors:
+          0: Severe nose-bridge distortion, overlap, gap, or impossible anatomy.
+          3: Major pinching, stretching, repeated skin, or inner-corner error.
+          5: Generally plausible with one obvious transition problem.
+          7: Natural with one minor issue.
+          9: Inner-corner and nose-bridge transitions are fully seamless and unchanged in identity.
+        rubric: Whether the space between the inner eye corners and unchanged nose bridge is reconstructed without stretching,
+          pinching, or nose deformation. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+      eye_spacing_face_angle_perspective_anatomy_consistency:
+        title: Face angle, perspective, and anatomy
+        definition: Whether the adjusted spacing follows head rotation, lens perspective, facial axis, and three-dimensional
+          orbital placement.
+        anchors:
+          0: Spacing contradicts head pose or creates impossible anatomy.
+          3: Major perspective, axis, or depth inconsistency.
+          5: Generally plausible with one clear anatomical issue.
+          7: Coherent with one minor issue.
+          9: Eye placement is fully compatible with facial anatomy and perspective.
+        rubric: Whether the adjusted spacing follows head rotation, lens perspective, facial axis, and three-dimensional orbital
+          placement. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      eye_spacing_subject_identity_facial_proportion_preservation:
+        title: Subject identity and facial-proportion preservation
+        definition: Whether the same person remains recognizable with unchanged face width, eye identity, nose relation, age
+          impression, and characteristic asymmetry.
+        anchors:
+          0: Different person or major facial redesign.
+          3: Strong identity or broad facial-proportion drift.
+          5: Same person remains recognizable with one clear identity change.
+          7: Identity preserved with one minor difference.
+          9: Identity and all non-target facial proportions remain fully preserved.
+        rubric: Whether the same person remains recognizable with unchanged face width, eye identity, nose relation, age impression,
+          and characteristic asymmetry. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet
+          is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+      eye_spacing_non_target_facial_feature_preservation:
+        title: Non-target facial-feature preservation
+        definition: Preservation of nose, lips, brows, ears, jaw, cheeks, forehead, teeth, hairline, and all unrelated facial
+          regions.
+        anchors:
+          0: Multiple major non-target facial changes.
+          3: Strong alteration of one or more facial features.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target facial features remain unchanged.
+        rubric: Preservation of nose, lips, brows, ears, jaw, cheeks, forehead, teeth, hairline, and all unrelated facial
+          regions. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_expression_gaze_head_pose_preservation:
+        title: Expression, gaze, and head-pose preservation
+        definition: Preservation of expression, eyelid state, gaze direction, head rotation, tilt, scale, and position.
+        anchors:
+          0: Major expression, gaze, or head-pose change.
+          3: Strong drift in one or more listed properties.
+          5: Mostly preserved with one clear difference.
+          7: Preserved with one minor shift.
+          9: Expression, gaze, and head pose remain unchanged.
+        rubric: Preservation of expression, eyelid state, gaze direction, head rotation, tilt, scale, and position. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_skin_tone_texture_makeup_preservation:
+        title: Skin tone, texture, and makeup preservation
+        definition: Preservation of pores, fine skin texture, local marks, makeup, color, natural shadows, and asymmetry around
+          the eyes.
+        anchors:
+          0: Major recoloring, plastic skin, erased texture, or makeup replacement.
+          3: Strong texture, color, shadow, or makeup drift.
+          5: Mostly preserved with one obvious alteration.
+          7: Preserved with one minor difference.
+          9: Skin tone, texture, makeup, and local appearance remain unchanged.
+        rubric: Preservation of pores, fine skin texture, local marks, makeup, color, natural shadows, and asymmetry around
+          the eyes. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_hair_clothing_scene_camera_preservation:
+        title: Hair, clothing, scene, and camera preservation
+        definition: Preservation of hairstyle, accessories, clothing, body, background, global lighting, crop, camera angle,
+          framing, scale, and resolution.
+        anchors:
+          0: Major scene, hair, clothing, camera, or framing replacement.
+          3: Strong non-target drift or background deformation.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target scene and camera conditions remain unchanged.
+        rubric: Preservation of hairstyle, accessories, clothing, body, background, global lighting, crop, camera angle, framing,
+          scale, and resolution. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      eye_spacing_local_skin_texture_edge_realism:
+        title: Local skin texture and edge realism
+        definition: Whether eye boundaries and reconstructed skin retain pores, fine texture, sharpness, and seamless transitions
+          without smearing or cut-and-paste edges.
+        anchors:
+          0: Severely synthetic, smeared, duplicated, or visibly pasted.
+          3: Strong texture stretching, halos, seams, or plasticity.
+          5: Usable but visibly processed with one clear artifact.
+          7: Realistic with one minor edge or texture issue.
+          9: Fully photorealistic and source-consistent local detail.
+        rubric: Whether eye boundaries and reconstructed skin retain pores, fine texture, sharpness, and seamless transitions
+          without smearing or cut-and-paste edges. Apply this facet's 0-9 anchors directly. If any global failure affecting
+          this facet is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism
+          compensate for this facet.
+      eye_spacing_local_lighting_shadow_color_consistency:
+        title: Local lighting, shadow, and color consistency
+        definition: Whether eyelid, eye-corner, nose-bridge, brow, and orbital shadows and colors remain compatible with source
+          illumination.
+        anchors:
+          0: Lighting, shadows, or colors strongly contradict the image.
+          3: Major missing, duplicated, or incorrect local illumination.
+          5: Generally plausible with one obvious inconsistency.
+          7: Consistent with one minor issue.
+          9: Color, lighting, and shadows integrate perfectly.
+        rubric: Whether eyelid, eye-corner, nose-bridge, brow, and orbital shadows and colors remain compatible with source
+          illumination. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      eye_spacing_artifact_background_stability:
+        title: Artifact and background stability
+        definition: Absence of duplicated eyes, malformed eyelids, stretched nose bridge, repeated textures, warped hair,
+          facial tearing, and background deformation.
+        anchors:
+          0: Severe structural artifacts or scene instability.
+          3: Multiple obvious distortions or duplicated structures.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; face and surrounding image remain fully stable.
+        rubric: Absence of duplicated eyes, malformed eyelids, stretched nose bridge, repeated textures, warped hair, facial
+          tearing, and background deformation. Apply this facet's 0-9 anchors directly. If any global failure affecting this
+          facet is detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism
+          compensate for this facet.
+prompt_applicability:
+  purpose: The dataset contains one source-adaptive semantic target across ten stylistic templates. All Prompt Compliance
+    facets are applicable to every valid sample.
+  always_applicable:
+  - eye_spacing_primary_adjustment_outcome_match
+  - eye_spacing_source_adaptive_direction_match
+  - eye_spacing_magnitude_intensity_match
+  - eye_spacing_final_facial_proportion_balance_match
+  - eye_spacing_interocular_distance_consistency_match
+  - eye_spacing_bilateral_position_balance_match
+  - eye_spacing_normal_view_visibility_match
+  - eye_spacing_requested_finish_style_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.

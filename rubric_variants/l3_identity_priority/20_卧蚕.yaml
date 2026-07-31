@@ -1,0 +1,1105 @@
+task_key: prompt_conditioned_bilateral_aegyo_sal_enhancement
+task_title: Prompt-Conditioned Bilateral Aegyo-Sal Enhancement
+task_title_zh: 卧蚕
+version: v1_fixed_22_l3_aegyo_sal_evidence_matrix_all7_audit_integer_0to9_l3_identity_priority
+target_region: the narrow pretarsal under-eye zone immediately beneath both lower lash lines, including the requested
+  aegyo-sal roll and only the minimum adjacent lower-lid, tear-trough, upper-cheek, makeup, glasses, hair, and skin
+  blending zones required for natural integration
+target_action_summary: Enhance both aegyo-sal regions according to the current prompt's subtle or moderate strength,
+  shape, extent, fullness, highlight, and youthful effect while preventing eye-bag appearance and preserving eye geometry,
+  gaze, expression, identity, tear troughs, skin texture, lighting, camera state, and all non-target regions.
+judge_role: You are a strict expert evaluator specializing in aegyo-sal anatomy, lower-eyelid cosmetic contouring,
+  under-eye volume placement, identity preservation, and photorealistic portrait editing.
+judge_instructions: |-
+  - Inspect both source and edited images at normal portrait size and close under-eye scale before scoring.
+  - Identify the lower lash lines, pretarsal zones, existing aegyo-sal, lower-eyelid margins, tear troughs, eye bags,
+    upper cheeks, canthi, makeup, glasses, hair occlusion, head pose, expression, and source lighting.
+  - The task is to enhance a natural aegyo-sal roll immediately beneath both lower lash lines.
+  - Distinguish aegyo-sal from eye bags: aegyo-sal is a narrow, controlled pretarsal convexity close to the lash line;
+    eye bags sit lower, are broader, heavier, and often accompanied by edema-like shadowing.
+  - Follow the current prompt's strength and shape wording. Most prompts request subtle enhancement; moderate prompts
+    require more visible fullness but still forbid swollen or filler-like results.
+  - Preserve eye shape, eye aperture, gaze, eyelids, lashes, brows, tear troughs, dark circles, cheeks, expression,
+    identity, skin tone, makeup, lighting, camera state, background, and all non-target regions.
+  - Before scoring, inspect for missing effect, wrong vertical placement, eye-bag appearance, overfilling, uneven sides,
+    wrong length, wrong profile, painted highlight or shadow, changed eye shape, expression drift, skin smoothing,
+    halos, mask seams, blur, makeup damage, glasses distortion, and background change.
+  - Do not use 7 as a default. Uncertainty requires the lower supported evidence class.
+
+  - MANDATORY PRIVATE EVIDENCE AUDIT:
+    Before selecting any score, complete a private evidence card. Do not reveal the card, observations, rationale,
+    or chain of thought in the final output.
+
+    PRIVATE_EVIDENCE_CARD:
+      prompt_strength:
+        choose exactly one of [subtle, moderate, unspecified]
+      requested_profile:
+        choose one or more of [soft_natural, rounded, crescent, oval, tapered, smile_like, centered, elongated, compact, outer_extended, highlighted, unspecified]
+      observed_operation:
+        choose exactly one of [correct_aegyo_sal, unchanged, eye_bag_like, tear_trough_fill_like, painted_relief, mixed_or_distorted, unusable]
+      target_visibility:
+        choose exactly one of [not_visible, weak, clear, excessive, unusable]
+      failure_severity:
+        wrong_vertical_placement: choose one of [none, minor, clear, major, severe]
+        wrong_fullness_or_projection: choose one of [none, minor, clear, major, severe]
+        wrong_shape_or_extent: choose one of [none, minor, clear, major, severe]
+        eye_bag_or_tear_trough_substitution: choose one of [none, minor, clear, major, severe]
+        changed_eye_shape_or_gaze: choose one of [none, minor, clear, major, severe]
+        identity_or_expression_drift: choose one of [none, minor, clear, major, severe]
+        skin_lighting_or_background_damage: choose one of [none, minor, clear, major, severe]
+      l3_evidence_class:
+        create exactly 22 entries in active_l3 order
+        each entry must be one of [no_visible_defect, tiny_defect, minor_defect, clear_defect, major_defect, severe_failure, absent_reversed_or_unusable]
+      provisional_scores:
+        create exactly 22 integers in active_l3 order using SCORE-EVIDENCE LOOKUP
+      propagation_matrix_checked:
+        verify every detected failure against the exact affected-facet matrix
+      concentration_review_triggered:
+        true_or_false
+      final_scores:
+        exactly 22 integers after all evidence audits
+
+  - SCORE-EVIDENCE LOOKUP:
+      no_visible_defect -> 9
+      tiny_defect -> 8
+      minor_defect -> 7
+      clear_defect -> 6
+      major_defect -> 4 or 5
+      severe_failure -> 2 or 3
+      absent_reversed_or_unusable -> 0 or 1
+
+  - THREE-WAY TEST FOR EVERY SCORE OF 7:
+    If no visible defect exists, use 9.
+    If only a tiny local defect exists, use 8.
+    If exactly one genuine minor-only defect exists, 7 is allowed.
+    If a clear or larger defect exists, use 6 or below.
+    Never choose 7 first and invent a defect afterward.
+
+  - EXACT FAILURE-PROPAGATION MATRIX:
+
+    primary_edit_absent_or_not_visible:
+      requested_aegyo_sal_operation_match: maximum 4
+      requested_aegyo_sal_intensity_match: maximum 4
+      requested_bilateral_aegyo_sal_coverage_match: maximum 5
+      requested_aegyo_sal_fullness_projection_match: maximum 4
+      requested_aegyo_sal_visibility_finish_match: maximum 4
+
+    clear_eye_bag_or_tear_trough_substitution:
+      requested_aegyo_sal_operation_match: maximum 5
+      requested_aegyo_sal_vertical_placement_match: maximum 5
+      requested_eye_bag_tear_trough_disambiguation_match: maximum 4
+      aegyo_sal_lower_lid_lash_orbit_transition_coherent: maximum 5
+      aegyo_sal_boundary_contact_under_eye_depth_consistent: maximum 5
+
+    clear_overfilled_or_swollen_result:
+      requested_aegyo_sal_intensity_match: maximum 5
+      requested_aegyo_sal_fullness_projection_match: maximum 5
+      requested_youthful_smile_like_effect_match: maximum 6
+      requested_eye_bag_tear_trough_disambiguation_match: maximum 5
+      aegyo_sal_identity_eye_landmark_consistency: maximum 6
+
+    clear_wrong_shape_or_horizontal_extent:
+      requested_aegyo_sal_shape_profile_match: maximum 6
+      requested_aegyo_sal_horizontal_extent_match: maximum 6
+      requested_aegyo_sal_volume_distribution_match: maximum 6
+
+    clear_painted_highlight_or_shadow:
+      requested_aegyo_sal_operation_match: maximum 5
+      requested_aegyo_sal_highlight_shadow_definition_match: maximum 5
+      aegyo_sal_lighting_shadow_color_integration: maximum 5
+      aegyo_sal_artifact_sharpness_no_mask_spill: maximum 6
+
+    clear_eye_shape_gaze_or_lower_lid_change:
+      aegyo_sal_identity_eye_landmark_consistency: maximum 6
+      aegyo_sal_expression_gaze_face_scene_preserved: maximum 5
+      aegyo_sal_lower_lid_lash_orbit_transition_coherent: maximum 5
+
+    clear_skin_lighting_or_background_damage:
+      aegyo_sal_skin_microtexture_realistic: maximum 6
+      aegyo_sal_lighting_shadow_color_integration: maximum 6
+      aegyo_sal_boundary_contact_under_eye_depth_consistent: maximum 6
+      aegyo_sal_artifact_sharpness_no_mask_spill: maximum 6
+
+
+  - SEVERITY ESCALATION:
+    Matrix values describe clear visible failures.
+    A minor failure follows ordinary evidence lookup and does not automatically trigger a clear-failure maximum.
+    A major failure reduces directly affected facets to 5 or below.
+    A severe failure reduces directly affected facets to 3 or below.
+    An absent, reversed, unrelated, or unusable primary requirement reduces directly affected core facets to 1 or below where applicable.
+
+  - SCORE-INDEPENDENCE CHECK:
+    High realism must not raise Prompt Compliance.
+    High Prompt Compliance must not raise identity, preservation, anatomy, or artifact scores.
+    One error may affect several causally related facets, but unrelated facets must not be lowered merely to create diversity.
+
+  - CONCENTRATION REVIEW:
+    Re-run the evidence audit when all scores are identical, at least 14 scores are 7, at least 18 scores occupy one
+    value, or a detected clear failure is inconsistent with the affected scores.
+    Re-check every 7 using the three-way test.
+    Never invent defects and never lower unrelated facets merely to break a flat pattern.
+
+  - ALL-7 SPECIAL AUDIT:
+    Treat all 7s as suspicious, not automatically invalid.
+    Keep all 7s only when every facet independently has a genuine minor-only defect, no facet is defect-free or tiny-only,
+    no facet has a clear or larger defect, and no propagation rule requires a lower score.
+
+  - FINAL OUTPUT GATE:
+    Confirm privately that exactly 22 integer scores exist, every score matches its evidence class, all applicable
+    propagation rules were enforced, every 7 passed the three-way test, and score order exactly matches active_l3.
+    Return only the compact output required by compact_output_contract.
+internal_reasoning_protocol:
+  status: mandatory_private_prompt_level_constraint
+  visibility: private_not_returned
+  important_limit: This is a prompt-level soft constraint. It becomes externally verifiable only if the runtime requests
+    and validates the intermediate evidence card.
+  required_sequence:
+  - inspect source, prompt, and edited image before scoring
+  - classify task-specific operation and preservation failures by severity
+  - assign one evidence class to each of the 22 L3 facets
+  - map evidence classes to scores
+  - apply the exact failure-propagation matrix
+  - apply the three-way test to every score of 7
+  - run concentration and all-7 audits when triggered
+  - return only the final 22 integer scores
+score_consistency_lookup:
+  no_visible_defect:
+    score: 9
+    meaning: Essentially complete satisfaction; no visible defect.
+  tiny_defect:
+    score: 8
+    meaning: Only a tiny local imperfection.
+  minor_defect:
+    score: 7
+    meaning: Exactly one genuinely minor visible imperfection.
+  clear_defect:
+    score: 6
+    meaning: Mostly correct, but one clear visible issue.
+  major_defect:
+    score_range:
+    - 4
+    - 5
+    meaning: One major mismatch or several visible issues.
+  severe_failure:
+    score_range:
+    - 2
+    - 3
+    meaning: Weak relevant attempt with severe primary failure.
+  absent_reversed_or_unusable:
+    score_range:
+    - 0
+    - 1
+    meaning: Absent, reversed, unrelated, negligible, or unusable.
+  score_7_rule: Score 7 is allowed only for a genuine minor-only defect. No visible defect implies 9; a tiny defect
+    implies 8; a clear defect implies 6 or below.
+failure_propagation_matrix:
+  primary_edit_absent_or_not_visible:
+    requested_aegyo_sal_operation_match: 4
+    requested_aegyo_sal_intensity_match: 4
+    requested_bilateral_aegyo_sal_coverage_match: 5
+    requested_aegyo_sal_fullness_projection_match: 4
+    requested_aegyo_sal_visibility_finish_match: 4
+  clear_eye_bag_or_tear_trough_substitution:
+    requested_aegyo_sal_operation_match: 5
+    requested_aegyo_sal_vertical_placement_match: 5
+    requested_eye_bag_tear_trough_disambiguation_match: 4
+    aegyo_sal_lower_lid_lash_orbit_transition_coherent: 5
+    aegyo_sal_boundary_contact_under_eye_depth_consistent: 5
+  clear_overfilled_or_swollen_result:
+    requested_aegyo_sal_intensity_match: 5
+    requested_aegyo_sal_fullness_projection_match: 5
+    requested_youthful_smile_like_effect_match: 6
+    requested_eye_bag_tear_trough_disambiguation_match: 5
+    aegyo_sal_identity_eye_landmark_consistency: 6
+  clear_painted_highlight_or_shadow:
+    requested_aegyo_sal_operation_match: 5
+    requested_aegyo_sal_highlight_shadow_definition_match: 5
+    aegyo_sal_lighting_shadow_color_integration: 5
+    aegyo_sal_artifact_sharpness_no_mask_spill: 6
+  clear_eye_shape_gaze_or_lower_lid_change:
+    aegyo_sal_identity_eye_landmark_consistency: 6
+    aegyo_sal_expression_gaze_face_scene_preserved: 5
+    aegyo_sal_lower_lid_lash_orbit_transition_coherent: 5
+  matrix_semantics: Values are maximum scores for clear visible failures; major and severe failures escalate downward.
+mandatory_review_protocol:
+  principle: Concentrated scores trigger re-evaluation, not automatic score spreading. Only visible evidence may raise
+    or lower a score.
+  triggers:
+  - all 22 provisional scores are identical
+  - at least 14 of 22 provisional scores are exactly 7
+  - at least 18 of 22 provisional scores occupy one score value
+  - a clear or larger failure is recorded while all directly affected facets remain 7 or above
+  - the primary edit is absent, reversed, or invisible while all core task facets remain 7 or above
+  score_7_three_way_test:
+  - no visible defect -> score 9
+  - tiny visible defect -> score 8
+  - exactly minor visible defect -> score 7
+  - clear or larger visible defect -> score 6 or below
+  all_7_rule: An all-7 provisional vector is structurally suspicious but not automatically invalid. It may remain
+    only when all 22 facets independently have genuine minor-only defects. Never fabricate defects to preserve all
+    7s.
+  no_forced_diversity: Do not lower unrelated facets, invent defects, or force a varied histogram merely to break
+    a flat vector.
+  final_output_rule: Return only 22 integers in active_l3 order.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets separate task compliance, anatomical integration, subject preservation,
+    and rendering quality. Evidence classes are selected before scores, and task-specific failure propagation prevents
+    contradictory high scores.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - Return exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet explanations in the training output.
+  - No external programmatic hard caps, manual reward deductions, rank bonuses, or external image metrics.
+  - The YAML uses prompt-level evidence-consistency maximums for clear, major, and severe failures.
+  - Do not score generic attractiveness in place of the requested operation.
+  - Do not force score diversity; score variation must come from visible evidence.
+  - Facial identity remains a dedicated high-impact L3 facet.
+  - Subject Preservation contributes 25% of final reward.
+evaluation_notes:
+- The uploaded file contains 200 prompts and 200 unique prompt texts.
+- 150 prompts request subtle enhancement and 50 request moderate enhancement.
+- The prompts include rounded, crescent, oval, tapered, centered, compact, elongated, outer-extended, highlighted,
+  smile-like, cute, fresh, and youthful contour variants.
+- All prompts require bilateral localized enhancement, clear visibility, natural appearance, photorealism, clean blending,
+  and preservation of every non-aegyo-sal region.
+- Aegyo-sal is not an eye bag, edema, tear-trough filler, dark-circle removal, or generalized under-eye smoothing.
+- Natural source-supported asymmetry may remain under head rotation, expression, partial occlusion, and perspective.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to each active L3 by comparing source image, current prompt,
+    and edited image.
+  anti_saturation: Do not default plausible results to 7. Score 7 requires minor-only evidence; 8 requires tiny-only
+    evidence; 9 requires no visible defect; a clear defect requires 6 or below.
+  no_cross_compensation: Do not raise one facet because another is strong. Prompt compliance, identity, anatomy, localization,
+    lighting, background, and artifacts are independent.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, texture, crop,
+    camera state, and composition must remain source-consistent.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Prompt-Conditioned Bilateral Aegyo-Sal Enhancement is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Enhance both aegyo-sal regions according to the current prompt's subtle or moderate strength,
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_aegyo_sal_operation_match
+          - requested_aegyo_sal_intensity_match
+          - requested_bilateral_aegyo_sal_coverage_match
+          - requested_aegyo_sal_vertical_placement_match
+          - requested_aegyo_sal_fullness_projection_match
+          - requested_aegyo_sal_shape_profile_match
+          - requested_aegyo_sal_horizontal_extent_match
+          - requested_aegyo_sal_volume_distribution_match
+          - requested_aegyo_sal_highlight_shadow_definition_match
+          - requested_youthful_smile_like_effect_match
+          - requested_eye_bag_tear_trough_disambiguation_match
+          - requested_aegyo_sal_visibility_finish_match
+          - aegyo_sal_edit_localized_to_under_eye_roll
+          - aegyo_sal_lower_lid_lash_orbit_transition_coherent
+          - aegyo_sal_pose_aware_bilateral_perspective_balance
+          - aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+          - aegyo_sal_identity_eye_landmark_consistency
+          - aegyo_sal_expression_gaze_face_scene_preserved
+          - aegyo_sal_skin_microtexture_realistic
+          - aegyo_sal_lighting_shadow_color_integration
+          - aegyo_sal_boundary_contact_under_eye_depth_consistent
+          - aegyo_sal_artifact_sharpness_no_mask_spill
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Prompt-Conditioned Bilateral Aegyo-Sal Enhancement. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on the narrow pretarsal under-eye zone immediately beneath both lower lash lines, including the requested.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_aegyo_sal_operation_match
+          - requested_aegyo_sal_intensity_match
+          - requested_bilateral_aegyo_sal_coverage_match
+          - requested_aegyo_sal_vertical_placement_match
+          - requested_aegyo_sal_fullness_projection_match
+          - requested_aegyo_sal_shape_profile_match
+          - requested_aegyo_sal_horizontal_extent_match
+          - requested_aegyo_sal_volume_distribution_match
+          - requested_aegyo_sal_highlight_shadow_definition_match
+          - requested_youthful_smile_like_effect_match
+          - requested_eye_bag_tear_trough_disambiguation_match
+          - requested_aegyo_sal_visibility_finish_match
+          - aegyo_sal_edit_localized_to_under_eye_roll
+          - aegyo_sal_lower_lid_lash_orbit_transition_coherent
+          - aegyo_sal_pose_aware_bilateral_perspective_balance
+          - aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+          - aegyo_sal_identity_eye_landmark_consistency
+          - aegyo_sal_expression_gaze_face_scene_preserved
+          - aegyo_sal_artifact_sharpness_no_mask_spill
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_aegyo_sal_intensity_match
+          - requested_bilateral_aegyo_sal_coverage_match
+          - requested_aegyo_sal_vertical_placement_match
+          - requested_aegyo_sal_fullness_projection_match
+          - requested_aegyo_sal_shape_profile_match
+          - requested_aegyo_sal_horizontal_extent_match
+          - requested_aegyo_sal_volume_distribution_match
+          - requested_aegyo_sal_highlight_shadow_definition_match
+          - requested_youthful_smile_like_effect_match
+          - requested_eye_bag_tear_trough_disambiguation_match
+          - requested_aegyo_sal_visibility_finish_match
+          - aegyo_sal_edit_localized_to_under_eye_roll
+          - aegyo_sal_lower_lid_lash_orbit_transition_coherent
+          - aegyo_sal_pose_aware_bilateral_perspective_balance
+          - aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+          - aegyo_sal_skin_microtexture_realistic
+          - aegyo_sal_lighting_shadow_color_integration
+          - aegyo_sal_boundary_contact_under_eye_depth_consistent
+          - aegyo_sal_artifact_sharpness_no_mask_spill
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of the narrow pretarsal under-eye zone immediately beneath both lower lash lines, including the requested, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_bilateral_aegyo_sal_coverage_match
+          - requested_aegyo_sal_vertical_placement_match
+          - requested_aegyo_sal_fullness_projection_match
+          - requested_aegyo_sal_shape_profile_match
+          - requested_aegyo_sal_horizontal_extent_match
+          - requested_aegyo_sal_volume_distribution_match
+          - requested_aegyo_sal_highlight_shadow_definition_match
+          - requested_youthful_smile_like_effect_match
+          - requested_eye_bag_tear_trough_disambiguation_match
+          - requested_aegyo_sal_visibility_finish_match
+          - aegyo_sal_edit_localized_to_under_eye_roll
+          - aegyo_sal_lower_lid_lash_orbit_transition_coherent
+          - aegyo_sal_pose_aware_bilateral_perspective_balance
+          - aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+          - aegyo_sal_skin_microtexture_realistic
+          - aegyo_sal_lighting_shadow_color_integration
+          - aegyo_sal_boundary_contact_under_eye_depth_consistent
+          - aegyo_sal_artifact_sharpness_no_mask_spill
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_aegyo_sal_operation_match
+          - requested_aegyo_sal_intensity_match
+          - requested_bilateral_aegyo_sal_coverage_match
+          - requested_aegyo_sal_vertical_placement_match
+          - requested_aegyo_sal_fullness_projection_match
+          - requested_aegyo_sal_shape_profile_match
+          - requested_aegyo_sal_horizontal_extent_match
+          - requested_aegyo_sal_volume_distribution_match
+          - requested_aegyo_sal_highlight_shadow_definition_match
+          - requested_youthful_smile_like_effect_match
+          - requested_eye_bag_tear_trough_disambiguation_match
+          - requested_aegyo_sal_visibility_finish_match
+          - aegyo_sal_edit_localized_to_under_eye_roll
+          - aegyo_sal_lower_lid_lash_orbit_transition_coherent
+          - aegyo_sal_pose_aware_bilateral_perspective_balance
+          - aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+          - aegyo_sal_identity_eye_landmark_consistency
+          - aegyo_sal_expression_gaze_face_scene_preserved
+          - aegyo_sal_skin_microtexture_realistic
+          - aegyo_sal_lighting_shadow_color_integration
+          - aegyo_sal_boundary_contact_under_eye_depth_consistent
+          - aegyo_sal_artifact_sharpness_no_mask_spill
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - aegyo_sal_edit_localized_to_under_eye_roll
+          - aegyo_sal_lower_lid_lash_orbit_transition_coherent
+          - aegyo_sal_pose_aware_bilateral_perspective_balance
+          - aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+          - aegyo_sal_skin_microtexture_realistic
+          - aegyo_sal_lighting_shadow_color_integration
+          - aegyo_sal_boundary_contact_under_eye_depth_consistent
+          - aegyo_sal_artifact_sharpness_no_mask_spill
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimals.
+active_l3:
+- requested_aegyo_sal_operation_match
+- requested_aegyo_sal_intensity_match
+- requested_bilateral_aegyo_sal_coverage_match
+- requested_aegyo_sal_vertical_placement_match
+- requested_aegyo_sal_fullness_projection_match
+- requested_aegyo_sal_shape_profile_match
+- requested_aegyo_sal_horizontal_extent_match
+- requested_aegyo_sal_volume_distribution_match
+- requested_aegyo_sal_highlight_shadow_definition_match
+- requested_youthful_smile_like_effect_match
+- requested_eye_bag_tear_trough_disambiguation_match
+- requested_aegyo_sal_visibility_finish_match
+- aegyo_sal_edit_localized_to_under_eye_roll
+- aegyo_sal_lower_lid_lash_orbit_transition_coherent
+- aegyo_sal_pose_aware_bilateral_perspective_balance
+- aegyo_sal_tear_trough_cheek_skin_occlusion_consistent
+- aegyo_sal_identity_eye_landmark_consistency
+- aegyo_sal_expression_gaze_face_scene_preserved
+- aegyo_sal_skin_microtexture_realistic
+- aegyo_sal_lighting_shadow_color_integration
+- aegyo_sal_boundary_contact_under_eye_depth_consistent
+- aegyo_sal_artifact_sharpness_no_mask_spill
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 8
+    - 9
+    - 8
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 8
+    - 8
+    - 9
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_aegyo_sal_operation_match: 0.18
+    requested_aegyo_sal_intensity_match: 0.08
+    requested_bilateral_aegyo_sal_coverage_match: 0.08
+    requested_aegyo_sal_vertical_placement_match: 0.1
+    requested_aegyo_sal_fullness_projection_match: 0.1
+    requested_aegyo_sal_shape_profile_match: 0.09
+    requested_aegyo_sal_horizontal_extent_match: 0.07
+    requested_aegyo_sal_volume_distribution_match: 0.07
+    requested_aegyo_sal_highlight_shadow_definition_match: 0.07
+    requested_youthful_smile_like_effect_match: 0.06
+    requested_eye_bag_tear_trough_disambiguation_match: 0.06
+    requested_aegyo_sal_visibility_finish_match: 0.04
+  Localization and Anatomical Integration:
+    aegyo_sal_edit_localized_to_under_eye_roll: 0.29
+    aegyo_sal_lower_lid_lash_orbit_transition_coherent: 0.27
+    aegyo_sal_pose_aware_bilateral_perspective_balance: 0.23
+    aegyo_sal_tear_trough_cheek_skin_occlusion_consistent: 0.21
+  Subject Preservation:
+    aegyo_sal_identity_eye_landmark_consistency: 0.8
+    aegyo_sal_expression_gaze_face_scene_preserved: 0.2
+  Task Realism and Image Quality:
+    aegyo_sal_skin_microtexture_realistic: 0.27
+    aegyo_sal_lighting_shadow_color_integration: 0.27
+    aegyo_sal_boundary_contact_under_eye_depth_consistent: 0.24
+    aegyo_sal_artifact_sharpness_no_mask_spill: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimals.
+taxonomy:
+  Prompt Compliance:
+    Requested Aegyo-Sal Geometry:
+      requested_aegyo_sal_operation_match:
+        title: Requested aegyo-sal enhancement operation match
+        definition: Judge whether a distinct but natural pretarsal under-eye roll is enhanced beneath both eyes. Do
+          not credit eye bags, tear-trough filling, lower-lid enlargement, eye-shape change, or painted highlights
+          as substitutes.
+        anchors:
+          0: Requested aegyo-sal enhancement operation match is absent, reversed, unrelated, or unusable; the requested
+            pretarsal roll is absent, replaced by eye bags or tear-trough editing, or produced by a substitute operation.
+          1: Only a negligible trace of requested aegyo-sal enhancement operation match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the requested pretarsal roll is absent, replaced by eye bags or tear-trough
+            editing, or produced by a substitute operation remains severe and dominates the result.
+          3: Requested aegyo-sal enhancement operation match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal enhancement operation match
+            remains.
+          5: Requested aegyo-sal enhancement operation match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested aegyo-sal enhancement operation match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal enhancement operation match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested aegyo-sal enhancement operation match is near-perfect, with only a tiny local imperfection.
+          9: Both eyes show the exact requested natural aegyo-sal enhancement with no substitute operation.
+      requested_aegyo_sal_intensity_match:
+        title: Requested aegyo-sal intensity match
+        definition: Judge subtle versus moderate enhancement according to the current prompt, with clearly visible
+          but believable volume.
+        anchors:
+          0: Requested aegyo-sal intensity match is absent, reversed, unrelated, or unusable; the effect is imperceptible,
+            substantially underdone, overfilled, or inconsistent with the prompt strength.
+          1: Only a negligible trace of requested aegyo-sal intensity match is visible; the result remains effectively
+            failed.
+          2: A small relevant trace exists, but the effect is imperceptible, substantially underdone, overfilled,
+            or inconsistent with the prompt strength remains severe and dominates the result.
+          3: Requested aegyo-sal intensity match is weakly attempted, but the primary requirement is still substantially
+            wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal intensity match remains.
+          5: Requested aegyo-sal intensity match is partially satisfied, with one major or several visible problems.
+          6: Requested aegyo-sal intensity match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal intensity match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested aegyo-sal intensity match is near-perfect, with only a tiny local imperfection.
+          9: The requested subtle or moderate strength is exactly matched and remains believable.
+      requested_bilateral_aegyo_sal_coverage_match:
+        title: Requested bilateral aegyo-sal coverage match
+        definition: Judge whether all assessable portions under both eyes receive coherent treatment without missing
+          one side or creating unrelated lower-eye edits.
+        anchors:
+          0: Requested bilateral aegyo-sal coverage match is absent, reversed, unrelated, or unusable; one eye or
+            a major target segment is missed, unevenly treated, or unnecessarily extended.
+          1: Only a negligible trace of requested bilateral aegyo-sal coverage match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but one eye or a major target segment is missed, unevenly treated, or
+            unnecessarily extended remains severe and dominates the result.
+          3: Requested bilateral aegyo-sal coverage match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested bilateral aegyo-sal coverage match
+            remains.
+          5: Requested bilateral aegyo-sal coverage match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested bilateral aegyo-sal coverage match is mostly correct, but one clear visible issue remains.
+          7: Requested bilateral aegyo-sal coverage match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested bilateral aegyo-sal coverage match is near-perfect, with only a tiny local imperfection.
+          9: Every assessable target area beneath both eyes is completely and coherently enhanced.
+      requested_aegyo_sal_vertical_placement_match:
+        title: Requested aegyo-sal vertical placement match
+        definition: Judge whether the roll sits immediately below the lower lash line in the pretarsal zone, not too
+          low in the tear-trough or eye-bag region.
+        anchors:
+          0: Requested aegyo-sal vertical placement match is absent, reversed, unrelated, or unusable; the roll is
+            too low, detached from the lower lid, intrudes into the eye, or occupies the tear-trough or eye-bag zone.
+          1: Only a negligible trace of requested aegyo-sal vertical placement match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the roll is too low, detached from the lower lid, intrudes into the
+            eye, or occupies the tear-trough or eye-bag zone remains severe and dominates the result.
+          3: Requested aegyo-sal vertical placement match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal vertical placement match
+            remains.
+          5: Requested aegyo-sal vertical placement match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested aegyo-sal vertical placement match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal vertical placement match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested aegyo-sal vertical placement match is near-perfect, with only a tiny local imperfection.
+          9: The roll is placed at the exact anatomically appropriate distance beneath both lower lash lines.
+      requested_aegyo_sal_fullness_projection_match:
+        title: Requested aegyo-sal fullness and projection match
+        definition: Judge the requested mild or moderate convex fullness without flatness, edema-like bulging, or
+          excessive forward projection.
+        anchors:
+          0: Requested aegyo-sal fullness and projection match is absent, reversed, unrelated, or unusable; the roll
+            is flat, overprojected, swollen, lumpy, or inconsistent with the requested fullness.
+          1: Only a negligible trace of requested aegyo-sal fullness and projection match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the roll is flat, overprojected, swollen, lumpy, or inconsistent with
+            the requested fullness remains severe and dominates the result.
+          3: Requested aegyo-sal fullness and projection match is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal fullness and projection
+            match remains.
+          5: Requested aegyo-sal fullness and projection match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested aegyo-sal fullness and projection match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal fullness and projection match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested aegyo-sal fullness and projection match is near-perfect, with only a tiny local imperfection.
+          9: The requested fullness and projection are exact, soft, and naturally supported.
+      requested_aegyo_sal_shape_profile_match:
+        title: Requested aegyo-sal shape-profile match
+        definition: Judge prompt-specific rounded, crescent, oval, softly tapered, smile-like, compact, refined, or
+          balanced contour geometry.
+        anchors:
+          0: Requested aegyo-sal shape-profile match is absent, reversed, unrelated, or unusable; the contour family,
+            curvature, taper, or profile is visibly wrong or generic.
+          1: Only a negligible trace of requested aegyo-sal shape-profile match is visible; the result remains effectively
+            failed.
+          2: A small relevant trace exists, but the contour family, curvature, taper, or profile is visibly wrong
+            or generic remains severe and dominates the result.
+          3: Requested aegyo-sal shape-profile match is weakly attempted, but the primary requirement is still substantially
+            wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal shape-profile match remains.
+          5: Requested aegyo-sal shape-profile match is partially satisfied, with one major or several visible problems.
+          6: Requested aegyo-sal shape-profile match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal shape-profile match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested aegyo-sal shape-profile match is near-perfect, with only a tiny local imperfection.
+          9: The requested under-eye roll shape and profile are precisely achieved on both sides.
+    Requested Extent, Relief, Effect, and Finish:
+      requested_aegyo_sal_horizontal_extent_match:
+        title: Requested aegyo-sal horizontal-extent match
+        definition: Judge narrow, wide, elongated, centered, compact, outer-corner-extended, or horizontally balanced
+          extent when specified; otherwise preserve source-appropriate extent.
+        anchors:
+          0: Requested aegyo-sal horizontal-extent match is absent, reversed, unrelated, or unusable; the roll is
+            too short, too long, incorrectly centered, or extends into inappropriate inner or outer regions.
+          1: Only a negligible trace of requested aegyo-sal horizontal-extent match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the roll is too short, too long, incorrectly centered, or extends
+            into inappropriate inner or outer regions remains severe and dominates the result.
+          3: Requested aegyo-sal horizontal-extent match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal horizontal-extent match
+            remains.
+          5: Requested aegyo-sal horizontal-extent match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested aegyo-sal horizontal-extent match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal horizontal-extent match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested aegyo-sal horizontal-extent match is near-perfect, with only a tiny local imperfection.
+          9: The requested or source-appropriate horizontal extent and endpoints are exact.
+      requested_aegyo_sal_volume_distribution_match:
+        title: Requested aegyo-sal volume-distribution match
+        definition: Judge central versus evenly distributed fullness, endpoint taper, and smooth left-to-right volume
+          flow without beads or isolated bumps.
+        anchors:
+          0: Requested aegyo-sal volume-distribution match is absent, reversed, unrelated, or unusable; volume is
+            patchy, bead-like, side-heavy, uniformly tubular, or poorly tapered.
+          1: Only a negligible trace of requested aegyo-sal volume-distribution match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but volume is patchy, bead-like, side-heavy, uniformly tubular, or poorly
+            tapered remains severe and dominates the result.
+          3: Requested aegyo-sal volume-distribution match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal volume-distribution match
+            remains.
+          5: Requested aegyo-sal volume-distribution match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested aegyo-sal volume-distribution match is mostly correct, but one clear visible issue remains.
+          7: Requested aegyo-sal volume-distribution match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested aegyo-sal volume-distribution match is near-perfect, with only a tiny local imperfection.
+          9: Fullness is distributed exactly as requested with smooth central support and natural endpoint taper.
+      requested_aegyo_sal_highlight_shadow_definition_match:
+        title: Requested aegyo-sal highlight-shadow definition match
+        definition: Judge soft upper highlight and restrained lower contact shadow when required, preserving source
+          lighting without drawing a makeup stripe.
+        anchors:
+          0: Requested aegyo-sal highlight-shadow definition match is absent, reversed, unrelated, or unusable; definition
+            is absent, painted, too bright, too dark, haloed, or inconsistent with source lighting.
+          1: Only a negligible trace of requested aegyo-sal highlight-shadow definition match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but definition is absent, painted, too bright, too dark, haloed, or inconsistent
+            with source lighting remains severe and dominates the result.
+          3: Requested aegyo-sal highlight-shadow definition match is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested aegyo-sal highlight-shadow definition
+            match remains.
+          5: Requested aegyo-sal highlight-shadow definition match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested aegyo-sal highlight-shadow definition match is mostly correct, but one clear visible issue
+            remains.
+          7: Requested aegyo-sal highlight-shadow definition match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested aegyo-sal highlight-shadow definition match is near-perfect, with only a tiny local imperfection.
+          9: The roll has exact source-compatible highlight and shadow relief with natural depth.
+      requested_youthful_smile_like_effect_match:
+        title: Requested youthful or smile-like effect match
+        definition: Judge the requested fresh, cute, lively, sweet, rested, baby-face, or smile-like impression produced
+          by local contour only, without changing expression or eye shape.
+        anchors:
+          0: Requested youthful or smile-like effect match is absent, reversed, unrelated, or unusable; the intended
+            impression is absent or produced by changing expression, eyelids, eye corners, or facial features.
+          1: Only a negligible trace of requested youthful or smile-like effect match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the intended impression is absent or produced by changing expression,
+            eyelids, eye corners, or facial features remains severe and dominates the result.
+          3: Requested youthful or smile-like effect match is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested youthful or smile-like effect match
+            remains.
+          5: Requested youthful or smile-like effect match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested youthful or smile-like effect match is mostly correct, but one clear visible issue remains.
+          7: Requested youthful or smile-like effect match is strong, with exactly one genuinely minor visible imperfection.
+          8: Requested youthful or smile-like effect match is near-perfect, with only a tiny local imperfection.
+          9: The requested youthful or smile-like impression is fully achieved through the local roll alone.
+      requested_eye_bag_tear_trough_disambiguation_match:
+        title: Requested eye-bag and tear-trough disambiguation match
+        definition: Judge whether the result reads as aegyo-sal rather than lower-eye edema, eye bags, tear-trough
+          filling, dark-circle removal, or generalized under-eye smoothing.
+        anchors:
+          0: Requested eye-bag and tear-trough disambiguation match is absent, reversed, unrelated, or unusable; the
+            edit resembles edema, eye bags, tear-trough filler, dark-circle editing, or generalized lower-eye swelling.
+          1: Only a negligible trace of requested eye-bag and tear-trough disambiguation match is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but the edit resembles edema, eye bags, tear-trough filler, dark-circle
+            editing, or generalized lower-eye swelling remains severe and dominates the result.
+          3: Requested eye-bag and tear-trough disambiguation match is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested eye-bag and tear-trough disambiguation
+            match remains.
+          5: Requested eye-bag and tear-trough disambiguation match is partially satisfied, with one major or several
+            visible problems.
+          6: Requested eye-bag and tear-trough disambiguation match is mostly correct, but one clear visible issue
+            remains.
+          7: Requested eye-bag and tear-trough disambiguation match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested eye-bag and tear-trough disambiguation match is near-perfect, with only a tiny local imperfection.
+          9: The contour reads unmistakably as natural aegyo-sal with no eye-bag or tear-trough confusion.
+      requested_aegyo_sal_visibility_finish_match:
+        title: Requested normal-view visibility and finish match
+        definition: Judge whether the requested contour is clearly visible at normal portrait size, photorealistic,
+          natural, and cleanly blended.
+        anchors:
+          0: Requested normal-view visibility and finish match is absent, reversed, unrelated, or unusable; the effect
+            is invisible, excessive, artificial, poorly blended, or inconsistent with the requested finish.
+          1: Only a negligible trace of requested normal-view visibility and finish match is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the effect is invisible, excessive, artificial, poorly blended, or
+            inconsistent with the requested finish remains severe and dominates the result.
+          3: Requested normal-view visibility and finish match is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in requested normal-view visibility and finish
+            match remains.
+          5: Requested normal-view visibility and finish match is partially satisfied, with one major or several visible
+            problems.
+          6: Requested normal-view visibility and finish match is mostly correct, but one clear visible issue remains.
+          7: Requested normal-view visibility and finish match is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Requested normal-view visibility and finish match is near-perfect, with only a tiny local imperfection.
+          9: The aegyo-sal is clearly visible, fully natural, photorealistic, and seamlessly finished.
+  Localization and Anatomical Integration:
+    Under-Eye Placement and Integration:
+      aegyo_sal_edit_localized_to_under_eye_roll:
+        title: Aegyo-sal editing is localized to the under-eye roll
+        definition: Confine geometric, tonal, and texture changes to the pretarsal under-eye strip and minimum blending
+          skin.
+        anchors:
+          0: Aegyo-sal editing is localized to the under-eye roll is absent, reversed, unrelated, or unusable; changes
+            spill into eyes, lower eyelids, tear troughs, cheeks, nose, temples, brows, or wider facial skin.
+          1: Only a negligible trace of aegyo-sal editing is localized to the under-eye roll is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but changes spill into eyes, lower eyelids, tear troughs, cheeks, nose,
+            temples, brows, or wider facial skin remains severe and dominates the result.
+          3: Aegyo-sal editing is localized to the under-eye roll is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in aegyo-sal editing is localized to the under-eye
+            roll remains.
+          5: Aegyo-sal editing is localized to the under-eye roll is partially satisfied, with one major or several
+            visible problems.
+          6: Aegyo-sal editing is localized to the under-eye roll is mostly correct, but one clear visible issue remains.
+          7: Aegyo-sal editing is localized to the under-eye roll is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Aegyo-sal editing is localized to the under-eye roll is near-perfect, with only a tiny local imperfection.
+          9: All editing is precisely confined to the intended under-eye roll and minimum blending zone.
+      aegyo_sal_lower_lid_lash_orbit_transition_coherent:
+        title: Lower-lid, lash-line, and orbital transition coherence
+        definition: Judge attachment to the lower eyelid, lash-line distance, lid margin, orbital curvature, and soft-tissue
+          continuity.
+        anchors:
+          0: Lower-lid, lash-line, and orbital transition coherence is absent, reversed, unrelated, or unusable; the
+            roll floats, cuts into the lid, changes the lid margin, or breaks orbital anatomy.
+          1: Only a negligible trace of lower-lid, lash-line, and orbital transition coherence is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but the roll floats, cuts into the lid, changes the lid margin, or breaks
+            orbital anatomy remains severe and dominates the result.
+          3: Lower-lid, lash-line, and orbital transition coherence is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in lower-lid, lash-line, and orbital transition
+            coherence remains.
+          5: Lower-lid, lash-line, and orbital transition coherence is partially satisfied, with one major or several
+            visible problems.
+          6: Lower-lid, lash-line, and orbital transition coherence is mostly correct, but one clear visible issue
+            remains.
+          7: Lower-lid, lash-line, and orbital transition coherence is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Lower-lid, lash-line, and orbital transition coherence is near-perfect, with only a tiny local imperfection.
+          9: The roll integrates perfectly with lower lids, lash lines, and orbital anatomy.
+      aegyo_sal_pose_aware_bilateral_perspective_balance:
+        title: Pose-aware bilateral and perspective balance
+        definition: Judge near/far eye scale, head rotation, tilt, foreshortening, source asymmetry, and expression
+          without forcing mirror symmetry.
+        anchors:
+          0: Pose-aware bilateral and perspective balance is absent, reversed, unrelated, or unusable; one side is
+            mismatched, mirrored mechanically, off-axis, or inconsistent with perspective.
+          1: Only a negligible trace of pose-aware bilateral and perspective balance is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but one side is mismatched, mirrored mechanically, off-axis, or inconsistent
+            with perspective remains severe and dominates the result.
+          3: Pose-aware bilateral and perspective balance is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in pose-aware bilateral and perspective balance
+            remains.
+          5: Pose-aware bilateral and perspective balance is partially satisfied, with one major or several visible
+            problems.
+          6: Pose-aware bilateral and perspective balance is mostly correct, but one clear visible issue remains.
+          7: Pose-aware bilateral and perspective balance is strong, with exactly one genuinely minor visible imperfection.
+          8: Pose-aware bilateral and perspective balance is near-perfect, with only a tiny local imperfection.
+          9: Both rolls are fully balanced for pose, perspective, visibility, and source-supported asymmetry.
+      aegyo_sal_tear_trough_cheek_skin_occlusion_consistent:
+        title: Tear-trough, cheek, skin, and local occlusion consistency
+        definition: Judge transitions into tear trough, upper cheek, nose-side skin, makeup, glasses, hair, and other
+          local occlusions without erasure or overlap errors.
+        anchors:
+          0: Tear-trough, cheek, skin, and local occlusion consistency is absent, reversed, unrelated, or unusable;
+            tear-trough or cheek anatomy is erased, makeup or glasses are distorted, or local layering is wrong.
+          1: Only a negligible trace of tear-trough, cheek, skin, and local occlusion consistency is visible; the
+            result remains effectively failed.
+          2: A small relevant trace exists, but tear-trough or cheek anatomy is erased, makeup or glasses are distorted,
+            or local layering is wrong remains severe and dominates the result.
+          3: Tear-trough, cheek, skin, and local occlusion consistency is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in tear-trough, cheek, skin, and local occlusion
+            consistency remains.
+          5: Tear-trough, cheek, skin, and local occlusion consistency is partially satisfied, with one major or several
+            visible problems.
+          6: Tear-trough, cheek, skin, and local occlusion consistency is mostly correct, but one clear visible issue
+            remains.
+          7: Tear-trough, cheek, skin, and local occlusion consistency is strong, with exactly one genuinely minor
+            visible imperfection.
+          8: Tear-trough, cheek, skin, and local occlusion consistency is near-perfect, with only a tiny local imperfection.
+          9: All under-eye, cheek, makeup, glasses, hair, and skin relationships remain physically coherent.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      aegyo_sal_identity_eye_landmark_consistency:
+        title: Facial identity and eye-landmark consistency
+        definition: Preserve same-person impression, eye spacing, eye aperture, eyelid geometry, canthi, iris/pupil
+          position, brows, nose, cheeks, age cues, and characteristic asymmetry.
+        anchors:
+          0: Facial identity and eye-landmark consistency is absent, reversed, unrelated, or unusable; the person,
+            eye geometry, landmarks, age impression, or characteristic facial cues visibly drift.
+          1: Only a negligible trace of facial identity and eye-landmark consistency is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but the person, eye geometry, landmarks, age impression, or characteristic
+            facial cues visibly drift remains severe and dominates the result.
+          3: Facial identity and eye-landmark consistency is weakly attempted, but the primary requirement is still
+            substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in facial identity and eye-landmark consistency
+            remains.
+          5: Facial identity and eye-landmark consistency is partially satisfied, with one major or several visible
+            problems.
+          6: Facial identity and eye-landmark consistency is mostly correct, but one clear visible issue remains.
+          7: Facial identity and eye-landmark consistency is strong, with exactly one genuinely minor visible imperfection.
+          8: Facial identity and eye-landmark consistency is near-perfect, with only a tiny local imperfection.
+          9: Identity and all defining eye and facial landmarks remain source-identical apart from the requested roll.
+      aegyo_sal_expression_gaze_face_scene_preserved:
+        title: Expression, gaze, face, scene, camera, and global state are preserved
+        definition: Preserve expression, gaze, eye shape, eyelids, lashes, brows, mouth, skin tone, hair, clothing,
+          background, lighting, crop, camera, composition, and resolution.
+        anchors:
+          0: Expression, gaze, face, scene, camera, and global state are preserved is absent, reversed, unrelated,
+            or unusable; expression, gaze, eye geometry, face, hair, scene, camera, lighting, or global color changes.
+          1: Only a negligible trace of expression, gaze, face, scene, camera, and global state are preserved is visible;
+            the result remains effectively failed.
+          2: A small relevant trace exists, but expression, gaze, eye geometry, face, hair, scene, camera, lighting,
+            or global color changes remains severe and dominates the result.
+          3: Expression, gaze, face, scene, camera, and global state are preserved is weakly attempted, but the primary
+            requirement is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in expression, gaze, face, scene, camera, and global
+            state are preserved remains.
+          5: Expression, gaze, face, scene, camera, and global state are preserved is partially satisfied, with one
+            major or several visible problems.
+          6: Expression, gaze, face, scene, camera, and global state are preserved is mostly correct, but one clear
+            visible issue remains.
+          7: Expression, gaze, face, scene, camera, and global state are preserved is strong, with exactly one genuinely
+            minor visible imperfection.
+          8: Expression, gaze, face, scene, camera, and global state are preserved is near-perfect, with only a tiny
+            local imperfection.
+          9: All non-target subject, scene, camera, lighting, and global image properties remain source-consistent.
+  Task Realism and Image Quality:
+    Under-Eye Rendering Quality:
+      aegyo_sal_skin_microtexture_realistic:
+        title: Under-eye skin microtexture realism
+        definition: Judge pores, fine lines, makeup, natural lower-eye texture, focus, grain, and source-level sharpness
+          after volume creation.
+        anchors:
+          0: Under-eye skin microtexture realism is absent, reversed, unrelated, or unusable; the skin becomes plastic,
+            blurred, overly smooth, repeated, waxy, or inconsistent with source detail.
+          1: Only a negligible trace of under-eye skin microtexture realism is visible; the result remains effectively
+            failed.
+          2: A small relevant trace exists, but the skin becomes plastic, blurred, overly smooth, repeated, waxy,
+            or inconsistent with source detail remains severe and dominates the result.
+          3: Under-eye skin microtexture realism is weakly attempted, but the primary requirement is still substantially
+            wrong.
+          4: A recognizable attempt exists, but one major mismatch in under-eye skin microtexture realism remains.
+          5: Under-eye skin microtexture realism is partially satisfied, with one major or several visible problems.
+          6: Under-eye skin microtexture realism is mostly correct, but one clear visible issue remains.
+          7: Under-eye skin microtexture realism is strong, with exactly one genuinely minor visible imperfection.
+          8: Under-eye skin microtexture realism is near-perfect, with only a tiny local imperfection.
+          9: Skin pores, fine texture, makeup, focus, and source-level detail remain fully photorealistic.
+      aegyo_sal_lighting_shadow_color_integration:
+        title: Aegyo-sal lighting, shadow, and color integration
+        definition: Judge local highlight, lower contact shadow, skin tone, white balance, catchlight context, and
+          facial illumination.
+        anchors:
+          0: Aegyo-sal lighting, shadow, and color integration is absent, reversed, unrelated, or unusable; false
+            highlights, dark stripes, halos, color shift, flattened shading, or global relighting appears.
+          1: Only a negligible trace of aegyo-sal lighting, shadow, and color integration is visible; the result remains
+            effectively failed.
+          2: A small relevant trace exists, but false highlights, dark stripes, halos, color shift, flattened shading,
+            or global relighting appears remains severe and dominates the result.
+          3: Aegyo-sal lighting, shadow, and color integration is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in aegyo-sal lighting, shadow, and color integration
+            remains.
+          5: Aegyo-sal lighting, shadow, and color integration is partially satisfied, with one major or several visible
+            problems.
+          6: Aegyo-sal lighting, shadow, and color integration is mostly correct, but one clear visible issue remains.
+          7: Aegyo-sal lighting, shadow, and color integration is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Aegyo-sal lighting, shadow, and color integration is near-perfect, with only a tiny local imperfection.
+          9: All local highlights, shadows, skin color, and source illumination integrate perfectly.
+      aegyo_sal_boundary_contact_under_eye_depth_consistent:
+        title: Boundary, contact, and under-eye depth consistency
+        definition: Judge upper and lower roll boundaries, endpoint taper, lid contact, tear-trough separation, and
+          cheek depth for seamless physical relationships.
+        anchors:
+          0: Boundary, contact, and under-eye depth consistency is absent, reversed, unrelated, or unusable; hard
+            seams, floating edges, gaps, merged anatomy, abrupt endpoints, or impossible depth is visible.
+          1: Only a negligible trace of boundary, contact, and under-eye depth consistency is visible; the result
+            remains effectively failed.
+          2: A small relevant trace exists, but hard seams, floating edges, gaps, merged anatomy, abrupt endpoints,
+            or impossible depth is visible remains severe and dominates the result.
+          3: Boundary, contact, and under-eye depth consistency is weakly attempted, but the primary requirement is
+            still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in boundary, contact, and under-eye depth consistency
+            remains.
+          5: Boundary, contact, and under-eye depth consistency is partially satisfied, with one major or several
+            visible problems.
+          6: Boundary, contact, and under-eye depth consistency is mostly correct, but one clear visible issue remains.
+          7: Boundary, contact, and under-eye depth consistency is strong, with exactly one genuinely minor visible
+            imperfection.
+          8: Boundary, contact, and under-eye depth consistency is near-perfect, with only a tiny local imperfection.
+          9: All boundaries, contacts, endpoints, and depth transitions are seamless and physically coherent.
+      aegyo_sal_artifact_sharpness_no_mask_spill:
+        title: Artifact control, source sharpness, and absence of mask spill
+        definition: Judge halos, blur, over-sharpening, duplicate contours, painted stripes, mask edges, warping,
+          stretched eyes, and background deformation.
+        anchors:
+          0: Artifact control, source sharpness, and absence of mask spill is absent, reversed, unrelated, or unusable;
+            masking, halos, blur, duplicate rolls, jagged edges, eye warping, or non-target deformation dominates.
+          1: Only a negligible trace of artifact control, source sharpness, and absence of mask spill is visible;
+            the result remains effectively failed.
+          2: A small relevant trace exists, but masking, halos, blur, duplicate rolls, jagged edges, eye warping,
+            or non-target deformation dominates remains severe and dominates the result.
+          3: Artifact control, source sharpness, and absence of mask spill is weakly attempted, but the primary requirement
+            is still substantially wrong.
+          4: A recognizable attempt exists, but one major mismatch in artifact control, source sharpness, and absence
+            of mask spill remains.
+          5: Artifact control, source sharpness, and absence of mask spill is partially satisfied, with one major
+            or several visible problems.
+          6: Artifact control, source sharpness, and absence of mask spill is mostly correct, but one clear visible
+            issue remains.
+          7: Artifact control, source sharpness, and absence of mask spill is strong, with exactly one genuinely minor
+            visible imperfection.
+          8: Artifact control, source sharpness, and absence of mask spill is near-perfect, with only a tiny local
+            imperfection.
+          9: The edit is source-sharp, seamless, and free of masking, duplication, warping, or spill.
+identity_preservation_protocol:
+  purpose: Prevent task success from hiding identity, expression, gaze, eye geometry, camera, lighting, or scene drift.
+  comparison_checklist:
+  - eye shape, aperture, spacing, canthi, iris and pupil position, and gaze
+  - lower-eyelid margin, lash line, tear trough, dark circles, and upper-cheek contour
+  - brows, nose, cheeks, mouth, expression, age impression, and characteristic asymmetry
+  - skin tone, makeup, pores, fine lines, stable marks, and facial texture
+  - hair, glasses, accessories, clothing, background, camera, lighting, crop, and resolution
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase identity because the requested local edit is attractive or realistic.
+  - Do not treat a photorealistic but different-looking person as identity-preserved.
+  - A score of 7 requires a strong same-person match with only a genuine minor defect.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - Prompt compliance, identity, expression, eye geometry, background, and rendering quality are independent.
+  task_specific_exception: only prompt-requested bilateral aegyo-sal geometry, volume, extent, highlight-shadow relief,
+    and minimum adjacent under-eye blending skin

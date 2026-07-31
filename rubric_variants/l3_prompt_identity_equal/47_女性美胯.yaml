@@ -1,0 +1,960 @@
+task_key: female_hip_beautification
+task_title: Female Hip and Buttock Contouring
+task_title_zh: 女性美胯
+version: v48_fixed_integer_22_l3_female_hip_beautification_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+language: English
+judge_role: You are a strict expert evaluator specializing in female hip/waist silhouette editing, pelvis-to-leg anatomy,
+  clothing-contour integration, pose preservation, and background stability. Judge the requested V-shaped hip result, not
+  generic body beautification.
+judge_instructions: 'Strictly compare SOURCE, EDIT PROMPT, and EDITED IMAGE.
+
+
+  Task target: Make only the hip and buttock outline V-shaped: hips/upper-hip area wider, waist slimmer, and leg pose unchanged.
+  The edit must be localized to waist/hip/buttock boundaries and must not change limbs, stance, clothing identity, background,
+  lighting, or framing.
+
+
+  Before returning JSON, privately run this judging protocol. Do not output private notes; use them only to produce the final
+  score_vector.
+
+
+  1) Task-state card.
+
+  Classify the candidate as clean_success, minor_flaws_success, partial_success, no_visible_edit, under_edited, wrong_direction,
+  wrong_region, wrong_operation, substitute_edit, correct_but_non_target_changed, correct_but_artifact, artifact_driven, or
+  unusable. Identify the actual visible edit, target region, and any changed non-target regions.
+
+
+  2) Defect-first scoring.
+
+  For every active L3 facet, first decide the visible defect level: none, tiny, minor, clear, major, severe, absent_or_reversed,
+  or unusable. Then choose the integer score. 7 is not a default score; it means strong evidence with only a minor flaw.
+
+
+  Score calibration:
+
+  - 9 = essentially exact, rare, clean positive evidence.
+
+  - 8 = near-exact with only a tiny local issue.
+
+  - 7 = strong but visibly imperfect.
+
+  - 6 = mostly correct with one clear issue.
+
+  - 4-5 = partial, mediocre, or mixed evidence.
+
+  - 2-3 = weak attempt with major visible failure.
+
+  - 0-1 = absent, reversed, wrong-region, unrelated, or unusable.
+
+
+  Task-specific defects to check:
+
+  - no visible V-shaped hip/buttock change, weak hip widening, weak waist slimming, or wrong/opposite shape family;
+
+  - generic body beautification, global scaling, crop/camera change, leg/stance repositioning, thigh slimming, butt enlargement,
+  or waist-only edit substituted for V-shaped hips;
+
+  - hip width hierarchy, side curves, fullness distribution, waist-to-hip ratio, or bilateral completeness contradicts the
+  prompt;
+
+  - pelvis, torso-leg axis, hip height, leg pose, knee/ankle/foot placement, body height, or person scale changes;
+
+  - clothing seams, folds, fabric patterns, occlusions, or hip/thigh transitions melt, detach, warp, or become inconsistent;
+
+  - identity, face, skin tone, non-target body, scene, lighting, resolution, or framing changes;
+
+  - warped background/floor/furniture, duplicated contours, blur bands, liquify seams, or synthetic texture.
+
+
+  3) Failure propagation.
+
+  Apply global_scoring_policy.failure_propagation after raw facet scoring. If a failure is detected, cap every affected L3
+  by the corresponding severity cap. Do not allow good preservation, clean background, or photorealism to compensate for missing
+  or wrong target editing.
+
+
+  4) Positive-case check.
+
+  High scores are allowed when the requested edit is clearly correct. Before giving 8 or 9, verify that the relevant positive-case
+  conditions in global_scoring_policy are visibly satisfied.
+
+
+  5) Flat-vector review.
+
+  Privately rescore if all scores are 7, 14+ scores are 7, 18+ scores are identical, all scores are 7-9, or visible defects
+  exist but no affected score is below 7.
+
+
+  Task-specific focus: female hip and waist V-shaped contour. Success requires mutually consistent hip/upper-hip widening
+  and waist slimming while leg pose, pelvis axis, body scale, clothing identity, and scene remain stable. Do not reward waist-only
+  slimming, thigh/leg slimming, buttock-only enlargement, global body scaling, leg-pose change, camera/crop change, or generic
+  body beautification as hip-contour success.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, wrong-region, or mainly a substitute operation,
+  apply failure_propagation before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, wrong-region, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve
+  0-1 and 8-9 for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '
+training_prompt_profile:
+  total_prompts_reviewed: 203
+  main_shape_families:
+    A_shaped: 40
+    H_shaped: 40
+    O_shaped: 40
+    V_shaped: 40
+    peach_shaped: 43
+  recurring_requirements:
+  - reshape the visible hip and buttock contour into the requested family
+  - widen the hips and slim the waist
+  - preserve leg pose, stance, body scale, camera distance, and framing
+  - preserve non-target body regions, clothing details, background, and lighting
+  systematic_prompt_conflict: 'Many prompts list the waist among unchanged regions and later explicitly request a slimmer
+    waist. Apply the conflict-resolution policy below rather than invalidating the full dataset.
+
+    '
+target_region: 'The visible waist-to-buttock contour, including the lateral waist, upper hip, outer hip, buttock outline,
+  and the minimum necessary transition into the upper thigh. Legs, joints, and upper thighs remain non-target except for unavoidable
+  boundary blending.
+
+  '
+target_action_summary: Produce the requested V-shaped hip and buttock silhouette by widening the hip area and slimming the
+  waist while preserving pelvic placement, leg pose, body height, person scale, clothing details, identity, background, lighting,
+  framing, aspect ratio, and resolution. Do not substitute with global body scaling, camera/crop change, leg-pose change,
+  generic beautification, or unrelated body retouching.
+design_principle:
+  summary: 'Use exactly 22 fixed L3 outputs. Separate requested silhouette accuracy from anatomical integration, non-target
+    preservation, and rendering quality. Do not reward a visually curvier result when the requested shape family, waist-to-hip
+    relation, pose, or scene is incorrect.
+
+    '
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - The judge always returns all 22 scores in active_l3 order.
+  - Compare the source image, prompt, and edited image directly.
+  - Judge only visible evidence; do not invent hidden anatomy.
+  - Do not reward whole-image scaling, camera change, cropping, or pose change as hip reshaping.
+  - Do not reward generic attractiveness when the requested hip family is wrong.
+  - One severe pose, anatomy, clothing, identity, or background error must not be averaged away.
+  - No hard caps, rank bonuses, external image metrics, or manual failure deductions.
+  - Public floating-point values use at most 3 decimal places.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: 'The prompt must request a visible hip, buttock, or waist-to-hip contour change, such as an A-, H-,
+    O-, V-, or peach-shaped silhouette, hip widening, waist slimming, added lower-buttock fullness, or a lifted contour.
+
+    '
+  deterministic_conflict_resolution:
+  - Explicit affirmative edit instructions override generic preserve lists.
+  - If a prompt says both "keep the waist unchanged" and "slim the waist", allow only waist-width contour change; preserve
+    waist position, vertical length, texture, clothing details, and pose.
+  - A named shape family controls upper-to-lower width distribution and curve geometry.
+  - A generic "wider hips" clause controls overall hip width but must not erase the named shape family.
+  - Skip only when two incompatible named shape families are explicitly requested for the same region.
+  wrong_task_examples:
+  - changing only the thighs, legs, shoulders, or breasts
+  - changing leg pose, stance, body height, or camera distance instead of hip contour
+  - replacing clothing without a body-contour edit
+  - global body reshaping without a concrete hip or waist-to-hip target
+  conflict_examples:
+  - make the same hip region both A-shaped and V-shaped
+  - make the same side contour both straight H-shaped and fully circular O-shaped
+  - preserve the exact original hip width while also requiring a clearly wider hip
+  visibility_failures:
+  - the hip and buttock contour is outside the frame
+  - clothing or an obstruction fully prevents comparison of the target contour
+  - image quality is too poor to judge waist, hip, and upper-thigh boundaries
+  partial_visibility_rule: 'Score only assessable evidence. Mask visibility-dependent Prompt Compliance facets when the requested
+    geometry cannot be observed.
+
+    '
+shape_family_reference:
+  A_shaped: 'Narrower upper hip with wider lower hip or buttock outline; a soft downward flare or triangular/heart-like lower
+    contour.
+
+    '
+  H_shaped: 'Upper and lower hip widths are similar; side contours are comparatively straight, parallel, and minimally flared.
+
+    '
+  O_shaped: 'Full, round, smooth contour with broadly distributed circular side curvature.
+
+    '
+  V_shaped: 'Wider upper hip with a narrower lower buttock outline; a controlled downward taper.
+
+    '
+  peach_shaped: 'Narrower upper hip with fuller, rounded lower buttocks plus a visibly lifted, firm, smooth contour. Distinguish
+    it from A-shape by stronger roundness and lift.
+
+    '
+body_geometry_preservation_protocol:
+  strict_rules:
+  - Preserve pelvic center, body axis, leg attachment points, hip height, and stance.
+  - Preserve leg length, knee and ankle positions, foot placement, and body height.
+  - Do not create disconnected hips, collapsed pelvis, duplicated curves, or impossible gluteal anatomy.
+  - Allow upper-thigh contour adaptation only where required for a smooth hip-to-thigh transition.
+  - Clothing may follow the new contour only as necessary; preserve seams, folds, texture, pattern, and color.
+  - Do not bend floors, walls, furniture, shadows, or image borders.
+  - Do not obtain the result through global horizontal scaling or camera-distance change.
+identity_preservation_protocol:
+  target_exemptions:
+  - The requested waist, hip, and buttock contour may change.
+  - Minimum local clothing deformation needed to follow the new contour is allowed.
+  - The intended target change must not itself be treated as identity drift.
+  strict_rules:
+  - Preserve the same person, face, hair, skin tone, age impression, and characteristic appearance.
+  - Preserve all non-target body proportions and body regions.
+  - A changed-person impression or broad body redesign must strongly reduce preservation scores.
+  - Generic attractiveness cannot compensate for identity, pose, or non-target drift.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Return one independent integer score for every active_l3 item in order. Score each facet from visible evidence
+    in SOURCE, EDIT PROMPT, and EDITED IMAGE.
+  output_order_rule: The score_vector must contain exactly 22 integers in active_l3 order; never reorder, omit, rename, or
+    explain facets.
+  anchor_interpolation: Use 1, 2, 4, 6, and 8 as intermediate severities. Do not round uncertainty upward.
+  anti_saturation: 0-3 = failed or damaging; 4-5 = partial/mediocre; 6 = mostly correct with one clear issue; 7 = strong but
+    visibly imperfect; 8 = near-exact; 9 = rare, essentially complete and clean.
+  no_cross_compensation: A smoother or more attractive body cannot compensate for missing V-shaped hip geometry, changed leg
+    pose, displaced pelvis, clothing damage, or scene/camera drift.
+  primary_edit_success_rule: If hips are not visibly shaped toward the requested V-style waist-to-hip silhouette, the candidate
+    is a weak/negative edit regardless of clean preservation elsewhere.
+  preservation_only_no_success_rule: A clean unchanged source-like image is not a successful edit. If the requested target
+    change is absent, preservation and photorealism may score high only on truly pure preservation facets, but they must not
+    lift task, localization, integration, or local realism facets into the successful range.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, choose its severity from the scale below. The final score for every affected L3 must be
+      min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score. Do not reveal propagation reasoning;
+      return only the final adjusted vector.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, wrong-region, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: The hip/upper-hip widening, waist slimming, or V-shaped hip-buttock silhouette is absent, barely visible,
+          or not useful for the requested edit.
+        severity_guidance: Tiny but correct waist/hip V-shape evidence may be severity 1. Barely visible or incomplete target
+          effect should be severity 2. Mostly unchanged waist/hip silhouette must be severity 3. No target effect, reversed
+          direction, or unassessable target edit must be severity 4-5.
+        affected_l3:
+        - female_hip_primary_edit_outcome_match
+        - female_hip_requested_shape_family_match
+        - female_hip_upper_lower_width_relation_match
+        - female_hip_side_curve_geometry_match
+        - female_hip_fullness_distribution_lift_match
+        - female_hip_widening_magnitude_match
+        - female_hip_waist_slimming_ratio_match
+        - female_hip_bilateral_balance_completeness_match
+        - female_hip_edit_localized_to_target_region
+        - female_hip_waist_pelvis_transition_quality
+        - female_hip_buttock_upper_thigh_transition_quality
+        - female_hip_clothing_occlusion_contour_integration
+        - female_hip_skin_clothing_surface_realism
+        - female_hip_local_lighting_shadow_consistency
+        - female_hip_contour_edge_blending_quality
+        - female_hip_non_target_body_proportion_preservation
+        - female_hip_subject_identity_non_target_body_preservation
+        - female_hip_person_scale_camera_framing_preservation
+        - female_hip_clothing_scene_illumination_preservation
+        - female_hip_artifact_background_stability
+      wrong_shape_or_substitute_edit:
+        detect_when: The result uses waist-only slimming, thigh/leg slimming, buttock enlargement, generic body beautification,
+          global scaling, camera/crop change, or leg-pose change instead of the requested V-shaped hip/waist silhouette.
+        severity_guidance: Minor substitute cue with real V-shape hip/waist improvement may be severity 1-2. Waist-only slimming,
+          thigh/leg slimming, buttock-only enlargement, global scaling, pose/camera change, or generic beautification as a
+          major contributor should be severity 3. Substitute replacing the target must be severity 4-5.
+        affected_l3:
+        - female_hip_primary_edit_outcome_match
+        - female_hip_requested_shape_family_match
+        - female_hip_upper_lower_width_relation_match
+        - female_hip_side_curve_geometry_match
+        - female_hip_fullness_distribution_lift_match
+        - female_hip_widening_magnitude_match
+        - female_hip_waist_slimming_ratio_match
+        - female_hip_edit_localized_to_target_region
+        - female_hip_pelvic_anatomy_body_axis_consistency
+        - female_hip_leg_pose_stance_joint_preservation
+        - female_hip_non_target_body_proportion_preservation
+        - female_hip_person_scale_camera_framing_preservation
+        - female_hip_bilateral_balance_completeness_match
+        - female_hip_waist_pelvis_transition_quality
+        - female_hip_subject_identity_non_target_body_preservation
+        - female_hip_clothing_scene_illumination_preservation
+        - female_hip_artifact_background_stability
+      waist_hip_relation_failure:
+        detect_when: 'The waist-to-hip relation is wrong: hips do not widen, waist does not slim, lower buttock does not taper
+          correctly, curves become lumpy/flat, or one requested side/detail is missed.'
+        affected_l3:
+        - female_hip_requested_shape_family_match
+        - female_hip_upper_lower_width_relation_match
+        - female_hip_side_curve_geometry_match
+        - female_hip_fullness_distribution_lift_match
+        - female_hip_widening_magnitude_match
+        - female_hip_waist_slimming_ratio_match
+        - female_hip_bilateral_balance_completeness_match
+        - female_hip_waist_pelvis_transition_quality
+        - female_hip_buttock_upper_thigh_transition_quality
+        severity_guidance: Small curve imbalance may be severity 1. Clear missing hip widening, missing waist slimming, wrong
+          taper, one-sided/lumpy/flat curve, or incomplete V relation should be severity 2-3. Broken, reversed, or anatomically
+          impossible waist-hip relation must be severity 4-5.
+      pelvis_leg_pose_or_scale_drift:
+        detect_when: Pelvis position, hip height, body axis, torso-leg connection, leg pose, stance width, joints, feet, body
+          height, person scale, camera distance, crop, or perspective changes.
+        affected_l3:
+        - female_hip_pelvic_anatomy_body_axis_consistency
+        - female_hip_leg_pose_stance_joint_preservation
+        - female_hip_non_target_body_proportion_preservation
+        - female_hip_subject_identity_non_target_body_preservation
+        - female_hip_person_scale_camera_framing_preservation
+        - female_hip_artifact_background_stability
+        - female_hip_primary_edit_outcome_match
+        - female_hip_side_curve_geometry_match
+        - female_hip_edit_localized_to_target_region
+        - female_hip_clothing_scene_illumination_preservation
+        - female_hip_skin_clothing_surface_realism
+        - female_hip_local_lighting_shadow_consistency
+        - female_hip_contour_edge_blending_quality
+        severity_guidance: Minor local alignment drift may be severity 1. Clear pelvis, hip height, body axis, stance, leg
+          pose, body height, camera distance, crop, or perspective drift should be severity 2-3. Major pose/scale/perspective
+          replacement or source-state change must be severity 4-5.
+      clothing_boundary_integration_failure:
+        detect_when: Clothing seams, folds, patterns, waistbands, hems, fabric depth, or front-back occlusion around the hip/waist/thigh
+          boundary are melted, detached, stretched, duplicated, or inconsistent.
+        affected_l3:
+        - female_hip_edit_localized_to_target_region
+        - female_hip_waist_pelvis_transition_quality
+        - female_hip_buttock_upper_thigh_transition_quality
+        - female_hip_clothing_occlusion_contour_integration
+        - female_hip_clothing_scene_illumination_preservation
+        - female_hip_skin_clothing_surface_realism
+        - female_hip_local_lighting_shadow_consistency
+        - female_hip_contour_edge_blending_quality
+        - female_hip_primary_edit_outcome_match
+        - female_hip_pelvic_anatomy_body_axis_consistency
+        - female_hip_leg_pose_stance_joint_preservation
+        - female_hip_artifact_background_stability
+        severity_guidance: Tiny fabric/edge blend issue may be severity 1. Clear seam, fold, pattern, waistband, hem, occlusion,
+          or fabric-depth inconsistency should be severity 2-3. Melted/detached clothing, severe stretch/duplication, or broken
+          front-back occlusion must be severity 4-5.
+      identity_non_target_scene_change:
+        detect_when: Face, identity, skin tone, hair, torso, shoulders, arms, hands, thighs/lower legs/feet outside boundary,
+          clothing color/design, background, lighting, crop, aspect ratio, or resolution changes.
+        affected_l3:
+        - female_hip_non_target_body_proportion_preservation
+        - female_hip_subject_identity_non_target_body_preservation
+        - female_hip_person_scale_camera_framing_preservation
+        - female_hip_clothing_scene_illumination_preservation
+        - female_hip_artifact_background_stability
+        - female_hip_primary_edit_outcome_match
+        - female_hip_side_curve_geometry_match
+        - female_hip_edit_localized_to_target_region
+        - female_hip_skin_clothing_surface_realism
+        - female_hip_local_lighting_shadow_consistency
+        - female_hip_contour_edge_blending_quality
+        severity_guidance: Minor local color/lighting drift may be severity 1. Clear torso/arms/legs/feet outside boundary,
+          clothing design/color, lighting, background, crop, aspect, or resolution drift should be severity 2-3. Identity,
+          body pose, camera, or broad scene-state change must be severity 4-5.
+      artifact_or_unrealistic_body_geometry:
+        detect_when: The body contour is liquified, dented, duplicated, broken, over-smoothed, plastic, physically implausible,
+          or causes warped floors/walls/furniture/background patterns.
+        affected_l3:
+        - female_hip_waist_pelvis_transition_quality
+        - female_hip_buttock_upper_thigh_transition_quality
+        - female_hip_pelvic_anatomy_body_axis_consistency
+        - female_hip_clothing_occlusion_contour_integration
+        - female_hip_skin_clothing_surface_realism
+        - female_hip_local_lighting_shadow_consistency
+        - female_hip_contour_edge_blending_quality
+        - female_hip_artifact_background_stability
+        - female_hip_primary_edit_outcome_match
+        - female_hip_requested_shape_family_match
+        - female_hip_upper_lower_width_relation_match
+        - female_hip_side_curve_geometry_match
+        - female_hip_fullness_distribution_lift_match
+        - female_hip_widening_magnitude_match
+        - female_hip_waist_slimming_ratio_match
+        - female_hip_bilateral_balance_completeness_match
+        - female_hip_edit_localized_to_target_region
+        - female_hip_leg_pose_stance_joint_preservation
+        - female_hip_non_target_body_proportion_preservation
+        severity_guidance: Small contour artifact may be severity 1. Clear liquify, dent, duplicate contour, over-smoothing,
+          plastic texture, or local background warp should be severity 2-3. Physically impossible body geometry or severe
+          floor/wall/furniture deformation must be severity 4-5.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  success_gate_definition: A positive female-hip sample visibly widens the hip/upper-hip contour and slims the waist into
+    the requested V-shaped silhouette while preserving leg pose, pelvis axis, clothing identity, body scale, identity, and
+    scene.
+  success_gate_conditions:
+  - Hip/upper-hip widening, waist slimming, and V-shaped side-curve geometry are all visible and mutually consistent with
+    the prompt.
+  - Pelvis placement, hip height, torso axis, leg pose, stance, knees, ankles, feet, body height, and person scale remain
+    source-consistent.
+  - Clothing follows the new contour naturally with preserved seams, folds, fabric texture, patterns, and correct occlusion
+    around waist/hip/thigh boundaries.
+  - Face identity, non-target body regions, clothing color/design outside the local contour, background, lighting, camera
+    angle, aspect ratio, and resolution are preserved.
+  - The edited hip/waist region has realistic anatomy, smooth blending, consistent shading, and no liquify, duplication, background
+    warp, or synthetic texture artifacts.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  no_compensation_rule: A smoother or more attractive body cannot compensate for missing V-shaped hip geometry, changed leg
+    pose, displaced pelvis, clothing damage, or scene/camera drift.
+  task_disambiguation_rule: Produce the requested V-shaped hip and buttock silhouette by widening the hip area and slimming
+    the waist while preserving pelvic placement, leg pose, body height, person scale, clothing details, identity, background,
+    lighting, framing, aspect ratio, and resolution. Do not substitute with global body scaling, camera/crop change, leg-pose
+    change, generic beautification, or unrelated body retouching.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally and return public values with at most 3 decimal places.
+active_l3:
+- female_hip_primary_edit_outcome_match
+- female_hip_requested_shape_family_match
+- female_hip_upper_lower_width_relation_match
+- female_hip_side_curve_geometry_match
+- female_hip_fullness_distribution_lift_match
+- female_hip_widening_magnitude_match
+- female_hip_waist_slimming_ratio_match
+- female_hip_bilateral_balance_completeness_match
+- female_hip_edit_localized_to_target_region
+- female_hip_waist_pelvis_transition_quality
+- female_hip_buttock_upper_thigh_transition_quality
+- female_hip_pelvic_anatomy_body_axis_consistency
+- female_hip_leg_pose_stance_joint_preservation
+- female_hip_clothing_occlusion_contour_integration
+- female_hip_non_target_body_proportion_preservation
+- female_hip_subject_identity_non_target_body_preservation
+- female_hip_person_scale_camera_framing_preservation
+- female_hip_clothing_scene_illumination_preservation
+- female_hip_skin_clothing_surface_realism
+- female_hip_local_lighting_shadow_consistency
+- female_hip_contour_edge_blending_quality
+- female_hip_artifact_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  high_score_note: Do not copy a fixed example vector. Give 8-9 only when the matching facet has visible positive evidence
+    and no propagated failure cap.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    female_hip_primary_edit_outcome_match: 0.16
+    female_hip_requested_shape_family_match: 0.16
+    female_hip_upper_lower_width_relation_match: 0.12
+    female_hip_side_curve_geometry_match: 0.12
+    female_hip_fullness_distribution_lift_match: 0.11
+    female_hip_widening_magnitude_match: 0.11
+    female_hip_waist_slimming_ratio_match: 0.11
+    female_hip_bilateral_balance_completeness_match: 0.11
+  Localization and Anatomical Integration:
+    female_hip_edit_localized_to_target_region: 0.18
+    female_hip_waist_pelvis_transition_quality: 0.16
+    female_hip_buttock_upper_thigh_transition_quality: 0.16
+    female_hip_pelvic_anatomy_body_axis_consistency: 0.2
+    female_hip_leg_pose_stance_joint_preservation: 0.16
+    female_hip_clothing_occlusion_contour_integration: 0.14
+  Subject Preservation:
+    female_hip_non_target_body_proportion_preservation: 0.28
+    female_hip_subject_identity_non_target_body_preservation: 0.28
+    female_hip_person_scale_camera_framing_preservation: 0.22
+    female_hip_clothing_scene_illumination_preservation: 0.22
+  Task Realism and Image Quality:
+    female_hip_skin_clothing_surface_realism: 0.28
+    female_hip_local_lighting_shadow_consistency: 0.24
+    female_hip_contour_edge_blending_quality: 0.26
+    female_hip_artifact_background_stability: 0.22
+aggregation:
+  prompt_compliance: 'Masked weighted arithmetic mean over the 8 Prompt Compliance facets. Only facets with applicability
+    mask=1 enter the numerator and denominator.
+
+    '
+  other_l1_blocks: 'Use weighted arithmetic means for Localization and Anatomical Integration, Subject Preservation, and Task
+    Realism and Image Quality.
+
+    '
+  base_formula: base_reward = 0.60 * P_masked + 0.18 * L + 0.15 * S + 0.07 * Q
+  anatomy_score: A = score(female_hip_pelvic_anatomy_body_axis_consistency) / 9.0
+  preservation_score: N = score(female_hip_subject_identity_non_target_body_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.25) * (N ** 0.20)
+  properties:
+  - Fixed 22-score output
+  - Shape-family-aware compliance
+  - Continuous anatomy constraint
+  - Continuous non-target preservation constraint
+  - No cross-facet compensation
+taxonomy:
+  Prompt Compliance:
+    Requested Hip and Buttock Shape:
+      female_hip_primary_edit_outcome_match:
+        title: Primary requested hip-edit outcome
+        definition: 'Judge whether the requested V-shaped hip/buttock transformation is clearly achieved in the correct region
+          and direction, including wider hips and a slimmer waist. Do not credit global scaling, camera changes, leg-pose
+          changes, or generic curviness.
+
+          '
+        anchors:
+          0: No visible hip/waist target edit, opposite edit, wrong shape family, or a different task.
+          3: Weak or inconsistent V-shaped change; original silhouette largely remains.
+          5: Visible partial edit, but V-shape, hip widening, or waist slimming is materially incomplete.
+          7: Clear V-shaped hip/waist edit with one visible outcome issue.
+          9: V-shaped hip/buttock outline, wider hips, and slimmer waist are fully and accurately achieved.
+        rubric: Judge whether the requested V-shaped hip/buttock transformation is clearly achieved in the correct region
+          and direction, including wider hips and a slimmer waist. Do not credit global scaling, camera changes, leg-pose
+          changes, or generic curviness. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      female_hip_requested_shape_family_match:
+        title: Requested shape-family match
+        definition: 'Judge whether the result specifically matches the requested V-shaped family: wider upper hip/hip area
+          with a controlled taper through the buttock outline, together with the requested waist slimming. Do not reward A-shape,
+          O-shape, peach-shape, H-shape, or generic curviness.
+
+          '
+        anchors:
+          0: Wrong or opposite shape family, no V-shape, or only generic body reshaping.
+          3: Slight resemblance to V-shape, but defining geometry is absent.
+          5: Recognizable V-shape tendency with major geometric inaccuracies.
+          7: Correct V-shape family with one visible shape inconsistency.
+          9: Exact, unambiguous, and natural V-shaped hip/buttock silhouette.
+        rubric: 'Judge whether the result specifically matches the requested V-shaped family: wider upper hip/hip area with
+          a controlled taper through the buttock outline, together with the requested waist slimming. Do not reward A-shape,
+          O-shape, peach-shape, H-shape, or generic curviness. Apply this facet''s 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.'
+      female_hip_upper_lower_width_relation_match:
+        title: Upper-to-lower hip width relation
+        definition: 'Judge the requested V-shaped width hierarchy: hips/upper-hip region should become wider while the lower
+          buttock outline tapers in a controlled way, and the waist should become slimmer as requested.
+
+          '
+        anchors:
+          0: Width hierarchy is reversed, unrelated, or produced by pose/camera distortion.
+          3: V-shaped width relation is weak, inconsistent, or mostly absent.
+          5: General V relation is present but materially inaccurate or incomplete.
+          7: V-shaped width relation is correct with a minor local inconsistency.
+          9: Hip widening, lower taper, and waist-to-hip relation precisely express the requested V-shape.
+        rubric: 'Judge the requested V-shaped width hierarchy: hips/upper-hip region should become wider while the lower buttock
+          outline tapers in a controlled way, and the waist should become slimmer as requested. Apply this facet''s 0-9 anchors
+          directly. If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.'
+      female_hip_side_curve_geometry_match:
+        title: Side-contour geometry
+        definition: 'Judge whether the side lines have the requested flare, straightness, roundness, taper, or smooth peach
+          curvature.
+
+          '
+        anchors:
+          0: Side geometry contradicts the prompt.
+          3: Minimal or unstable geometric change.
+          5: Requested geometry is recognizable but uneven or inaccurate.
+          7: Correct geometry with one visible contour issue.
+          9: Side contours cleanly and precisely match the requested geometry.
+        rubric: Judge whether the side lines have the requested flare, straightness, roundness, taper, or smooth peach curvature.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_fullness_distribution_lift_match:
+        title: Fullness distribution and lift
+        definition: 'Judge where volume is placed and whether requested roundness, lower fullness, firmness, or lift is present.
+          Mask when the prompt specifies no fullness or lift property.
+
+          '
+        anchors:
+          0: Fullness is placed incorrectly or lift is opposite to the request.
+          3: Weak, lumpy, or poorly located fullness.
+          5: Partial fullness or lift with clear placement errors.
+          7: Correct distribution with one visible issue.
+          9: Fullness and lift are exactly placed, smooth, and prompt-faithful.
+        rubric: Judge where volume is placed and whether requested roundness, lower fullness, firmness, or lift is present.
+          Mask when the prompt specifies no fullness or lift property. Apply this facet's 0-9 anchors directly. If a task-specific
+          failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness
+          compensate for this facet.
+      female_hip_widening_magnitude_match:
+        title: Hip-widening magnitude
+        definition: 'Judge whether overall hip widening matches the requested degree. When no degree is stated, require a
+          visible but natural cosmetic increase.
+
+          '
+        anchors:
+          0: No widening, narrowing, or opposite-direction change.
+          3: Barely visible or very uneven widening.
+          5: Noticeable but clearly insufficient or excessive.
+          7: Appropriate widening with a minor magnitude issue.
+          9: Widening is clear, balanced, and exactly appropriate.
+        rubric: Judge whether overall hip widening matches the requested degree. When no degree is stated, require a visible
+          but natural cosmetic increase. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this
+          facet, apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate
+          for this facet.
+      female_hip_waist_slimming_ratio_match:
+        title: Waist slimming and waist-to-hip ratio
+        definition: 'Judge requested waist narrowing and the resulting waist-to-hip balance. Under the conflict rule, only
+          waist width may change; waist position, length, texture, and pose must remain stable.
+
+          '
+        anchors:
+          0: Waist is unchanged when slimming is required, widened, or severely distorted.
+          3: Weak or asymmetric slimming with poor waist-to-hip balance.
+          5: Partial slimming but visibly inaccurate or overdone.
+          7: Correct slimming with a minor ratio or symmetry issue.
+          9: Waist narrowing and waist-to-hip balance exactly match the request.
+        rubric: Judge requested waist narrowing and the resulting waist-to-hip balance. Under the conflict rule, only waist
+          width may change; waist position, length, texture, and pose must remain stable. Apply this facet's 0-9 anchors directly.
+          If a task-specific failure affects this facet, apply failure_propagation caps. Do not let unrelated preservation,
+          realism, or attractiveness compensate for this facet.
+      female_hip_bilateral_balance_completeness_match:
+        title: Bilateral balance and completeness
+        definition: 'Judge whether all visible requested sides and details are completed, with perspective-aware left-right
+          balance rather than forced symmetry.
+
+          '
+        anchors:
+          0: Wrong side, one side missed, or major asymmetry.
+          3: Incomplete bilateral edit with obvious imbalance.
+          5: Both sides attempted but one remains materially inconsistent.
+          7: Complete edit with a minor perspective or balance issue.
+          9: All visible requested regions are complete and naturally balanced.
+        rubric: Judge whether all visible requested sides and details are completed, with perspective-aware left-right balance
+          rather than forced symmetry. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Localization and Anatomical Integration:
+    Target Boundaries and Body Structure:
+      female_hip_edit_localized_to_target_region:
+        title: Edit localization
+        definition: 'Judge whether changes remain within the waist, hip, buttock, and minimum necessary upper-thigh transition.
+
+          '
+        anchors:
+          0: Broad non-target body or scene editing.
+          3: Significant spill into thighs, torso, legs, or background.
+          5: Mostly localized but with clear non-target contour changes.
+          7: Localized with one minor spill.
+          9: Precisely localized to the permitted target region.
+        rubric: Judge whether changes remain within the waist, hip, buttock, and minimum necessary upper-thigh transition.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_waist_pelvis_transition_quality:
+        title: Waist-to-pelvis transition
+        definition: 'Judge continuity from the waist into the upper hip, without dents, shelves, pinching, abrupt bends, or
+          disconnected contours.
+
+          '
+        anchors:
+          0: Broken or anatomically impossible upper transition.
+          3: Strong pinching, dents, or discontinuity.
+          5: Recognizable transition with obvious irregularity.
+          7: Natural transition with one small contour issue.
+          9: Smooth, continuous, and anatomically plausible transition.
+        rubric: Judge continuity from the waist into the upper hip, without dents, shelves, pinching, abrupt bends, or disconnected
+          contours. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_buttock_upper_thigh_transition_quality:
+        title: Buttock-to-upper-thigh transition
+        definition: 'Judge continuity into the upper thigh and gluteal fold without lumps, cutouts, duplicated curves, or
+          unintended thigh reshaping.
+
+          '
+        anchors:
+          0: Broken anatomy or severe thigh distortion.
+          3: Major lumps, cutouts, or disconnected lower boundary.
+          5: Transition exists but is visibly unnatural.
+          7: Natural transition with one minor issue.
+          9: Clean, smooth, and anatomically coherent lower transition.
+        rubric: Judge continuity into the upper thigh and gluteal fold without lumps, cutouts, duplicated curves, or unintended
+          thigh reshaping. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_pelvic_anatomy_body_axis_consistency:
+        title: Pelvic anatomy and body-axis consistency
+        definition: 'Judge whether pelvic placement, hip height, body axis, torso-leg connection, and perspective remain anatomically
+          coherent.
+
+          '
+        anchors:
+          0: Pelvis is displaced, collapsed, duplicated, or impossible.
+          3: Major axis, attachment, or perspective distortion.
+          5: Generally plausible with clear anatomical inconsistency.
+          7: Coherent anatomy with one minor issue.
+          9: Pelvic structure and body axis remain fully coherent.
+        rubric: Judge whether pelvic placement, hip height, body axis, torso-leg connection, and perspective remain anatomically
+          coherent. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_leg_pose_stance_joint_preservation:
+        title: Leg pose, stance, and joint preservation
+        definition: 'Judge preservation of leg positions, stance width, weight bearing, knee and ankle placement, foot position,
+          and leg length.
+
+          '
+        anchors:
+          0: Pose, stance, joints, or leg length materially changed.
+          3: Strong leg drift or altered weight-bearing geometry.
+          5: Mostly preserved but with a clear pose or joint shift.
+          7: Preserved with one minor alignment difference.
+          9: Original leg pose and joint geometry are exactly preserved.
+        rubric: Judge preservation of leg positions, stance width, weight bearing, knee and ankle placement, foot position,
+          and leg length. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_clothing_occlusion_contour_integration:
+        title: Clothing and occlusion integration
+        definition: 'Judge whether clothing follows the new contour naturally while seams, folds, texture, pattern, and front-back
+          occlusion remain coherent.
+
+          '
+        anchors:
+          0: Clothing is detached, melted, duplicated, or wrongly layered.
+          3: Major texture, seam, fold, or occlusion damage.
+          5: Clothing follows the body but with obvious inconsistencies.
+          7: Natural integration with one minor fabric issue.
+          9: Clothing and occlusion adapt cleanly with all details preserved.
+        rubric: Judge whether clothing follows the new contour naturally while seams, folds, texture, pattern, and front-back
+          occlusion remain coherent. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+  Subject Preservation:
+    Identity, Body, and Scene Preservation:
+      female_hip_non_target_body_proportion_preservation:
+        title: Non-target body-proportion preservation
+        definition: 'Judge preservation of torso, shoulders, arms, hands, thighs beyond the boundary, lower legs, feet, and
+          all unrequested body proportions.
+
+          '
+        anchors:
+          0: Major broad-body redesign or multiple altered regions.
+          3: Significant non-target proportion changes.
+          5: Mostly preserved with one clear body-region alteration.
+          7: Preserved with a minor non-target difference.
+          9: All non-target body proportions remain unchanged.
+        rubric: Judge preservation of torso, shoulders, arms, hands, thighs beyond the boundary, lower legs, feet, and all
+          unrequested body proportions. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      female_hip_subject_identity_non_target_body_preservation:
+        title: Subject identity and non-target appearance
+        definition: 'Judge whether the same person, face, hair, skin tone, age impression, and characteristic appearance are
+          preserved.
+
+          '
+        anchors:
+          0: Different person or severe identity drift.
+          3: Strong face, age, skin-tone, or appearance drift.
+          5: Same person is recognizable but with clear identity changes.
+          7: Identity is preserved with one minor difference.
+          9: Subject identity and non-target appearance are fully preserved.
+        rubric: Judge whether the same person, face, hair, skin tone, age impression, and characteristic appearance are preserved.
+          Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_person_scale_camera_framing_preservation:
+        title: Person scale, camera, and framing preservation
+        definition: 'Judge preservation of person-to-camera distance, body scale, crop, camera angle, composition, image-edge
+          distances, aspect ratio, and resolution.
+
+          '
+        anchors:
+          0: Global scaling, crop, reframing, or camera change creates the result.
+          3: Major scale, framing, or distance drift.
+          5: Mostly stable with one clear composition change.
+          7: Stable with a minor framing difference.
+          9: Camera, scale, framing, and image geometry are unchanged.
+        rubric: Judge preservation of person-to-camera distance, body scale, crop, camera angle, composition, image-edge distances,
+          aspect ratio, and resolution. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      female_hip_clothing_scene_illumination_preservation:
+        title: Clothing, scene, and illumination preservation
+        definition: 'Judge preservation of clothing design and color, shoes, background, objects, global lighting, and original
+          scene structure.
+
+          '
+        anchors:
+          0: Major clothing, background, or lighting replacement.
+          3: Strong non-target scene or garment alteration.
+          5: Mostly preserved with one obvious change.
+          7: Preserved with one minor difference.
+          9: All non-target clothing and scene content remain unchanged.
+        rubric: Judge preservation of clothing design and color, shoes, background, objects, global lighting, and original
+          scene structure. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      female_hip_skin_clothing_surface_realism:
+        title: Skin and clothing surface realism
+        definition: 'Judge natural skin or fabric texture in the edited region, without waxiness, smearing, repeated texture,
+          plastic surfaces, or lost detail.
+
+          '
+        anchors:
+          0: Severely synthetic, smeared, or destroyed surface.
+          3: Strong texture artifacts or plastic appearance.
+          5: Usable but visibly processed or inconsistent.
+          7: Realistic with one minor surface issue.
+          9: Fully photorealistic and source-consistent surface detail.
+        rubric: Judge natural skin or fabric texture in the edited region, without waxiness, smearing, repeated texture, plastic
+          surfaces, or lost detail. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      female_hip_local_lighting_shadow_consistency:
+        title: Local lighting and shadow consistency
+        definition: 'Judge whether highlights, body shading, cast shadows, and clothing shadows follow the new contour and
+          match the source illumination.
+
+          '
+        anchors:
+          0: Lighting or shadows contradict the new shape or source.
+          3: Major missing, duplicated, or inconsistent shadows.
+          5: Generally plausible with obvious local lighting errors.
+          7: Consistent with one minor shadow issue.
+          9: Lighting and shadows integrate perfectly with the new contour.
+        rubric: Judge whether highlights, body shading, cast shadows, and clothing shadows follow the new contour and match
+          the source illumination. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+      female_hip_contour_edge_blending_quality:
+        title: Contour and edge blending
+        definition: 'Judge smooth natural boundaries without halos, jagged edges, dents, cut-and-paste seams, over-sharpening,
+          or local blur.
+
+          '
+        anchors:
+          0: Severe edge failure or obvious compositing seam.
+          3: Strong halos, jaggedness, dents, or blur.
+          5: Mostly blended but with visible boundary artifacts.
+          7: Clean blending with one minor edge issue.
+          9: Seamless, sharp, and natural contour integration.
+        rubric: Judge smooth natural boundaries without halos, jagged edges, dents, cut-and-paste seams, over-sharpening,
+          or local blur. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet, apply failure_propagation
+          caps. Do not let unrelated preservation, realism, or attractiveness compensate for this facet.
+      female_hip_artifact_background_stability:
+        title: Artifact and background stability
+        definition: 'Judge absence of warped floors, walls, furniture, repeated patterns, duplicated body parts, melted clothing,
+          holes, or geometry artifacts.
+
+          '
+        anchors:
+          0: Severe structural artifacts or background warping.
+          3: Multiple obvious distortions or duplicated structures.
+          5: One clear artifact or moderate local instability.
+          7: Stable image with one minor artifact.
+          9: No visible artifact; body, clothing, and background remain stable.
+        rubric: Judge absence of warped floors, walls, furniture, repeated patterns, duplicated body parts, melted clothing,
+          holes, or geometry artifacts. Apply this facet's 0-9 anchors directly. If a task-specific failure affects this facet,
+          apply failure_propagation caps. Do not let unrelated preservation, realism, or attractiveness compensate for this
+          facet.
+prompt_applicability:
+  purpose: 'Prevent unrequested attributes from adding easy high scores while preserving the fixed 22-score output.
+
+    '
+  always_applicable:
+  - female_hip_primary_edit_outcome_match
+  - female_hip_bilateral_balance_completeness_match
+  activation_rules:
+    female_hip_requested_shape_family_match:
+    - activate for A, H, O, V, peach, heart-like, round, straight, triangular, or named hip-shape requests
+    female_hip_upper_lower_width_relation_match:
+    - activate when the prompt specifies narrower above, wider below, equal width, wider above, or another vertical width
+      relation
+    female_hip_side_curve_geometry_match:
+    - activate for flare, straight side, round curve, taper, circular, or smooth side-contour instructions
+    female_hip_fullness_distribution_lift_match:
+    - activate for fullness, volume placement, rounded buttocks, firmness, lift, or lower-buttock emphasis
+    female_hip_widening_magnitude_match:
+    - activate for widen, broaden, fuller hips, or increased hip width
+    female_hip_waist_slimming_ratio_match:
+    - activate for slim waist, narrow waist, smaller waist, or explicit waist-to-hip ratio changes
+    female_hip_bilateral_balance_completeness_match:
+    - always active for visible bilateral body-contour edits
+  mask_values:
+    applicable: 1
+    not_applicable: 0
+  aggregation_rule: "P = sum_i(weight_i * mask_i * normalized_score_i) /\n    sum_i(weight_i * mask_i)\n"

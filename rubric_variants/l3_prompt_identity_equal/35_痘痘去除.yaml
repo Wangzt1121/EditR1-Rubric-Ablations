@@ -1,0 +1,738 @@
+task_key: acne_blemish_removal
+task_title: Acne and Blemish Removal
+task_title_zh: 痘痘去除
+version: v48_fixed_integer_22_l3_acne_blemish_removal_successgate_hybrid_compact_deep_review_compact_l3_pi_equal
+language: English
+training_prompt_profile:
+  total_prompts_reviewed: 50
+  unique_prompt_templates: 1
+  shared_target: remove only acne, blemishes, and visible unwanted spots
+  recurring_requirements:
+  - preserve realistic skin texture and pores
+  - preserve original skin tone and facial details
+  - preserve facial features, face shape, expression, hair, and clothing
+  - preserve lighting, camera angle, background, and photographic appearance
+  - produce a clean but natural result
+  data_note: All 50 prompts are identical. Every Prompt Compliance facet is therefore applicable to every valid sample.
+target_region: Only visible acne lesions, pimples, inflamed blemishes, healing blemish marks, and clearly unwanted transient
+  spots on facial skin. The permitted edit includes the lesion and the minimum surrounding pixels needed to reconstruct pores,
+  texture, color, and shadow. Stable identity-bearing marks, facial features, makeup, hair, and all other regions are non-target.
+target_action_summary: Remove visible acne and unwanted blemishes while reconstructing realistic local skin. Preserve pores,
+  fine texture, original skin tone, natural shadows, facial anatomy, identity-bearing marks, makeup, expression, camera conditions,
+  and the entire scene.
+task_boundary:
+  allowed:
+  - localized removal of acne, pimples, inflamed blemishes, and healing blemish discoloration
+  - minimal reconstruction of pores, fine texture, skin color, and local shading
+  - small source-consistent blending around each removed lesion
+  not_equivalent_tasks:
+  - global skin smoothing, beauty filtering, whitening, recoloring, or face relighting
+  - removing all pores, fine lines, freckles, moles, scars, or identity-bearing marks
+  - changing face shape, facial features, makeup, age appearance, or expression
+  - replacing large skin regions with uniform synthetic texture
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate lesion removal, local reconstruction, non-target preservation, and final
+    image quality. A smooth-looking face must not score highly when acne remains, natural skin detail is erased, stable marks
+    are removed, or the edit becomes broad cosmetic retouching.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible and assessable lesions.
+  - Do not reward global smoothing, whitening, recoloring, or texture replacement.
+  - Do not treat all natural moles, freckles, scars, or beauty marks as acne.
+  - One severe lesion-coverage, texture, identity, or facial-feature error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_visible_target: skip_sample_and_log_no_assessable_blemish
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: At least one visible acne lesion, blemish, or clearly unwanted transient skin spot must be assessable
+    in the source image.
+  wrong_task_examples:
+  - global skin smoothing or pore removal
+  - skin whitening, recoloring, relighting, or makeup replacement
+  - freckle, mole, scar, wrinkle, or dark-circle removal as the main task
+  - face reshaping or facial-feature editing
+  conflict_examples:
+  - remove and preserve the same named blemish
+  - remove all visible spots while explicitly preserving every visible spot
+  - preserve target pixels exactly while requiring visible acne removal
+  visibility_failures:
+  - the face is too small or blurred to distinguish acne from texture
+  - the target skin is fully occluded
+  - compression noise prevents reliable lesion identification
+  partial_visibility_rule: Score only assessable lesions. Do not invent hidden acne, and do not penalize unseen or fully occluded
+    skin.
+target_identification_protocol:
+  remove_when_visible_as:
+  - raised or inflamed pimples
+  - red acne papules or pustules
+  - healing acne scabs or clearly transient blemish marks
+  - isolated unwanted spots that differ from stable surrounding skin
+  preserve_by_default:
+  - natural pores and fine skin texture
+  - stable moles, beauty marks, and freckles
+  - permanent scars and characteristic pigmentation
+  - makeup, facial hair, fine lines, and normal skin variation
+  uncertainty_rule: When a mark cannot be confidently distinguished from a stable identity-bearing feature, preservation is
+    preferred over aggressive removal.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong but visibly
+    imperfect; 8 nearly exact; 9 complete and exact.
+  no_cross_compensation: Preserved background or attractive smooth skin cannot compensate for residual acne, erased stable
+    marks, poreless/plastic texture, wrong-region edits, patchy reconstruction, or source-state drift.
+  acne_removal_disambiguation_rule: Reward only localized unwanted lesion removal with realistic skin reconstruction. Penalize
+    global skin beautification, whitening, blur, or removal of natural stable marks even if the face appears cleaner.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_lesions_residual_or_too_weak:
+        detect_when: Visible acne, pimples, breakout texture, redness, discoloration, or target blemishes remain mostly visible;
+          lesion coverage is incomplete or too weak.
+        severity_guidance: Tiny residual trace after clear lesion-specific repair may be severity 1. Several small residuals
+          or incomplete local coverage should be severity 2. Multiple obvious remaining lesions, unchanged redness, or weak
+          normal-view improvement must be severity 3. Mostly unchanged, absent, or worse acne/blemish state must be severity
+          4-5.
+        affected_l3:
+        - acne_removal_primary_outcome_match
+        - acne_removal_target_lesion_coverage_match
+        - acne_removal_residual_redness_discoloration_match
+        - acne_removal_multi_region_completeness_match
+        - acne_removal_normal_view_visibility_match
+        - acne_removal_requested_scope_precision_match
+        - acne_removal_edit_localized_to_blemish_regions
+        - acne_removal_no_over_removal_natural_marks_match
+        - acne_removal_clean_natural_finish_match
+        - acne_removal_local_pore_texture_reconstruction
+        - acne_removal_identity_face_geometry_preservation
+        - acne_removal_facial_features_expression_gaze_preservation
+        - acne_removal_global_skin_tone_texture_preservation
+        - acne_removal_makeup_moles_freckles_marks_preservation
+        - acne_removal_hair_clothing_scene_camera_preservation
+        - acne_removal_artifact_repetition_background_stability
+      over_removal_of_natural_marks_or_identity_marks:
+        detect_when: Moles, freckles, stable identity marks, makeup, facial hair detail, or source-specific skin features
+          are removed together with acne.
+        severity_guidance: A tiny accidental softening of a non-identity skin speck may be severity 1. Clear moles/freckles/makeup/facial-hair/stable-mark
+          loss should be severity 2-3. Identity marks, facial detail, or source character erased by smoothing must be severity
+          4-5.
+        affected_l3:
+        - acne_removal_no_over_removal_natural_marks_match
+        - acne_removal_requested_scope_precision_match
+        - acne_removal_global_skin_tone_texture_preservation
+        - acne_removal_makeup_moles_freckles_marks_preservation
+        - acne_removal_identity_face_geometry_preservation
+        - acne_removal_artifact_repetition_background_stability
+        - acne_removal_primary_outcome_match
+        - acne_removal_target_lesion_coverage_match
+        - acne_removal_residual_redness_discoloration_match
+        - acne_removal_clean_natural_finish_match
+        - acne_removal_multi_region_completeness_match
+        - acne_removal_normal_view_visibility_match
+        - acne_removal_edit_localized_to_blemish_regions
+        - acne_removal_local_pore_texture_reconstruction
+        - acne_removal_skin_tone_gradient_continuity
+        - acne_removal_facial_landmark_boundary_integrity
+        - acne_removal_surface_perspective_anatomy_consistency
+        - acne_removal_source_focus_grain_resolution_match
+        - acne_removal_local_lighting_shadow_color_consistency
+        - acne_removal_patch_edge_blending_uniformity
+      substitute_global_smoothing_whitening_or_beauty_filter:
+        detect_when: The result removes blemishes by globally smoothing, whitening, brightening, blurring, recoloring, or
+          applying a beauty filter to broad facial skin instead of local lesion reconstruction.
+        severity_guidance: Minor local tone smoothing around repaired lesions may be severity 1. Visible global smoothing,
+          whitening, brightening, or filter-like tone shift should be severity 2-3. Poreless/plastic/beauty-filter skin, full-image
+          blur, or younger/different identity must be severity 4-5.
+        affected_l3:
+        - acne_removal_primary_outcome_match
+        - acne_removal_clean_natural_finish_match
+        - acne_removal_requested_scope_precision_match
+        - acne_removal_edit_localized_to_blemish_regions
+        - acne_removal_local_pore_texture_reconstruction
+        - acne_removal_skin_tone_gradient_continuity
+        - acne_removal_global_skin_tone_texture_preservation
+        - acne_removal_source_focus_grain_resolution_match
+        - acne_removal_local_lighting_shadow_color_consistency
+        - acne_removal_target_lesion_coverage_match
+        - acne_removal_residual_redness_discoloration_match
+        - acne_removal_no_over_removal_natural_marks_match
+        - acne_removal_multi_region_completeness_match
+        - acne_removal_normal_view_visibility_match
+        - acne_removal_identity_face_geometry_preservation
+        - acne_removal_facial_features_expression_gaze_preservation
+        - acne_removal_makeup_moles_freckles_marks_preservation
+        - acne_removal_hair_clothing_scene_camera_preservation
+        - acne_removal_artifact_repetition_background_stability
+      local_reconstruction_texture_tone_or_patch_artifact:
+        detect_when: Edited lesion areas show patch edges, blur, cloned/repeated texture, smeared pores, color mismatch, tone-gradient
+          break, halo, mask seam, or unnatural local lighting.
+        severity_guidance: Tiny blend irregularity may be severity 1. Clear pore mismatch, repeated texture, halo, seam, local
+          color island, or shadow discontinuity should be severity 2-3. Large patch, pasted skin, melted texture, or severe
+          reconstruction artifact must be severity 4-5.
+        affected_l3:
+        - acne_removal_local_pore_texture_reconstruction
+        - acne_removal_skin_tone_gradient_continuity
+        - acne_removal_facial_landmark_boundary_integrity
+        - acne_removal_surface_perspective_anatomy_consistency
+        - acne_removal_source_focus_grain_resolution_match
+        - acne_removal_local_lighting_shadow_color_consistency
+        - acne_removal_patch_edge_blending_uniformity
+        - acne_removal_artifact_repetition_background_stability
+        - acne_removal_primary_outcome_match
+        - acne_removal_no_over_removal_natural_marks_match
+        - acne_removal_clean_natural_finish_match
+        - acne_removal_normal_view_visibility_match
+        - acne_removal_edit_localized_to_blemish_regions
+      wrong_region_scope_or_non_target_edit:
+        detect_when: The edit targets the wrong area, removes non-target texture, changes facial features/hair/clothing/background,
+          or leaves requested acne while cleaning unrelated skin.
+        severity_guidance: Very small non-target touch with correct lesion repair may be severity 1. Clear wrong-region skin
+          editing or missed requested lesion area should be severity 2-3. Broad non-target retouching, ignored target region,
+          or full-face transformation must be severity 4-5.
+        affected_l3:
+        - acne_removal_requested_scope_precision_match
+        - acne_removal_edit_localized_to_blemish_regions
+        - acne_removal_facial_landmark_boundary_integrity
+        - acne_removal_facial_features_expression_gaze_preservation
+        - acne_removal_hair_clothing_scene_camera_preservation
+        - acne_removal_artifact_repetition_background_stability
+        - acne_removal_primary_outcome_match
+        - acne_removal_target_lesion_coverage_match
+        - acne_removal_residual_redness_discoloration_match
+        - acne_removal_no_over_removal_natural_marks_match
+        - acne_removal_clean_natural_finish_match
+        - acne_removal_multi_region_completeness_match
+        - acne_removal_normal_view_visibility_match
+        - acne_removal_local_pore_texture_reconstruction
+        - acne_removal_identity_face_geometry_preservation
+        - acne_removal_global_skin_tone_texture_preservation
+        - acne_removal_makeup_moles_freckles_marks_preservation
+      identity_expression_scene_or_camera_drift:
+        detect_when: Identity, face geometry, facial features, expression, gaze, hair, clothing, lighting, background, focus,
+          grain, crop, or camera state changes beyond acne removal.
+        severity_guidance: Minor local lighting/focus drift may be severity 1. Clear expression, skin tone, focus/grain, lighting,
+          background, clothing, or camera drift should be severity 2-3. Identity, facial geometry, crop, pose, or scene-state
+          change must be severity 4-5.
+        affected_l3:
+        - acne_removal_identity_face_geometry_preservation
+        - acne_removal_facial_features_expression_gaze_preservation
+        - acne_removal_hair_clothing_scene_camera_preservation
+        - acne_removal_source_focus_grain_resolution_match
+        - acne_removal_artifact_repetition_background_stability
+        - acne_removal_primary_outcome_match
+        - acne_removal_target_lesion_coverage_match
+        - acne_removal_residual_redness_discoloration_match
+        - acne_removal_no_over_removal_natural_marks_match
+        - acne_removal_clean_natural_finish_match
+        - acne_removal_multi_region_completeness_match
+        - acne_removal_normal_view_visibility_match
+        - acne_removal_requested_scope_precision_match
+        - acne_removal_edit_localized_to_blemish_regions
+        - acne_removal_local_pore_texture_reconstruction
+        - acne_removal_global_skin_tone_texture_preservation
+        - acne_removal_makeup_moles_freckles_marks_preservation
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. Also avoid a mechanical
+    many-1s/many-9s split unless the visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Acne/blemish removal means lesion-specific local repair of unwanted acne, pimples, redness, or
+    breakout marks. It is not whitening, full-face smoothing, beauty filtering, lighting change, or removal of stable identity
+    marks.
+  no_compensation_rule: If target acne/blemishes remain, preservation/background/photorealism must not raise edit-dependent
+    facets. If acne is removed by global smoothing, whitening, blur, mark erasure, or identity-changing beautification, the
+    cleaner-looking face must not raise acne-removal facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample removes visible acne and unwanted blemishes through local realistic skin reconstruction
+    while preserving pores, skin tone, natural marks, makeup, facial anatomy, identity, and scene state.
+  success_gate_conditions:
+  - Target acne, pimples, redness, discoloration, and small breakouts are clearly reduced or removed at normal viewing size.
+  - Stable moles, freckles, identity marks, makeup, facial hair, pores, and global skin texture remain preserved.
+  - The result is lesion-specific, not global smoothing, whitening, poreless beauty filtering, full-face relighting, or makeup
+    change.
+  - Reconstructed local skin has plausible pore texture, tone gradients, lighting, sharpness, focus, and no obvious patch
+    seams or cloned texture.
+  - Facial features, expression, hair, clothing, background, crop, and camera state remain source-consistent.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- acne_removal_primary_outcome_match
+- acne_removal_target_lesion_coverage_match
+- acne_removal_residual_redness_discoloration_match
+- acne_removal_no_over_removal_natural_marks_match
+- acne_removal_clean_natural_finish_match
+- acne_removal_multi_region_completeness_match
+- acne_removal_normal_view_visibility_match
+- acne_removal_requested_scope_precision_match
+- acne_removal_edit_localized_to_blemish_regions
+- acne_removal_local_pore_texture_reconstruction
+- acne_removal_skin_tone_gradient_continuity
+- acne_removal_facial_landmark_boundary_integrity
+- acne_removal_surface_perspective_anatomy_consistency
+- acne_removal_identity_face_geometry_preservation
+- acne_removal_facial_features_expression_gaze_preservation
+- acne_removal_global_skin_tone_texture_preservation
+- acne_removal_makeup_moles_freckles_marks_preservation
+- acne_removal_hair_clothing_scene_camera_preservation
+- acne_removal_source_focus_grain_resolution_match
+- acne_removal_local_lighting_shadow_color_consistency
+- acne_removal_patch_edge_blending_uniformity
+- acne_removal_artifact_repetition_background_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Skin Reconstruction: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    acne_removal_primary_outcome_match: 0.2
+    acne_removal_target_lesion_coverage_match: 0.18
+    acne_removal_residual_redness_discoloration_match: 0.13
+    acne_removal_no_over_removal_natural_marks_match: 0.15
+    acne_removal_clean_natural_finish_match: 0.12
+    acne_removal_multi_region_completeness_match: 0.09
+    acne_removal_normal_view_visibility_match: 0.06
+    acne_removal_requested_scope_precision_match: 0.07
+  Localization and Skin Reconstruction:
+    acne_removal_edit_localized_to_blemish_regions: 0.22
+    acne_removal_local_pore_texture_reconstruction: 0.24
+    acne_removal_skin_tone_gradient_continuity: 0.2
+    acne_removal_facial_landmark_boundary_integrity: 0.16
+    acne_removal_surface_perspective_anatomy_consistency: 0.18
+  Subject Preservation:
+    acne_removal_identity_face_geometry_preservation: 0.26
+    acne_removal_facial_features_expression_gaze_preservation: 0.24
+    acne_removal_global_skin_tone_texture_preservation: 0.2
+    acne_removal_makeup_moles_freckles_marks_preservation: 0.17
+    acne_removal_hair_clothing_scene_camera_preservation: 0.13
+  Task Realism and Image Quality:
+    acne_removal_source_focus_grain_resolution_match: 0.27
+    acne_removal_local_lighting_shadow_color_consistency: 0.27
+    acne_removal_patch_edge_blending_uniformity: 0.26
+    acne_removal_artifact_repetition_background_stability: 0.2
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.50 * P + 0.24 * L + 0.16 * S + 0.10 * Q
+  outcome_score: O = score(acne_removal_primary_outcome_match) / 9.0
+  texture_score: T = score(acne_removal_local_pore_texture_reconstruction) / 9.0
+  identity_score: I = score(acne_removal_identity_face_geometry_preservation) / 9.0
+  final_formula: reward = base_reward * (O ** 0.26) * (T ** 0.20) * (I ** 0.14)
+taxonomy:
+  Prompt Compliance:
+    Requested Acne and Blemish Removal:
+      acne_removal_primary_outcome_match:
+        title: Primary acne-removal outcome
+        definition: Whether visible acne and unwanted blemishes are removed while the face remains natural.
+        anchors:
+          0: No removal, worse acne, or a different task.
+          3: Only a weak or inconsistent attempt.
+          5: Partial removal with major residual lesions.
+          7: Clear successful removal with one material issue.
+          9: Visible acne and blemishes are comprehensively and naturally removed.
+        rubric: Whether visible acne and unwanted blemishes are removed while the face remains natural. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_target_lesion_coverage_match:
+        title: Target-lesion coverage
+        definition: Whether all clearly assessable acne lesions and unwanted blemishes are addressed.
+        anchors:
+          0: Most target lesions remain or new lesions appear.
+          3: Large portions of visible acne remain untreated.
+          5: Several lesions are removed but important targets remain.
+          7: Nearly complete coverage with one minor miss.
+          9: All assessable target lesions are correctly treated.
+        rubric: Whether all clearly assessable acne lesions and unwanted blemishes are addressed. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_residual_redness_discoloration_match:
+        title: Residual redness and discoloration
+        definition: Whether lesion-associated redness or transient discoloration is reduced without flattening normal skin
+          variation.
+        anchors:
+          0: Redness remains unchanged, worsens, or becomes artificial.
+          3: Strong residual or broad color replacement.
+          5: Partial correction with clear patchiness or residual marks.
+          7: Natural correction with one minor residual.
+          9: Target-related redness is cleanly corrected while normal variation remains.
+        rubric: Whether lesion-associated redness or transient discoloration is reduced without flattening normal skin variation.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_no_over_removal_natural_marks_match:
+        title: No over-removal of natural marks
+        definition: Whether pores, freckles, moles, scars, fine lines, and stable identity marks remain unless clearly targeted.
+        anchors:
+          0: Natural marks or broad skin detail are extensively erased.
+          3: Major over-removal of identity-bearing skin features.
+          5: Mostly preserved but one clear natural mark is lost or altered.
+          7: Preserved with one minor questionable change.
+          9: All non-target natural marks and skin detail remain intact.
+        rubric: Whether pores, freckles, moles, scars, fine lines, and stable identity marks remain unless clearly targeted.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_clean_natural_finish_match:
+        title: Clean but natural finish
+        definition: Whether the skin looks cleaner without becoming waxy, airbrushed, uniform, or excessively perfect.
+        anchors:
+          0: Result is dirty, untreated, waxy, or fully synthetic.
+          3: Strong smoothing, plasticity, or unfinished appearance.
+          5: Cleaner skin is visible but the finish remains noticeably processed.
+          7: Natural finish with one minor issue.
+          9: The result is clean, believable, and retains real skin character.
+        rubric: Whether the skin looks cleaner without becoming waxy, airbrushed, uniform, or excessively perfect. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_multi_region_completeness_match:
+        title: Multi-region completeness
+        definition: Whether visible lesions across forehead, cheeks, nose, chin, and jaw areas are treated consistently.
+        anchors:
+          0: Only one small area is edited while major visible regions are ignored.
+          3: Strong inconsistency across facial regions.
+          5: Multiple areas are treated but one clear region is missed.
+          7: Complete with one minor regional inconsistency.
+          9: All assessable facial regions are treated consistently.
+        rubric: Whether visible lesions across forehead, cheeks, nose, chin, and jaw areas are treated consistently. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_normal_view_visibility_match:
+        title: Normal-view improvement visibility
+        definition: Whether acne reduction is noticeable at ordinary portrait viewing size without obvious retouching.
+        anchors:
+          0: No visible improvement or severe over-editing dominates.
+          3: Improvement is difficult to see or highly distracting.
+          5: Visible but clearly incomplete or artificial.
+          7: Clear improvement with one minor issue.
+          9: Improvement is easy to perceive and remains fully natural.
+        rubric: Whether acne reduction is noticeable at ordinary portrait viewing size without obvious retouching. Apply this
+          facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_requested_scope_precision_match:
+        title: Requested scope precision
+        definition: Whether only acne, blemishes, and unwanted transient spots are removed.
+        anchors:
+          0: Broad unrelated skin or facial editing replaces the task.
+          3: Major scope expansion into smoothing, whitening, or feature editing.
+          5: Mostly correct scope with one obvious extra edit.
+          7: Precise scope with one minor spill.
+          9: The edit exactly follows the requested removal scope.
+        rubric: Whether only acne, blemishes, and unwanted transient spots are removed. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+  Localization and Skin Reconstruction:
+    Localized Repair and Surface Continuity:
+      acne_removal_edit_localized_to_blemish_regions:
+        title: Edit localization
+        definition: Whether changes remain confined to target lesions and minimum reconstruction areas.
+        anchors:
+          0: Broad face-wide replacement, smoothing, or recoloring.
+          3: Significant editing outside lesion regions.
+          5: Mostly localized with one clear extra patch.
+          7: Localized with one minor spill.
+          9: Precisely confined to the target blemish areas.
+        rubric: Whether changes remain confined to target lesions and minimum reconstruction areas. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_local_pore_texture_reconstruction:
+        title: Local pore and texture reconstruction
+        definition: Whether removed lesions are replaced with source-consistent pores and fine skin texture.
+        anchors:
+          0: Edited areas are blank, smeared, cloned, or textureless.
+          3: Major pore loss, repeated texture, or plastic patches.
+          5: General texture exists but one clear mismatch remains.
+          7: Natural reconstruction with one minor issue.
+          9: Pore density and fine texture match surrounding skin exactly.
+        rubric: Whether removed lesions are replaced with source-consistent pores and fine skin texture. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_skin_tone_gradient_continuity:
+        title: Skin-tone gradient continuity
+        definition: Whether repaired areas preserve local hue, brightness, undertone, and smooth tonal gradients.
+        anchors:
+          0: Strong patches, stains, color shifts, or exposure breaks.
+          3: Major hue, brightness, or gradient mismatch.
+          5: Generally plausible with one obvious tonal patch.
+          7: Continuous with one minor difference.
+          9: Skin color and tonal gradients are seamless.
+        rubric: Whether repaired areas preserve local hue, brightness, undertone, and smooth tonal gradients. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_facial_landmark_boundary_integrity:
+        title: Facial-landmark boundary integrity
+        definition: Whether lesions near eyes, brows, nostrils, lips, hairline, and facial hair are removed without damaging
+          those boundaries.
+        anchors:
+          0: Protected landmarks are erased, warped, or blended together.
+          3: Major eye, lip, nostril, brow, hairline, or facial-hair damage.
+          5: Mostly preserved with one clear boundary error.
+          7: Preserved with one minor issue.
+          9: All facial-feature boundaries remain exact and clean.
+        rubric: Whether lesions near eyes, brows, nostrils, lips, hairline, and facial hair are removed without damaging those
+          boundaries. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_surface_perspective_anatomy_consistency:
+        title: Surface perspective and anatomy
+        definition: Whether repaired skin follows facial curvature, head pose, depth, and source anatomy.
+        anchors:
+          0: Skin appears flat, floating, dented, or anatomically impossible.
+          3: Major curvature, depth, or perspective inconsistency.
+          5: Generally plausible with one clear spatial issue.
+          7: Coherent with one minor issue.
+          9: All repairs follow facial surface anatomy and perspective.
+        rubric: Whether repaired skin follows facial curvature, head pose, depth, and source anatomy. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      acne_removal_identity_face_geometry_preservation:
+        title: Identity and face-geometry preservation
+        definition: Whether the same person, age impression, head size, face shape, and facial proportions remain unchanged.
+        anchors:
+          0: Different person or major facial redesign.
+          3: Strong identity, age, or face-shape drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference.
+          9: Identity and facial geometry remain unchanged.
+        rubric: Whether the same person, age impression, head size, face shape, and facial proportions remain unchanged. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_facial_features_expression_gaze_preservation:
+        title: Facial features, expression, and gaze preservation
+        definition: Whether eyes, brows, nose, lips, ears, teeth, jaw, expression, and gaze remain stable.
+        anchors:
+          0: Major feature, expression, or gaze change.
+          3: Strong drift in one or more facial features.
+          5: Mostly preserved with one clear alteration.
+          7: Preserved with one minor difference.
+          9: All facial features, expression, and gaze remain unchanged.
+        rubric: Whether eyes, brows, nose, lips, ears, teeth, jaw, expression, and gaze remain stable. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_global_skin_tone_texture_preservation:
+        title: Global skin tone and texture preservation
+        definition: Whether non-target skin retains original color, pores, texture, fine lines, shadows, and natural variation.
+        anchors:
+          0: Whole-face recoloring, smoothing, or texture replacement.
+          3: Strong non-target skin-tone or texture drift.
+          5: Mostly preserved with one obvious broad alteration.
+          7: Preserved with one minor difference.
+          9: All non-target skin appearance remains unchanged.
+        rubric: Whether non-target skin retains original color, pores, texture, fine lines, shadows, and natural variation.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_makeup_moles_freckles_marks_preservation:
+        title: Makeup and stable-mark preservation
+        definition: Whether makeup, freckles, moles, scars, beauty marks, facial hair, and characteristic pigmentation remain
+          unchanged.
+        anchors:
+          0: Multiple stable marks or makeup details are removed or redesigned.
+          3: Strong alteration of identity-bearing surface details.
+          5: Mostly preserved with one clear loss or change.
+          7: Preserved with one minor difference.
+          9: All stable marks and makeup remain unchanged.
+        rubric: Whether makeup, freckles, moles, scars, beauty marks, facial hair, and characteristic pigmentation remain
+          unchanged. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_hair_clothing_scene_camera_preservation:
+        title: Hair, clothing, scene, and camera preservation
+        definition: Whether hair, clothing, accessories, body, background, lighting, crop, camera angle, framing, and resolution
+          remain stable.
+        anchors:
+          0: Major non-target replacement, reframing, or camera change.
+          3: Strong hair, clothing, background, crop, scale, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target scene and camera conditions remain unchanged.
+        rubric: Whether hair, clothing, accessories, body, background, lighting, crop, camera angle, framing, and resolution
+          remain stable. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected,
+          apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this
+          facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      acne_removal_source_focus_grain_resolution_match:
+        title: Source focus, grain, and resolution match
+        definition: Whether repaired areas match the source sharpness, depth of field, sensor grain, compression, and resolution.
+        anchors:
+          0: Edited patches are severely blurred, sharpened, noisy, or resolution-mismatched.
+          3: Major focus, grain, or resolution discontinuity.
+          5: Generally compatible with one obvious mismatch.
+          7: Matched with one minor issue.
+          9: Focus, grain, and resolution are fully source-consistent.
+        rubric: Whether repaired areas match the source sharpness, depth of field, sensor grain, compression, and resolution.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_local_lighting_shadow_color_consistency:
+        title: Local lighting, shadow, and color consistency
+        definition: Whether highlights, pores, skin shadows, color, and depth remain compatible with source illumination.
+        anchors:
+          0: Lighting or color strongly contradicts the face.
+          3: Major halo, flat patch, missing shadow, or color mismatch.
+          5: Generally plausible with one obvious inconsistency.
+          7: Consistent with one minor issue.
+          9: Lighting, shadow, color, and depth integrate perfectly.
+        rubric: Whether highlights, pores, skin shadows, color, and depth remain compatible with source illumination. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_patch_edge_blending_uniformity:
+        title: Patch blending and uniformity
+        definition: Whether repaired areas avoid seams, halos, circular clone patches, repeated boundaries, and uneven smoothing.
+        anchors:
+          0: Severe patch edges, stains, clone circles, or compositing failure.
+          3: Multiple obvious seams, halos, or patch inconsistencies.
+          5: One clear patch boundary or moderate unevenness.
+          7: Clean with one minor blending issue.
+          9: All repaired areas blend seamlessly without visible patch structure.
+        rubric: Whether repaired areas avoid seams, halos, circular clone patches, repeated boundaries, and uneven smoothing.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      acne_removal_artifact_repetition_background_stability:
+        title: Artifact, repetition, and background stability
+        definition: Whether duplicated pores, repeated skin, malformed features, facial tearing, and background changes are
+          absent.
+        anchors:
+          0: Severe structural artifacts or image instability.
+          3: Multiple obvious repetitions, distortions, or scene changes.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor artifact.
+          9: No visible artifacts; face and surrounding image remain fully stable.
+        rubric: Whether duplicated pores, repeated skin, malformed features, facial tearing, and background changes are absent.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+prompt_applicability:
+  purpose: All prompts share one fixed acne-and-blemish removal request. All eight Prompt Compliance facets are always applicable.
+  always_applicable:
+  - acne_removal_primary_outcome_match
+  - acne_removal_target_lesion_coverage_match
+  - acne_removal_residual_redness_discoloration_match
+  - acne_removal_no_over_removal_natural_marks_match
+  - acne_removal_clean_natural_finish_match
+  - acne_removal_multi_region_completeness_match
+  - acne_removal_normal_view_visibility_match
+  - acne_removal_requested_scope_precision_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+judge_role: You are a strict expert evaluator for acne/blemish removal, local skin reconstruction, identity-mark preservation,
+  and source-state consistency.
+judge_instructions: 'Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+
+  1) Source audit. Compare visible acne, pimples, redness, small breakouts, local pores, skin tone gradients, moles/freckles/stable
+  marks, makeup, facial features, expression, hair, clothing, lighting, background, focus, grain, and camera state.
+
+
+  2) Task target. A successful edit removes unwanted acne/blemishes and reconstructs realistic local skin while preserving
+  natural pores, stable identity marks, original skin tone, shadows, facial anatomy, makeup, expression, camera conditions,
+  and the full scene. It is not full-face whitening, global smoothing, plastic beauty filtering, or removal of source-specific
+  marks.
+
+
+  3) Task-specific failures. Treat residual target lesions, over-removal of natural marks, global smoothing/whitening substitute,
+  local reconstruction artifacts, wrong-region/scope errors, and non-target source drift as failures. Apply global_scoring_policy.failure_propagation
+  before final output.
+
+
+  4) Calibration. 9 is rare. 7 requires clear lesion-specific removal with natural reconstruction. If acne remains or the
+  image is globally beautified, preservation/quality must not lift affected facets.
+
+
+  Hybrid scoring safeguards.
+
+  - Treat success_gate_conditions as eligibility checks for scores 7-9, not as examples or automatic high-score templates.
+
+  - If the primary requested edit is absent, wrong-direction, mostly unchanged, or mainly a substitute operation, apply failure_propagation
+  before considering any 7-9.
+
+  - Do not let preserved background, photorealism, clean texture, or attractiveness lift a failed or substituted primary edit
+  into a high reward.
+
+  - When the primary edit fails, unchanged non-target regions can receive moderate-to-good preservation scores, but should
+  not automatically become all 9s.
+
+  - Avoid mechanical split vectors such as many core facets at 1 and many preservation/quality facets at 9. Use 2-4 for weak,
+  partial, mostly unchanged, or wrong-substitute attempts; use 5-6 for mixed but recognizable attempts; reserve 0-1 and 8-9
+  for truly extreme evidence.
+
+  - Use the full 0-9 scale by facet-level visual evidence, not by a copied pattern.
+
+
+  Return only JSON:
+
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}
+
+  '

@@ -1,0 +1,844 @@
+task_key: nose_edit
+task_title: Nose Editing
+task_title_zh: 鼻子编辑
+version: v35_fixed_22_l3_nose_edit_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority
+target_region: visible nose, radix, bridge, dorsum, sidewalls, tip, columella, nostrils, alar wings, nasal base, local skin
+  boundaries, highlights, and shadows
+target_action_summary: Perform the requested nose fine control, including full-nose enlargement or reduction, bridge elevation,
+  nasal-wing narrowing, or nose-tip refinement, while preserving identity, adjacent facial anatomy, perspective, and realistic
+  skin integration.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets. Target execution receives the dominant weight. Related requirements are merged
+    into the same L3 instead of being repeatedly expanded. The judge returns one fixed-order vector containing exactly 22
+    integers from 0 to 9.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy must use the fixed hierarchy L1 -> L2 -> L3.
+  - Judge output contains exactly 22 integers in active_l3 order.
+  - No decimal L3 scores and no per-facet evidence in the training path.
+  - No N/A values, hard caps, manual failure deductions, rank bonuses, or external metrics.
+  - Closely related details must be merged into one L3 definition rather than becoming separate L3 facets.
+  - Clothing, hairstyle, accessories, and background must not be split into separate preservation facets.
+  - Public floating-point outputs use at most three decimal places.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, nose slimming is not full-face slimming; bridge enhancement is
+  not changing the entire face; contour shadow is not anatomical nose reshaping unless requested.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+- Read the fine-control label together with the natural-language instruction.
+- A changed nose is not sufficient if the requested fine-control direction is wrong.
+- Full-nose enlargement or reduction must affect the complete nose coherently rather than only one subregion.
+- Bridge elevation must be structural and cannot be satisfied by adding only a highlight.
+- Wing narrowing must preserve open, plausible nostrils and must not collapse the nasal base.
+- Tip refinement must remain local and must not silently become full-nose reduction.
+- Natural perspective may create unequal visible nostrils; judge symmetry relative to head pose.
+- Do not reward an attractive but instruction-inaccurate nose.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet. Judge each facet independently using the source
+    image, prompt, fine-control label, and edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  comparison_rule: Do not use one successful property to compensate for another failed property. Correct skin blending cannot
+    compensate for the wrong fine control, and correct size cannot compensate for collapsed nostrils or altered perspective.
+  output_order_rule: Return scores in exactly the same order as active_l3. Array position identifies the facet.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. nose
+    slimming, nose widening, bridge height adjustment, tip reshaping, nostril/alar adjustment, nose length adjustment, hump
+    smoothing, nose contour refinement, or nose-size reduction/enlargement must not substitute for each other when the prompt
+    specifies one.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason for that exact
+    L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet, or any visible defect
+    remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Nose Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Perform the requested nose fine control, including full-nose enlargement or reduction, bridge elevation,
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_fine_control_and_direction_match
+          - requested_edit_strength_match
+          - requested_target_subregion_match
+          - requested_components_complete
+          - requested_change_distribution_match
+          - requested_full_nose_scale_match
+          - requested_bridge_geometry_match
+          - requested_tip_geometry_match
+          - requested_alar_wing_base_match
+          - requested_nostril_columella_match
+          - requested_angle_perspective_match
+          - unrequested_nose_properties_preserved
+          - edit_localized_to_nose
+          - nose_subregion_anatomy_continuous
+          - nose_to_face_proportion_harmonious
+          - pose_aware_bilateral_balance
+          - identity_expression_preserved
+          - adjacent_facial_geometry_preserved
+          - skin_texture_boundary_blend
+          - highlight_shadow_form_consistent
+          - depth_projection_occlusion_consistent
+          - artifact_sharpness_no_warp
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Nose Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on visible nose, radix, bridge, dorsum, sidewalls, tip, columella, nostrils, alar wings, nasal base, local skin.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_fine_control_and_direction_match
+          - requested_edit_strength_match
+          - requested_target_subregion_match
+          - requested_components_complete
+          - requested_change_distribution_match
+          - requested_full_nose_scale_match
+          - requested_bridge_geometry_match
+          - requested_tip_geometry_match
+          - requested_alar_wing_base_match
+          - requested_nostril_columella_match
+          - requested_angle_perspective_match
+          - unrequested_nose_properties_preserved
+          - edit_localized_to_nose
+          - nose_subregion_anatomy_continuous
+          - nose_to_face_proportion_harmonious
+          - pose_aware_bilateral_balance
+          - identity_expression_preserved
+          - adjacent_facial_geometry_preserved
+          - artifact_sharpness_no_warp
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_edit_strength_match
+          - requested_target_subregion_match
+          - requested_components_complete
+          - requested_change_distribution_match
+          - requested_full_nose_scale_match
+          - requested_bridge_geometry_match
+          - requested_tip_geometry_match
+          - requested_alar_wing_base_match
+          - requested_nostril_columella_match
+          - requested_angle_perspective_match
+          - unrequested_nose_properties_preserved
+          - edit_localized_to_nose
+          - nose_subregion_anatomy_continuous
+          - nose_to_face_proportion_harmonious
+          - pose_aware_bilateral_balance
+          - skin_texture_boundary_blend
+          - highlight_shadow_form_consistent
+          - depth_projection_occlusion_consistent
+          - artifact_sharpness_no_warp
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of visible nose, radix, bridge, dorsum, sidewalls, tip, columella, nostrils, alar wings, nasal base, local skin, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_target_subregion_match
+          - requested_components_complete
+          - requested_change_distribution_match
+          - requested_full_nose_scale_match
+          - requested_bridge_geometry_match
+          - requested_tip_geometry_match
+          - requested_alar_wing_base_match
+          - requested_nostril_columella_match
+          - requested_angle_perspective_match
+          - unrequested_nose_properties_preserved
+          - edit_localized_to_nose
+          - nose_subregion_anatomy_continuous
+          - nose_to_face_proportion_harmonious
+          - pose_aware_bilateral_balance
+          - skin_texture_boundary_blend
+          - highlight_shadow_form_consistent
+          - depth_projection_occlusion_consistent
+          - artifact_sharpness_no_warp
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_fine_control_and_direction_match
+          - requested_edit_strength_match
+          - requested_target_subregion_match
+          - requested_components_complete
+          - requested_change_distribution_match
+          - requested_full_nose_scale_match
+          - requested_bridge_geometry_match
+          - requested_tip_geometry_match
+          - requested_alar_wing_base_match
+          - requested_nostril_columella_match
+          - requested_angle_perspective_match
+          - unrequested_nose_properties_preserved
+          - edit_localized_to_nose
+          - nose_subregion_anatomy_continuous
+          - nose_to_face_proportion_harmonious
+          - pose_aware_bilateral_balance
+          - identity_expression_preserved
+          - adjacent_facial_geometry_preserved
+          - skin_texture_boundary_blend
+          - highlight_shadow_form_consistent
+          - depth_projection_occlusion_consistent
+          - artifact_sharpness_no_warp
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - edit_localized_to_nose
+          - nose_subregion_anatomy_continuous
+          - nose_to_face_proportion_harmonious
+          - pose_aware_bilateral_balance
+          - skin_texture_boundary_blend
+          - highlight_shadow_form_consistent
+          - depth_projection_occlusion_consistent
+          - artifact_sharpness_no_warp
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_fine_control_and_direction_match
+- requested_edit_strength_match
+- requested_target_subregion_match
+- requested_components_complete
+- requested_change_distribution_match
+- requested_full_nose_scale_match
+- requested_bridge_geometry_match
+- requested_tip_geometry_match
+- requested_alar_wing_base_match
+- requested_nostril_columella_match
+- requested_angle_perspective_match
+- unrequested_nose_properties_preserved
+- edit_localized_to_nose
+- nose_subregion_anatomy_continuous
+- nose_to_face_proportion_harmonious
+- pose_aware_bilateral_balance
+- identity_expression_preserved
+- adjacent_facial_geometry_preserved
+- skin_texture_boundary_blend
+- highlight_shadow_form_consistent
+- depth_projection_occlusion_consistent
+- artifact_sharpness_no_warp
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_fine_control_and_direction_match: 0.16
+    requested_edit_strength_match: 0.08
+    requested_target_subregion_match: 0.08
+    requested_components_complete: 0.08
+    requested_change_distribution_match: 0.07
+    requested_full_nose_scale_match: 0.11
+    requested_bridge_geometry_match: 0.09
+    requested_tip_geometry_match: 0.08
+    requested_alar_wing_base_match: 0.07
+    requested_nostril_columella_match: 0.06
+    requested_angle_perspective_match: 0.06
+    unrequested_nose_properties_preserved: 0.06
+  Localization and Anatomical Integration:
+    edit_localized_to_nose: 0.24
+    nose_subregion_anatomy_continuous: 0.31
+    nose_to_face_proportion_harmonious: 0.24
+    pose_aware_bilateral_balance: 0.21
+  Subject Preservation:
+    identity_expression_preserved: 0.52
+    adjacent_facial_geometry_preserved: 0.48
+  Task Realism and Image Quality:
+    skin_texture_boundary_blend: 0.28
+    highlight_shadow_form_consistent: 0.25
+    depth_projection_occlusion_consistent: 0.25
+    artifact_sharpness_no_warp: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Operation, Strength, and Coverage:
+      requested_fine_control_and_direction_match:
+        title: Requested fine control and edit direction match
+        definition: 'Judge whether the output performs the exact requested control and direction: full-nose enlargement, full-nose
+          reduction, bridge elevation, nasal-wing narrowing, or tip refinement. A different nose operation must not receive
+          credit merely because the nose changed.'
+        anchors:
+          0: the requested nose fine control and direction is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested nose fine control and direction is visible; the central operation is
+            essentially unmet.
+          2: A small relevant attempt is present, but the requested nose fine control and direction is severely incorrect
+            or incomplete.
+          3: the requested nose fine control and direction is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested nose fine control and direction is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested nose fine control and direction is moderately achieved, with several substantial visible problems.
+          6: the requested nose fine control and direction is mostly correct, but one clear and important issue remains.
+          7: the requested nose fine control and direction is clearly successful, with only a minor visible mismatch.
+          8: the requested nose fine control and direction is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact requested fine control and geometric direction are executed completely, with no competing or opposite
+            nose operation.
+      requested_edit_strength_match:
+        title: Requested nose-edit strength is matched
+        definition: Judge whether the change has the requested subtle, medium, strong, dramatic, or editorial magnitude. The
+          change must be visible at normal viewing size without becoming swollen, pinched, or caricatured.
+        anchors:
+          0: the requested edit strength is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested edit strength is visible; the change is far too weak, excessive, or
+            destructive.
+          2: A small relevant attempt is present, but the requested edit strength is severely incorrect or incomplete.
+          3: the requested edit strength is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested edit strength is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested edit strength is moderately achieved, with several substantial visible problems.
+          6: the requested edit strength is mostly correct, but one clear and important issue remains.
+          7: the requested edit strength is clearly successful, with only a minor visible mismatch.
+          8: the requested edit strength is highly accurate and complete, with only a tiny local imperfection.
+          9: The change has exactly the requested visibility and magnitude while remaining natural and controlled.
+      requested_target_subregion_match:
+        title: The correct nose subregion is edited
+        definition: Judge whether the requested complete nose, bridge, tip, alar wings, nasal base, nostrils, or other specified
+          region is the actual focus of the transformation.
+        anchors:
+          0: the requested nose subregion targeting is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested nose subregion targeting is visible; the edit is focused on the wrong
+            nose region.
+          2: A small relevant attempt is present, but the requested nose subregion targeting is severely incorrect or incomplete.
+          3: the requested nose subregion targeting is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested nose subregion targeting is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested nose subregion targeting is moderately achieved, with several substantial visible problems.
+          6: the requested nose subregion targeting is mostly correct, but one clear and important issue remains.
+          7: the requested nose subregion targeting is clearly successful, with only a minor visible mismatch.
+          8: the requested nose subregion targeting is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested nose subregion is edited precisely, and no incorrect subregion substitutes for the target.
+      requested_components_complete:
+        title: All required nose components are completed
+        definition: Judge whether every explicitly requested component is present. A full-nose size edit may require bridge,
+          sidewalls, tip, wings, base, and nostril relationships to change together; a compound prompt must not omit a primary
+          component.
+        anchors:
+          0: the completeness of requested nose components is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the completeness of requested nose components is visible; most required components
+            are missing.
+          2: A small relevant attempt is present, but the completeness of requested nose components is severely incorrect
+            or incomplete.
+          3: the completeness of requested nose components is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the completeness of requested nose components is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the completeness of requested nose components is moderately achieved, with several substantial visible problems.
+          6: the completeness of requested nose components is mostly correct, but one clear and important issue remains.
+          7: the completeness of requested nose components is clearly successful, with only a minor visible mismatch.
+          8: the completeness of requested nose components is highly accurate and complete, with only a tiny local imperfection.
+          9: All explicitly requested components are fully and visibly completed with no important omission.
+      requested_change_distribution_match:
+        title: The requested change is distributed correctly
+        definition: Judge whether enlargement, reduction, elevation, narrowing, or refinement is allocated across the intended
+          regions rather than concentrated unnaturally in one point.
+        anchors:
+          0: the spatial distribution of the requested nose change is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the spatial distribution of the requested nose change is visible; the change is concentrated
+            in incorrect regions.
+          2: A small relevant attempt is present, but the spatial distribution of the requested nose change is severely incorrect
+            or incomplete.
+          3: the spatial distribution of the requested nose change is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the spatial distribution of the requested nose change is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the spatial distribution of the requested nose change is moderately achieved, with several substantial visible
+            problems.
+          6: the spatial distribution of the requested nose change is mostly correct, but one clear and important issue remains.
+          7: the spatial distribution of the requested nose change is clearly successful, with only a minor visible mismatch.
+          8: the spatial distribution of the requested nose change is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: The change is distributed exactly as requested across the intended nose structure.
+    Nose Geometry:
+      requested_full_nose_scale_match:
+        title: Requested full-nose scale, width, and projection match
+        definition: For full-size prompts, judge overall three-dimensional scale, width, prominence, projection, and volume
+          as one coherent change. For local prompts, judge that the complete nose is not unintentionally enlarged or reduced.
+        anchors:
+          0: the requested complete-nose scale, width, and projection is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested complete-nose scale, width, and projection is visible; the overall nose
+            size is wrong or incoherent.
+          2: A small relevant attempt is present, but the requested complete-nose scale, width, and projection is severely
+            incorrect or incomplete.
+          3: the requested complete-nose scale, width, and projection is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: the requested complete-nose scale, width, and projection is recognizable, but a major mismatch, omission, or
+            excessive change remains.
+          5: the requested complete-nose scale, width, and projection is moderately achieved, with several substantial visible
+            problems.
+          6: the requested complete-nose scale, width, and projection is mostly correct, but one clear and important issue
+            remains.
+          7: the requested complete-nose scale, width, and projection is clearly successful, with only a minor visible mismatch.
+          8: the requested complete-nose scale, width, and projection is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: The complete nose has the exact requested scale and three-dimensional prominence, with no unintended global size
+            drift.
+      requested_bridge_geometry_match:
+        title: Requested bridge height, width, and definition match
+        definition: Judge radix, bridge height, bridge width, sidewalls, contour continuity, and bridge-to-tip transition.
+          Bridge elevation must reflect plausible structure rather than only painted highlights.
+        anchors:
+          0: the requested nasal-bridge geometry is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested nasal-bridge geometry is visible; the bridge is unchanged, directionally
+            wrong, or structurally implausible.
+          2: A small relevant attempt is present, but the requested nasal-bridge geometry is severely incorrect or incomplete.
+          3: the requested nasal-bridge geometry is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested nasal-bridge geometry is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested nasal-bridge geometry is moderately achieved, with several substantial visible problems.
+          6: the requested nasal-bridge geometry is mostly correct, but one clear and important issue remains.
+          7: the requested nasal-bridge geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested nasal-bridge geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: Bridge height, width, sidewalls, root, definition, and tip transition match the instruction exactly.
+      requested_tip_geometry_match:
+        title: Requested nasal-tip size, shape, and projection match
+        definition: Judge tip size, fullness, delicacy, definition, width, roundness, projection, rotation, and bridge-to-tip
+          transition according to the prompt.
+        anchors:
+          0: the requested nasal-tip geometry is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested nasal-tip geometry is visible; the tip is unchanged, directionally wrong,
+            or distorted.
+          2: A small relevant attempt is present, but the requested nasal-tip geometry is severely incorrect or incomplete.
+          3: the requested nasal-tip geometry is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested nasal-tip geometry is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested nasal-tip geometry is moderately achieved, with several substantial visible problems.
+          6: the requested nasal-tip geometry is mostly correct, but one clear and important issue remains.
+          7: the requested nasal-tip geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested nasal-tip geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: The nasal tip has exactly the requested size, definition, shape, projection, and transition.
+      requested_alar_wing_base_match:
+        title: Requested nasal-wing and alar-base geometry match
+        definition: Judge alar-wing width, lateral extent, base span, contour, and left-right relation. Wing narrowing must
+          not collapse the nostrils or silently reduce the entire nose.
+        anchors:
+          0: the requested nasal-wing and alar-base geometry is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested nasal-wing and alar-base geometry is visible; the wings or base are
+            unchanged, directionally wrong, or collapsed.
+          2: A small relevant attempt is present, but the requested nasal-wing and alar-base geometry is severely incorrect
+            or incomplete.
+          3: the requested nasal-wing and alar-base geometry is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested nasal-wing and alar-base geometry is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested nasal-wing and alar-base geometry is moderately achieved, with several substantial visible problems.
+          6: the requested nasal-wing and alar-base geometry is mostly correct, but one clear and important issue remains.
+          7: the requested nasal-wing and alar-base geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested nasal-wing and alar-base geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: Wing width, base span, contour, and bilateral relation match the instruction exactly and remain anatomically
+            open.
+      requested_nostril_columella_match:
+        title: Requested nostril and columella geometry match
+        definition: Judge nostril opening shape, size, visibility, orientation, alar-rim thickness, columella position, and
+          pose-appropriate left-right relationship.
+        anchors:
+          0: the requested nostril and columella geometry is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the requested nostril and columella geometry is visible; nostrils are malformed, collapsed,
+            merged, or inconsistent with the prompt.
+          2: A small relevant attempt is present, but the requested nostril and columella geometry is severely incorrect or
+            incomplete.
+          3: the requested nostril and columella geometry is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested nostril and columella geometry is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested nostril and columella geometry is moderately achieved, with several substantial visible problems.
+          6: the requested nostril and columella geometry is mostly correct, but one clear and important issue remains.
+          7: the requested nostril and columella geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested nostril and columella geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: Nostril openings, alar rims, and columella are exactly matched, open, balanced, and anatomically plausible.
+      requested_angle_perspective_match:
+        title: Requested nose angle and portrait perspective are preserved
+        definition: Judge nose direction, yaw, pitch, foreshortening, visible-side balance, and consistency with the source
+          head pose and camera angle.
+        anchors:
+          0: the preservation of nose angle and portrait perspective is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the preservation of nose angle and portrait perspective is visible; the nose is rotated,
+            re-posed, or inconsistent with the portrait.
+          2: A small relevant attempt is present, but the preservation of nose angle and portrait perspective is severely
+            incorrect or incomplete.
+          3: the preservation of nose angle and portrait perspective is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: the preservation of nose angle and portrait perspective is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of nose angle and portrait perspective is moderately achieved, with several substantial visible
+            problems.
+          6: the preservation of nose angle and portrait perspective is mostly correct, but one clear and important issue
+            remains.
+          7: the preservation of nose angle and portrait perspective is clearly successful, with only a minor visible mismatch.
+          8: the preservation of nose angle and portrait perspective is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: The edited nose perfectly preserves source direction and perspective while achieving the requested geometry.
+      unrequested_nose_properties_preserved:
+        title: Unrequested nose properties are preserved
+        definition: Preserve all nose characteristics not required to change, including unrelated subregions, characteristic
+          angle, skin detail, and local relationships, except for unavoidable consequences of the requested edit.
+        anchors:
+          0: the preservation of unrequested nose properties is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the preservation of unrequested nose properties is visible; unrequested nose properties
+            are extensively altered.
+          2: A small relevant attempt is present, but the preservation of unrequested nose properties is severely incorrect
+            or incomplete.
+          3: the preservation of unrequested nose properties is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the preservation of unrequested nose properties is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of unrequested nose properties is moderately achieved, with several substantial visible problems.
+          6: the preservation of unrequested nose properties is mostly correct, but one clear and important issue remains.
+          7: the preservation of unrequested nose properties is clearly successful, with only a minor visible mismatch.
+          8: the preservation of unrequested nose properties is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested nose properties remain source-consistent apart from unavoidable consequences of the target edit.
+  Localization and Anatomical Integration:
+    Nose Structure and Facial Fit:
+      edit_localized_to_nose:
+        title: The edit is localized to the nose
+        definition: Changes must remain within the nose and the minimum adjacent transition zone. Do not pull cheeks, shift
+          lips, change eye spacing, or deform the wider face to create the effect.
+        anchors:
+          0: nose-edit localization is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of nose-edit localization is visible; large non-target facial regions are altered.
+          2: A small relevant attempt is present, but nose-edit localization is severely incorrect or incomplete.
+          3: nose-edit localization is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: nose-edit localization is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: nose-edit localization is moderately achieved, with several substantial visible problems.
+          6: nose-edit localization is mostly correct, but one clear and important issue remains.
+          7: nose-edit localization is clearly successful, with only a minor visible mismatch.
+          8: nose-edit localization is highly accurate and complete, with only a tiny local imperfection.
+          9: The transformation is precisely localized to the intended nose regions with no visible spill or surrounding deformation.
+      nose_subregion_anatomy_continuous:
+        title: Bridge, sidewalls, tip, wings, nostrils, and columella remain anatomically continuous
+        definition: Judge the nose as one coherent structure with continuous surfaces and plausible connections among all
+          visible subregions.
+        anchors:
+          0: the anatomical continuity of all nose subregions is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of the anatomical continuity of all nose subregions is visible; the nose is structurally
+            broken or contradictory.
+          2: A small relevant attempt is present, but the anatomical continuity of all nose subregions is severely incorrect
+            or incomplete.
+          3: the anatomical continuity of all nose subregions is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the anatomical continuity of all nose subregions is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the anatomical continuity of all nose subregions is moderately achieved, with several substantial visible problems.
+          6: the anatomical continuity of all nose subregions is mostly correct, but one clear and important issue remains.
+          7: the anatomical continuity of all nose subregions is clearly successful, with only a minor visible mismatch.
+          8: the anatomical continuity of all nose subregions is highly accurate and complete, with only a tiny local imperfection.
+          9: All nose subregions form a fully coherent, continuous, and anatomically plausible structure.
+      nose_to_face_proportion_harmonious:
+        title: The edited nose remains proportionate to the face
+        definition: Judge nose dimensions and prominence relative to face size, feature spacing, portrait angle, and the requested
+          amount. The requested change must remain readable without becoming implausibly swollen or pinched.
+        anchors:
+          0: nose-to-face proportion and harmony is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of nose-to-face proportion and harmony is visible; the nose is grossly disproportionate
+            to the face.
+          2: A small relevant attempt is present, but nose-to-face proportion and harmony is severely incorrect or incomplete.
+          3: nose-to-face proportion and harmony is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: nose-to-face proportion and harmony is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: nose-to-face proportion and harmony is moderately achieved, with several substantial visible problems.
+          6: nose-to-face proportion and harmony is mostly correct, but one clear and important issue remains.
+          7: nose-to-face proportion and harmony is clearly successful, with only a minor visible mismatch.
+          8: nose-to-face proportion and harmony is highly accurate and complete, with only a tiny local imperfection.
+          9: The edited nose has the exact requested prominence while remaining ideally proportioned to the face.
+      pose_aware_bilateral_balance:
+        title: Nasal balance is correct for the actual head pose
+        definition: Judge centerline, bridge alignment, wing relation, nostril visibility, and apparent symmetry under perspective.
+          Do not demand raw mirror symmetry from a turned face.
+        anchors:
+          0: pose-aware nasal balance is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of pose-aware nasal balance is visible; the nose has major unintended asymmetry or centerline
+            drift.
+          2: A small relevant attempt is present, but pose-aware nasal balance is severely incorrect or incomplete.
+          3: pose-aware nasal balance is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: pose-aware nasal balance is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: pose-aware nasal balance is moderately achieved, with several substantial visible problems.
+          6: pose-aware nasal balance is mostly correct, but one clear and important issue remains.
+          7: pose-aware nasal balance is clearly successful, with only a minor visible mismatch.
+          8: pose-aware nasal balance is highly accurate and complete, with only a tiny local imperfection.
+          9: Centerline, wings, nostrils, and visible-side relationships are perfectly balanced for the source pose.
+  Subject Preservation:
+    Adjacent Face:
+      identity_expression_preserved:
+        title: Identity and expression are preserved
+        definition: Preserve the same person, age impression, gaze, expression, and recognizable facial identity. Do not suppress
+          the requested nose change merely to preserve identity.
+        anchors:
+          0: identity and expression preservation is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of identity and expression preservation is visible; identity or expression is substantially
+            changed.
+          2: A small relevant attempt is present, but identity and expression preservation is severely incorrect or incomplete.
+          3: identity and expression preservation is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: identity and expression preservation is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: identity and expression preservation is moderately achieved, with several substantial visible problems.
+          6: identity and expression preservation is mostly correct, but one clear and important issue remains.
+          7: identity and expression preservation is clearly successful, with only a minor visible mismatch.
+          8: identity and expression preservation is highly accurate and complete, with only a tiny local imperfection.
+          9: The same person and expression are fully preserved while the requested nose edit remains clearly visible.
+      adjacent_facial_geometry_preserved:
+        title: Adjacent facial geometry is preserved
+        definition: Preserve eyes, eyebrows, cheeks, lips, philtrum, mouth position, jaw, face width, face length, and feature
+          spacing. Clothing, background, and hairstyle are not separate L3 items.
+        anchors:
+          0: adjacent facial geometry preservation is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of adjacent facial geometry preservation is visible; nearby facial structures are clearly
+            shifted or warped.
+          2: A small relevant attempt is present, but adjacent facial geometry preservation is severely incorrect or incomplete.
+          3: adjacent facial geometry preservation is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: adjacent facial geometry preservation is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: adjacent facial geometry preservation is moderately achieved, with several substantial visible problems.
+          6: adjacent facial geometry preservation is mostly correct, but one clear and important issue remains.
+          7: adjacent facial geometry preservation is clearly successful, with only a minor visible mismatch.
+          8: adjacent facial geometry preservation is highly accurate and complete, with only a tiny local imperfection.
+          9: All adjacent facial structures and feature spacing remain source-consistent.
+  Task Realism and Image Quality:
+    Nose Rendering:
+      skin_texture_boundary_blend:
+        title: Skin texture and nose-face boundaries blend naturally
+        definition: Judge pores, fine texture, local color, sharpness, and transitions into forehead, cheeks, philtrum, and
+          upper-lip area. Penalize seams, halos, waxy smoothing, smearing, or pasted boundaries.
+        anchors:
+          0: skin-texture and boundary integration is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of skin-texture and boundary integration is visible; boundaries or skin texture are visibly
+            synthetic.
+          2: A small relevant attempt is present, but skin-texture and boundary integration is severely incorrect or incomplete.
+          3: skin-texture and boundary integration is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: skin-texture and boundary integration is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: skin-texture and boundary integration is moderately achieved, with several substantial visible problems.
+          6: skin-texture and boundary integration is mostly correct, but one clear and important issue remains.
+          7: skin-texture and boundary integration is clearly successful, with only a minor visible mismatch.
+          8: skin-texture and boundary integration is highly accurate and complete, with only a tiny local imperfection.
+          9: Skin detail and every nose-face boundary are seamlessly integrated and source-consistent.
+      highlight_shadow_form_consistent:
+        title: Highlights and shadows support the new nose form
+        definition: Judge bridge highlight, sidewall shadow, tip highlight, nostril darkness, and source light direction.
+          Shading must support the edited geometry without relighting the whole face.
+        anchors:
+          0: nose highlights, shadows, and form lighting is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of nose highlights, shadows, and form lighting is visible; lighting contradicts the nose
+            form or source.
+          2: A small relevant attempt is present, but nose highlights, shadows, and form lighting is severely incorrect or
+            incomplete.
+          3: nose highlights, shadows, and form lighting is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: nose highlights, shadows, and form lighting is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: nose highlights, shadows, and form lighting is moderately achieved, with several substantial visible problems.
+          6: nose highlights, shadows, and form lighting is mostly correct, but one clear and important issue remains.
+          7: nose highlights, shadows, and form lighting is clearly successful, with only a minor visible mismatch.
+          8: nose highlights, shadows, and form lighting is highly accurate and complete, with only a tiny local imperfection.
+          9: All highlights and shadows are physically consistent with the new geometry and source illumination.
+      depth_projection_occlusion_consistent:
+        title: Depth, projection, and occlusion are physically consistent
+        definition: Judge three-dimensional projection, foreshortening, overlap, sidewall depth, nostril depth, and relationships
+          with cheeks and upper-lip regions.
+        anchors:
+          0: nose depth, projection, and occlusion is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of nose depth, projection, and occlusion is visible; the nose appears flat, floating,
+            or perspective-inconsistent.
+          2: A small relevant attempt is present, but nose depth, projection, and occlusion is severely incorrect or incomplete.
+          3: nose depth, projection, and occlusion is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: nose depth, projection, and occlusion is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: nose depth, projection, and occlusion is moderately achieved, with several substantial visible problems.
+          6: nose depth, projection, and occlusion is mostly correct, but one clear and important issue remains.
+          7: nose depth, projection, and occlusion is clearly successful, with only a minor visible mismatch.
+          8: nose depth, projection, and occlusion is highly accurate and complete, with only a tiny local imperfection.
+          9: Depth, projection, foreshortening, and occlusion are fully coherent with the source pose and camera.
+      artifact_sharpness_no_warp:
+        title: Artifacts, sharpness loss, and warping are controlled
+        definition: Judge duplicated nostrils, melted tip, broken bridge, warped cheeks, distorted lips, halos, blur, texture
+          stretching, blocky masks, and local resolution loss.
+        anchors:
+          0: artifact control, sharpness, and absence of warping is absent, reversed, unrelated, or completely unusable.
+          1: Only a negligible trace of artifact control, sharpness, and absence of warping is visible; strong artifacts,
+            blur, or facial warping dominate the result.
+          2: A small relevant attempt is present, but artifact control, sharpness, and absence of warping is severely incorrect
+            or incomplete.
+          3: artifact control, sharpness, and absence of warping is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: artifact control, sharpness, and absence of warping is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: artifact control, sharpness, and absence of warping is moderately achieved, with several substantial visible
+            problems.
+          6: artifact control, sharpness, and absence of warping is mostly correct, but one clear and important issue remains.
+          7: artifact control, sharpness, and absence of warping is clearly successful, with only a minor visible mismatch.
+          8: artifact control, sharpness, and absence of warping is highly accurate and complete, with only a tiny local imperfection.
+          9: The edit is clean, sharply resolved, free of warping, and contains no meaningful generation artifact.
+judge_role: You are a strict expert evaluator specializing in nose-shape editing and facial identity preservation. Judge the
+  edited image against the exact requested edit family, direction, target region, strength, component details, preservation
+  constraints, and realism, not against generic attractiveness or plausibility.
+judge_instructions: |-
+  - First infer the exact requested edit family from the prompt, such as nose slimming, nose widening, bridge height adjustment, tip reshaping, nostril/alar adjustment, nose length adjustment, hump smoothing, nose contour refinement, or nose-size reduction/enlargement.
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+  - Target regions for this task include nasal bridge, nose tip, nostrils, alar wings, nasolabial boundary, highlight/shadow, central facial landmarks, cheeks, lips, and surrounding skin. Judge the requested target area and the preservation of all non-target regions independently.
+
+  - Common non-equivalent substitutions: nose slimming is not full-face slimming; bridge enhancement is not changing the entire face; contour shadow is not anatomical nose reshaping unless requested. These should be penalized even if the image looks plausible.
+
+  - Nose edits must preserve the source person; small changes to the nose can strongly alter identity, so high scores require stable eyes, mouth, face outline, and landmark spacing.
+
+  - Do not reward a pretty or generic nose if the requested nose direction, subregion, or strength is wrong.
+
+  - Preserve the source person's identity, face/body proportions not requested to change, expression when not targeted, skin texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target regions independently from target edit quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change, background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning; output only the JSON score vector.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should be 0-6.
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond the request, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.

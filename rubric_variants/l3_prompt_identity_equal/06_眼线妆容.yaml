@@ -1,0 +1,874 @@
+task_key: eyeliner_makeup_edit
+task_title: Eyeliner Makeup Editing
+task_title_zh: 眼线妆容编辑
+version: v35_fixed_22_l3_eyeliner_makeup_identity_bg_antilazy_flash_integer_0to9_l3_pi_equal
+judge_role: You are a strict expert evaluator specializing in eyeliner makeup editing and eye-area preservation. Judge the
+  edited image against the exact requested edit family, direction, target region, strength, component details, preservation
+  constraints, and realism, not against generic attractiveness or plausibility.
+judge_instructions: |-
+  - First infer the exact requested edit family from the prompt, such as thin eyeliner, thick eyeliner, winged eyeliner, cat-eye liner, fox-eye liner, lower-lid liner, inner-corner liner, tightline, graphic liner, smoky liner, colored liner, or eyeliner removal.
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+  - Target regions for this task include upper and lower lash lines, inner and outer corners, wings, waterline/tightline areas, eyelids, lashes, iris boundary, brows, and adjacent skin. Judge the requested target area and the preservation of all non-target regions independently.
+
+  - Common non-equivalent substitutions: eyeliner-only is not full eyeshadow; cat-eye liner is not rounded doll-eye liner; lower-lid liner is not smoky eye makeup. These should be penalized even if the image looks plausible.
+
+  - For eyeliner-only requests, extra eyeshadow, heavy lashes, changed iris, or changed eye shape is a prompt and preservation error.
+
+  - Eyeliner must follow the eyelid/lash-line anatomy; a clean stroke in the wrong location is still wrong.
+
+  - Preserve the source person's identity, face/body proportions not requested to change, expression when not targeted, skin texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target regions independently from target edit quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change, background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning; output only the JSON score vector.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should be 0-6.
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond the request, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.
+
+target_region: upper and lower lash lines, lash roots, inner corners, outer corners, eyeliner tails, narrow smoky diffusion
+  zones, and eyeliner material
+target_action_summary: Create the requested eyeliner style, path, inner/outer geometry, thickness, color, finish, continuity,
+  and bilateral balance without changing eye anatomy.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add extra rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial identity must remain one dedicated, high-impact L3 facet rather than being diluted across easy preservation checks.
+  - Subject Preservation contributes 42% of the final reward; successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, eyeliner-only is not full eyeshadow; cat-eye liner is not rounded
+  doll-eye liner; lower-lid liner is not smoky eye makeup.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+- Tightline, half-length, lower-lash-line, double, segmented, inner-corner, and outer-tail styles require different path logic.
+- Lifted, downturned, and straight extensions must be created by liner rather than anatomical eye-corner movement.
+- Bold black plus a contradictory colored final liner should be treated as a prompt conflict unless a two-color design is
+  explicit.
+- Soft-focus or smoky edges do not authorize broad eyeshadow or blurred eye detail.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited face against the source as the same individual. A plausible or attractive face is not
+    sufficient. Visible drift in landmark geometry, feature spacing, face outline, age impression, gender presentation, or
+    characteristic details must lower the identity score.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. thin
+    eyeliner, thick eyeliner, winged eyeliner, cat-eye liner, fox-eye liner, lower-lid liner, inner-corner liner, tightline,
+    graphic liner, smoky liner, colored liner, or eyeliner removal must not substitute for each other when the prompt specifies
+    one.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason for that exact
+    L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet, or any visible defect
+    remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Eyeliner Makeup Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Create the requested eyeliner style, path, inner/outer geometry, thickness, color, finish, continuity,
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_eyeliner_style_match
+          - requested_eyeliner_upper_lower_region_match
+          - requested_eyeliner_start_end_path_match
+          - requested_eyeliner_inner_corner_geometry_match
+          - requested_eyeliner_outer_tail_direction_match
+          - requested_eyeliner_tail_length_curvature_taper_match
+          - requested_eyeliner_thickness_progression_match
+          - requested_eyeliner_intensity_contrast_match
+          - requested_eyeliner_color_undertone_match
+          - requested_eyeliner_finish_material_match
+          - requested_eyeliner_continuity_segmentation_doubleline_edge_match
+          - unrequested_eyeliner_properties_preserved
+          - eyeliner_edit_localized_to_lashline
+          - eyeliner_lashroot_corner_attachment_natural
+          - eyeliner_pose_aware_bilateral_correspondence
+          - eyeliner_skin_sclera_iris_boundary_clean
+          - eyeliner_facial_identity_landmark_consistency
+          - eyeliner_eye_anatomy_gaze_lashes_brows_face_preserved
+          - eyeliner_pigment_deposition_material_realistic
+          - eyeliner_edge_sharpness_controlled_diffusion
+          - eyeliner_lighting_skin_texture_integration
+          - eyeliner_artifact_no_jagged_breaks_blur
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Eyeliner Makeup Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on upper and lower lash lines, lash roots, inner corners, outer corners, eyeliner tails, narrow smoky diffusion.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_eyeliner_style_match
+          - requested_eyeliner_upper_lower_region_match
+          - requested_eyeliner_start_end_path_match
+          - requested_eyeliner_inner_corner_geometry_match
+          - requested_eyeliner_outer_tail_direction_match
+          - requested_eyeliner_tail_length_curvature_taper_match
+          - requested_eyeliner_thickness_progression_match
+          - requested_eyeliner_intensity_contrast_match
+          - requested_eyeliner_color_undertone_match
+          - requested_eyeliner_finish_material_match
+          - requested_eyeliner_continuity_segmentation_doubleline_edge_match
+          - unrequested_eyeliner_properties_preserved
+          - eyeliner_edit_localized_to_lashline
+          - eyeliner_lashroot_corner_attachment_natural
+          - eyeliner_pose_aware_bilateral_correspondence
+          - eyeliner_skin_sclera_iris_boundary_clean
+          - eyeliner_facial_identity_landmark_consistency
+          - eyeliner_eye_anatomy_gaze_lashes_brows_face_preserved
+          - eyeliner_artifact_no_jagged_breaks_blur
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_eyeliner_upper_lower_region_match
+          - requested_eyeliner_start_end_path_match
+          - requested_eyeliner_inner_corner_geometry_match
+          - requested_eyeliner_outer_tail_direction_match
+          - requested_eyeliner_tail_length_curvature_taper_match
+          - requested_eyeliner_thickness_progression_match
+          - requested_eyeliner_intensity_contrast_match
+          - requested_eyeliner_color_undertone_match
+          - requested_eyeliner_finish_material_match
+          - requested_eyeliner_continuity_segmentation_doubleline_edge_match
+          - unrequested_eyeliner_properties_preserved
+          - eyeliner_edit_localized_to_lashline
+          - eyeliner_lashroot_corner_attachment_natural
+          - eyeliner_pose_aware_bilateral_correspondence
+          - eyeliner_skin_sclera_iris_boundary_clean
+          - eyeliner_pigment_deposition_material_realistic
+          - eyeliner_edge_sharpness_controlled_diffusion
+          - eyeliner_lighting_skin_texture_integration
+          - eyeliner_artifact_no_jagged_breaks_blur
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of upper and lower lash lines, lash roots, inner corners, outer corners, eyeliner tails, narrow smoky diffusion, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_eyeliner_start_end_path_match
+          - requested_eyeliner_inner_corner_geometry_match
+          - requested_eyeliner_outer_tail_direction_match
+          - requested_eyeliner_tail_length_curvature_taper_match
+          - requested_eyeliner_thickness_progression_match
+          - requested_eyeliner_intensity_contrast_match
+          - requested_eyeliner_color_undertone_match
+          - requested_eyeliner_finish_material_match
+          - requested_eyeliner_continuity_segmentation_doubleline_edge_match
+          - unrequested_eyeliner_properties_preserved
+          - eyeliner_edit_localized_to_lashline
+          - eyeliner_lashroot_corner_attachment_natural
+          - eyeliner_pose_aware_bilateral_correspondence
+          - eyeliner_skin_sclera_iris_boundary_clean
+          - eyeliner_pigment_deposition_material_realistic
+          - eyeliner_edge_sharpness_controlled_diffusion
+          - eyeliner_lighting_skin_texture_integration
+          - eyeliner_artifact_no_jagged_breaks_blur
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_eyeliner_style_match
+          - requested_eyeliner_upper_lower_region_match
+          - requested_eyeliner_start_end_path_match
+          - requested_eyeliner_inner_corner_geometry_match
+          - requested_eyeliner_outer_tail_direction_match
+          - requested_eyeliner_tail_length_curvature_taper_match
+          - requested_eyeliner_thickness_progression_match
+          - requested_eyeliner_intensity_contrast_match
+          - requested_eyeliner_color_undertone_match
+          - requested_eyeliner_finish_material_match
+          - requested_eyeliner_continuity_segmentation_doubleline_edge_match
+          - unrequested_eyeliner_properties_preserved
+          - eyeliner_edit_localized_to_lashline
+          - eyeliner_lashroot_corner_attachment_natural
+          - eyeliner_pose_aware_bilateral_correspondence
+          - eyeliner_skin_sclera_iris_boundary_clean
+          - eyeliner_facial_identity_landmark_consistency
+          - eyeliner_eye_anatomy_gaze_lashes_brows_face_preserved
+          - eyeliner_pigment_deposition_material_realistic
+          - eyeliner_edge_sharpness_controlled_diffusion
+          - eyeliner_lighting_skin_texture_integration
+          - eyeliner_artifact_no_jagged_breaks_blur
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - eyeliner_edit_localized_to_lashline
+          - eyeliner_lashroot_corner_attachment_natural
+          - eyeliner_pose_aware_bilateral_correspondence
+          - eyeliner_skin_sclera_iris_boundary_clean
+          - eyeliner_pigment_deposition_material_realistic
+          - eyeliner_edge_sharpness_controlled_diffusion
+          - eyeliner_lighting_skin_texture_integration
+          - eyeliner_artifact_no_jagged_breaks_blur
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_eyeliner_style_match
+- requested_eyeliner_upper_lower_region_match
+- requested_eyeliner_start_end_path_match
+- requested_eyeliner_inner_corner_geometry_match
+- requested_eyeliner_outer_tail_direction_match
+- requested_eyeliner_tail_length_curvature_taper_match
+- requested_eyeliner_thickness_progression_match
+- requested_eyeliner_intensity_contrast_match
+- requested_eyeliner_color_undertone_match
+- requested_eyeliner_finish_material_match
+- requested_eyeliner_continuity_segmentation_doubleline_edge_match
+- unrequested_eyeliner_properties_preserved
+- eyeliner_edit_localized_to_lashline
+- eyeliner_lashroot_corner_attachment_natural
+- eyeliner_pose_aware_bilateral_correspondence
+- eyeliner_skin_sclera_iris_boundary_clean
+- eyeliner_facial_identity_landmark_consistency
+- eyeliner_eye_anatomy_gaze_lashes_brows_face_preserved
+- eyeliner_pigment_deposition_material_realistic
+- eyeliner_edge_sharpness_controlled_diffusion
+- eyeliner_lighting_skin_texture_integration
+- eyeliner_artifact_no_jagged_breaks_blur
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_eyeliner_style_match: 0.13
+    requested_eyeliner_upper_lower_region_match: 0.1
+    requested_eyeliner_start_end_path_match: 0.1
+    requested_eyeliner_inner_corner_geometry_match: 0.07
+    requested_eyeliner_outer_tail_direction_match: 0.09
+    requested_eyeliner_tail_length_curvature_taper_match: 0.09
+    requested_eyeliner_thickness_progression_match: 0.09
+    requested_eyeliner_intensity_contrast_match: 0.07
+    requested_eyeliner_color_undertone_match: 0.08
+    requested_eyeliner_finish_material_match: 0.06
+    requested_eyeliner_continuity_segmentation_doubleline_edge_match: 0.08
+    unrequested_eyeliner_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    eyeliner_edit_localized_to_lashline: 0.25
+    eyeliner_lashroot_corner_attachment_natural: 0.3
+    eyeliner_pose_aware_bilateral_correspondence: 0.21
+    eyeliner_skin_sclera_iris_boundary_clean: 0.24
+  Subject Preservation:
+    eyeliner_facial_identity_landmark_consistency: 0.7
+    eyeliner_eye_anatomy_gaze_lashes_brows_face_preserved: 0.3
+  Task Realism and Image Quality:
+    eyeliner_pigment_deposition_material_realistic: 0.27
+    eyeliner_edge_sharpness_controlled_diffusion: 0.27
+    eyeliner_lighting_skin_texture_integration: 0.24
+    eyeliner_artifact_no_jagged_breaks_blur: 0.22
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Style, Path, and Geometry:
+      requested_eyeliner_style_match:
+        title: Requested eyeliner style match
+        definition: Judge natural, tightline, innocent drooping, Western lifted, cat-eye, half-length, straight extended,
+          inner-corner, thin elongated, bold, soft brown, smoky, double, lower-lash-line, thickened outer-tail, segmented,
+          or colored style.
+        anchors:
+          0: the requested eyeliner style is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner style is visible; the central eyeliner style is wrong or missing.
+          2: A small relevant attempt is present, but the requested eyeliner style is severely incorrect or incomplete.
+          3: the requested eyeliner style is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested eyeliner style is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested eyeliner style is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner style is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner style is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner style is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact eyeliner style and defining line topology are fully realized.
+      requested_eyeliner_upper_lower_region_match:
+        title: Requested upper/lower lash-line region match
+        definition: Judge upper line, lower line, both lines, inner lash base, outer half, outer third, or other specified
+          lash-line region.
+        anchors:
+          0: the requested upper/lower eyeliner region is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested upper/lower eyeliner region is visible; major requested regions are
+            missing or misplaced.
+          2: A small relevant attempt is present, but the requested upper/lower eyeliner region is severely incorrect or incomplete.
+          3: the requested upper/lower eyeliner region is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested upper/lower eyeliner region is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested upper/lower eyeliner region is moderately achieved, with several substantial visible problems.
+          6: the requested upper/lower eyeliner region is mostly correct, but one clear and important issue remains.
+          7: the requested upper/lower eyeliner region is clearly successful, with only a minor visible mismatch.
+          8: the requested upper/lower eyeliner region is highly accurate and complete, with only a tiny local imperfection.
+          9: Every requested lash-line region is covered exactly, with no incorrect regional substitution.
+      requested_eyeliner_start_end_path_match:
+        title: Requested line start, end, and path match
+        definition: Judge line start point, endpoint, distance from lash roots, half-length start, outer-third emphasis, complete
+          path, and route along the eye.
+        anchors:
+          0: the requested eyeliner path and endpoints is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner path and endpoints is visible; the path or endpoints are substantially
+            wrong.
+          2: A small relevant attempt is present, but the requested eyeliner path and endpoints is severely incorrect or incomplete.
+          3: the requested eyeliner path and endpoints is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested eyeliner path and endpoints is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested eyeliner path and endpoints is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner path and endpoints is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner path and endpoints is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner path and endpoints is highly accurate and complete, with only a tiny local imperfection.
+          9: The line follows the exact requested path with correct start, endpoint, and lash-root distance.
+      requested_eyeliner_inner_corner_geometry_match:
+        title: Requested inner-corner eyeliner geometry match
+        definition: Judge hidden inner tightline, fine inner-corner opening, sharpened/lengthened inner extension, thickness,
+          point shape, and no anatomical canthus movement.
+        anchors:
+          0: the requested inner-corner eyeliner geometry is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested inner-corner eyeliner geometry is visible; the inner-corner component
+            is missing, excessive, or anatomically altered.
+          2: A small relevant attempt is present, but the requested inner-corner eyeliner geometry is severely incorrect or
+            incomplete.
+          3: the requested inner-corner eyeliner geometry is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested inner-corner eyeliner geometry is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested inner-corner eyeliner geometry is moderately achieved, with several substantial visible problems.
+          6: the requested inner-corner eyeliner geometry is mostly correct, but one clear and important issue remains.
+          7: the requested inner-corner eyeliner geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested inner-corner eyeliner geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: Inner-corner placement, length, sharpness, and attachment exactly match the prompt.
+      requested_eyeliner_outer_tail_direction_match:
+        title: Requested outer-tail direction match
+        definition: Judge lifted/upward, downward/drooping, horizontal/straight, softly elongated, or preserved direction.
+        anchors:
+          0: the requested outer-tail direction is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested outer-tail direction is visible; the tail direction is opposite or substantially
+            wrong.
+          2: A small relevant attempt is present, but the requested outer-tail direction is severely incorrect or incomplete.
+          3: the requested outer-tail direction is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested outer-tail direction is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested outer-tail direction is moderately achieved, with several substantial visible problems.
+          6: the requested outer-tail direction is mostly correct, but one clear and important issue remains.
+          7: the requested outer-tail direction is clearly successful, with only a minor visible mismatch.
+          8: the requested outer-tail direction is highly accurate and complete, with only a tiny local imperfection.
+          9: The outer tail follows the exact requested directional angle on both eyes.
+      requested_eyeliner_tail_length_curvature_taper_match:
+        title: Requested tail length, curvature, and taper match
+        definition: Judge short/long extension, curvature, sharp or soft point, taper, wing geometry, and bilateral correspondence.
+        anchors:
+          0: the requested eyeliner tail length and geometry is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner tail length and geometry is visible; tail geometry is substantially
+            wrong or incomplete.
+          2: A small relevant attempt is present, but the requested eyeliner tail length and geometry is severely incorrect
+            or incomplete.
+          3: the requested eyeliner tail length and geometry is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested eyeliner tail length and geometry is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested eyeliner tail length and geometry is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner tail length and geometry is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner tail length and geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner tail length and geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: Tail length, curvature, point shape, and taper exactly match the instruction.
+    Thickness, Color, and Edge Structure:
+      requested_eyeliner_thickness_progression_match:
+        title: Requested line thickness and progression match
+        definition: Judge hidden/thin/slender, clear/moderate, bold/thick, inner-to-outer progression, and outer-third thickening.
+        anchors:
+          0: the requested eyeliner thickness and width progression is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner thickness and width progression is visible; the line is far
+            too thin, thick, or uneven.
+          2: A small relevant attempt is present, but the requested eyeliner thickness and width progression is severely incorrect
+            or incomplete.
+          3: the requested eyeliner thickness and width progression is weakly attempted; one or more primary requirements
+            are missing or contradictory.
+          4: the requested eyeliner thickness and width progression is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested eyeliner thickness and width progression is moderately achieved, with several substantial visible
+            problems.
+          6: the requested eyeliner thickness and width progression is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner thickness and width progression is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner thickness and width progression is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Line width and progression exactly match the requested design.
+      requested_eyeliner_intensity_contrast_match:
+        title: Requested eyeliner intensity and contrast match
+        definition: Judge subtle, clear, refined, moderate, intense, gentle contrast, strong definition, and visibility against
+          skin and lashes.
+        anchors:
+          0: the requested eyeliner intensity and contrast is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner intensity and contrast is visible; the eyeliner is far too
+            weak, harsh, or excessive.
+          2: A small relevant attempt is present, but the requested eyeliner intensity and contrast is severely incorrect
+            or incomplete.
+          3: the requested eyeliner intensity and contrast is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested eyeliner intensity and contrast is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested eyeliner intensity and contrast is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner intensity and contrast is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner intensity and contrast is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner intensity and contrast is highly accurate and complete, with only a tiny local imperfection.
+          9: The eyeliner has exactly the requested visibility, definition, and contrast.
+      requested_eyeliner_color_undertone_match:
+        title: Requested eyeliner color and undertone match
+        definition: Judge black, warm/cool/soft brown, taupe gray, peach, nude pink, rose pink, dusty mauve, coral, apricot,
+          or other colored liner.
+        anchors:
+          0: the requested eyeliner color and undertone is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner color and undertone is visible; the dominant eyeliner color
+            is wrong.
+          2: A small relevant attempt is present, but the requested eyeliner color and undertone is severely incorrect or
+            incomplete.
+          3: the requested eyeliner color and undertone is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested eyeliner color and undertone is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested eyeliner color and undertone is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner color and undertone is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner color and undertone is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner color and undertone is highly accurate and complete, with only a tiny local imperfection.
+          9: Hue, undertone, darkness, saturation, and contrast exactly match the prompt.
+      requested_eyeliner_finish_material_match:
+        title: Requested eyeliner finish and material match
+        definition: Judge soft matte, powder matte, low-saturation soft-focus, fine shimmer, sheer dewy, satin, and material
+          behavior.
+        anchors:
+          0: the requested eyeliner finish and material is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner finish and material is visible; the dominant finish is wrong
+            or physically inconsistent.
+          2: A small relevant attempt is present, but the requested eyeliner finish and material is severely incorrect or
+            incomplete.
+          3: the requested eyeliner finish and material is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested eyeliner finish and material is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested eyeliner finish and material is moderately achieved, with several substantial visible problems.
+          6: the requested eyeliner finish and material is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner finish and material is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner finish and material is highly accurate and complete, with only a tiny local imperfection.
+          9: The complete eyeliner finish and optical response exactly match the prompt.
+      requested_eyeliner_continuity_segmentation_doubleline_edge_match:
+        title: Requested continuity, segmentation, double-line, and edge behavior match
+        definition: Judge continuous versus intentionally segmented line, two parallel strokes, deliberate gaps, crisp versus
+          softly diffused edge, endpoint tapering, and line rhythm.
+        anchors:
+          0: the requested eyeliner continuity and edge topology is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested eyeliner continuity and edge topology is visible; the line is accidentally
+            broken, merged, over-smudged, or topologically wrong.
+          2: A small relevant attempt is present, but the requested eyeliner continuity and edge topology is severely incorrect
+            or incomplete.
+          3: the requested eyeliner continuity and edge topology is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested eyeliner continuity and edge topology is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested eyeliner continuity and edge topology is moderately achieved, with several substantial visible
+            problems.
+          6: the requested eyeliner continuity and edge topology is mostly correct, but one clear and important issue remains.
+          7: the requested eyeliner continuity and edge topology is clearly successful, with only a minor visible mismatch.
+          8: the requested eyeliner continuity and edge topology is highly accurate and complete, with only a tiny local imperfection.
+          9: Continuity, gaps, parallel strokes, sharpness or diffusion, and tapering are exact and controlled.
+      unrequested_eyeliner_properties_preserved:
+        title: Unrequested eyeliner properties are preserved
+        definition: Preserve eyeliner attributes not requested to change, including unrelated upper/lower regions, color,
+          thickness, tail, and finish.
+        anchors:
+          0: the preservation of unrequested eyeliner properties is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the preservation of unrequested eyeliner properties is visible; unrequested eyeliner
+            properties are extensively altered.
+          2: A small relevant attempt is present, but the preservation of unrequested eyeliner properties is severely incorrect
+            or incomplete.
+          3: the preservation of unrequested eyeliner properties is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the preservation of unrequested eyeliner properties is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of unrequested eyeliner properties is moderately achieved, with several substantial visible
+            problems.
+          6: the preservation of unrequested eyeliner properties is mostly correct, but one clear and important issue remains.
+          7: the preservation of unrequested eyeliner properties is clearly successful, with only a minor visible mismatch.
+          8: the preservation of unrequested eyeliner properties is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested eyeliner attributes remain source-consistent.
+  Localization and Anatomical Integration:
+    Lash-line Localization and Integration:
+      eyeliner_edit_localized_to_lashline:
+        title: The eyeliner edit is localized to the requested lash-line region
+        definition: Keep pigment within the requested upper/lower lash line, inner/outer corner, and narrow diffusion zones.
+        anchors:
+          0: eyeliner localization to the lash-line region is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner localization to the lash-line region is visible; large eyelid or facial regions
+            are contaminated.
+          2: A small relevant attempt is present, but eyeliner localization to the lash-line region is severely incorrect
+            or incomplete.
+          3: eyeliner localization to the lash-line region is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: eyeliner localization to the lash-line region is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eyeliner localization to the lash-line region is moderately achieved, with several substantial visible problems.
+          6: eyeliner localization to the lash-line region is mostly correct, but one clear and important issue remains.
+          7: eyeliner localization to the lash-line region is clearly successful, with only a minor visible mismatch.
+          8: eyeliner localization to the lash-line region is highly accurate and complete, with only a tiny local imperfection.
+          9: The eyeliner is precisely confined to all requested lash-line regions with no spill.
+      eyeliner_lashroot_corner_attachment_natural:
+        title: Lash-root and corner attachment are natural
+        definition: Judge contact with lash roots, inner and outer corners, no floating bands, gaps, sclera coverage, or detached
+          wings.
+        anchors:
+          0: eyeliner attachment to lash roots and corners is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner attachment to lash roots and corners is visible; the liner floats, detaches,
+            or crosses the eye surface.
+          2: A small relevant attempt is present, but eyeliner attachment to lash roots and corners is severely incorrect
+            or incomplete.
+          3: eyeliner attachment to lash roots and corners is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: eyeliner attachment to lash roots and corners is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eyeliner attachment to lash roots and corners is moderately achieved, with several substantial visible problems.
+          6: eyeliner attachment to lash roots and corners is mostly correct, but one clear and important issue remains.
+          7: eyeliner attachment to lash roots and corners is clearly successful, with only a minor visible mismatch.
+          8: eyeliner attachment to lash roots and corners is highly accurate and complete, with only a tiny local imperfection.
+          9: The liner is perfectly attached to lash roots and corners with natural continuity.
+      eyeliner_pose_aware_bilateral_correspondence:
+        title: Left-right eyeliner correspondence is correct for the pose
+        definition: Judge line height, thickness, wing angle, length, and perspective-aware balance across both eyes.
+        anchors:
+          0: pose-aware bilateral eyeliner correspondence is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of pose-aware bilateral eyeliner correspondence is visible; major unintended asymmetry
+            or perspective mismatch is present.
+          2: A small relevant attempt is present, but pose-aware bilateral eyeliner correspondence is severely incorrect or
+            incomplete.
+          3: pose-aware bilateral eyeliner correspondence is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: pose-aware bilateral eyeliner correspondence is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: pose-aware bilateral eyeliner correspondence is moderately achieved, with several substantial visible problems.
+          6: pose-aware bilateral eyeliner correspondence is mostly correct, but one clear and important issue remains.
+          7: pose-aware bilateral eyeliner correspondence is clearly successful, with only a minor visible mismatch.
+          8: pose-aware bilateral eyeliner correspondence is highly accurate and complete, with only a tiny local imperfection.
+          9: Both eyes match the requested design perfectly under the source pose and perspective.
+      eyeliner_skin_sclera_iris_boundary_clean:
+        title: Skin, sclera, iris, and tear-duct boundaries remain clean
+        definition: Judge leakage onto sclera, iris, tear duct, lower-eye skin, crease, or surrounding face, including halos
+          and jagged masks.
+        anchors:
+          0: eyeliner boundary cleanliness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner boundary cleanliness is visible; major leakage, halos, or masking errors
+            are visible.
+          2: A small relevant attempt is present, but eyeliner boundary cleanliness is severely incorrect or incomplete.
+          3: eyeliner boundary cleanliness is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: eyeliner boundary cleanliness is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: eyeliner boundary cleanliness is moderately achieved, with several substantial visible problems.
+          6: eyeliner boundary cleanliness is mostly correct, but one clear and important issue remains.
+          7: eyeliner boundary cleanliness is clearly successful, with only a minor visible mismatch.
+          8: eyeliner boundary cleanliness is highly accurate and complete, with only a tiny local imperfection.
+          9: All eyeliner boundaries are clean, controlled, and naturally integrated with skin and eye surfaces.
+  Subject Preservation:
+    Facial Identity and Eye Preservation:
+      eyeliner_facial_identity_landmark_consistency:
+        title: Facial identity and defining landmark geometry are preserved
+        definition: Compare the complete source and edited face as the same individual. Judge face outline, forehead, eye
+          spacing, brows, nose, cheeks, mouth, jaw, chin, age impression, gender presentation, skin tone, and characteristic
+          details. The eyeliner may change the eye-area style but must not create a different-person impression.
+        anchors:
+          0: The edited face is effectively a different person, severely distorted, or no longer identity-consistent with
+            the source.
+          1: Identity correspondence is extremely weak; multiple defining facial landmarks and the overall person impression
+            are replaced.
+          2: Major identity drift affects several defining regions such as face outline, eyes, nose, mouth, jaw, or feature
+            spacing.
+          3: Substantial facial-identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression at normal viewing
+            size.
+          5: The person remains recognizable, but multiple facial landmarks, proportions, age cues, or characteristic details
+            visibly drift.
+          6: The same person is mostly preserved, but one clear identity-affecting geometric or appearance change remains.
+          7: Identity preservation is strong, with only a minor visible drift in one facial landmark or characteristic detail.
+          8: The face is nearly source-identical outside the allowed target change, with only a tiny local discrepancy.
+          9: The same person's facial identity, landmark geometry, feature spacing, age impression, and characteristic details
+            are source-identical apart from the requested eyeliner pigment and line geometry.
+      eyeliner_eye_anatomy_gaze_lashes_brows_face_preserved:
+        title: Eye anatomy, gaze, expression, lashes, brows, and adjacent face are preserved
+        definition: Preserve eye aperture, eyelid folds, canthi, iris, pupil, sclera, gaze, blink state, expression, eyelashes,
+          mascara, eyeshadow, eyebrows, under-eye anatomy, nose bridge, cheeks, and nearby skin. A lifted or downturned line
+          must remain a makeup effect rather than anatomical eye-corner movement.
+        anchors:
+          0: eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details is severely changed, replaced,
+            or unusable.
+          1: Most of eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details is clearly inconsistent
+            with the source.
+          2: Several major changes substantially alter eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent
+            facial details.
+          3: One major or multiple obvious changes affect eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent
+            facial details.
+          4: eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details remains recognizable but
+            contains a clear important mismatch.
+          5: eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details is only moderately preserved,
+            with several visible differences.
+          6: Most of eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details is preserved, but
+            one clear difference remains.
+          7: eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details is strongly preserved, with
+            only a minor discrepancy.
+          8: eye anatomy, gaze, expression, lashes, brows, eyeshadow, and adjacent facial details is nearly source-identical,
+            with only a tiny local discrepancy.
+          9: Eye anatomy, gaze, expression, lashes, brows, eyeshadow, and all adjacent non-target facial details remain source-consistent.
+  Task Realism and Image Quality:
+    Eyeliner Rendering:
+      eyeliner_pigment_deposition_material_realistic:
+        title: Eyeliner pigment deposition and material are realistic
+        definition: Judge product opacity, pigment density, matte/satin/dewy/shimmer material, and natural interaction with
+          skin and lash roots.
+        anchors:
+          0: eyeliner pigment and material realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner pigment and material realism is visible; the eyeliner looks painted, plastic,
+            or detached.
+          2: A small relevant attempt is present, but eyeliner pigment and material realism is severely incorrect or incomplete.
+          3: eyeliner pigment and material realism is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: eyeliner pigment and material realism is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: eyeliner pigment and material realism is moderately achieved, with several substantial visible problems.
+          6: eyeliner pigment and material realism is mostly correct, but one clear and important issue remains.
+          7: eyeliner pigment and material realism is clearly successful, with only a minor visible mismatch.
+          8: eyeliner pigment and material realism is highly accurate and complete, with only a tiny local imperfection.
+          9: Pigment deposition and material behavior are fully photorealistic and product-consistent.
+      eyeliner_edge_sharpness_controlled_diffusion:
+        title: Edge sharpness or controlled diffusion is realistic
+        definition: Judge crisp edges, sharp points, soft tails, narrow smoky diffusion, and non-destructive local blending
+          according to the style.
+        anchors:
+          0: eyeliner edge and diffusion realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner edge and diffusion realism is visible; edges are jagged, blurred, or unintentionally
+            smeared.
+          2: A small relevant attempt is present, but eyeliner edge and diffusion realism is severely incorrect or incomplete.
+          3: eyeliner edge and diffusion realism is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: eyeliner edge and diffusion realism is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: eyeliner edge and diffusion realism is moderately achieved, with several substantial visible problems.
+          6: eyeliner edge and diffusion realism is mostly correct, but one clear and important issue remains.
+          7: eyeliner edge and diffusion realism is clearly successful, with only a minor visible mismatch.
+          8: eyeliner edge and diffusion realism is highly accurate and complete, with only a tiny local imperfection.
+          9: Edges and diffusion are perfectly controlled and realistic for the requested style.
+      eyeliner_lighting_skin_texture_integration:
+        title: Lighting and skin texture integrate naturally
+        definition: Judge pores, eyelid texture, local highlights, shadows, shimmer response, and source-consistent illumination
+          without smoothing.
+        anchors:
+          0: eyeliner lighting and skin-texture integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner lighting and skin-texture integration is visible; skin texture or lighting
+            is visibly inconsistent.
+          2: A small relevant attempt is present, but eyeliner lighting and skin-texture integration is severely incorrect
+            or incomplete.
+          3: eyeliner lighting and skin-texture integration is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: eyeliner lighting and skin-texture integration is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: eyeliner lighting and skin-texture integration is moderately achieved, with several substantial visible problems.
+          6: eyeliner lighting and skin-texture integration is mostly correct, but one clear and important issue remains.
+          7: eyeliner lighting and skin-texture integration is clearly successful, with only a minor visible mismatch.
+          8: eyeliner lighting and skin-texture integration is highly accurate and complete, with only a tiny local imperfection.
+          9: Skin detail and eyeliner lighting are fully natural and source-consistent.
+      eyeliner_artifact_no_jagged_breaks_blur:
+        title: Artifacts, jagged breaks, blur, and duplicated contours are controlled
+        definition: Judge accidental gaps, double contours, pixel stair-steps, melted lashes, noisy shimmer, blur, posterization,
+          and resolution loss.
+        anchors:
+          0: eyeliner artifact control and sharpness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of eyeliner artifact control and sharpness is visible; strong jaggedness, blur, or generation
+            artifacts dominate.
+          2: A small relevant attempt is present, but eyeliner artifact control and sharpness is severely incorrect or incomplete.
+          3: eyeliner artifact control and sharpness is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: eyeliner artifact control and sharpness is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: eyeliner artifact control and sharpness is moderately achieved, with several substantial visible problems.
+          6: eyeliner artifact control and sharpness is mostly correct, but one clear and important issue remains.
+          7: eyeliner artifact control and sharpness is clearly successful, with only a minor visible mismatch.
+          8: eyeliner artifact control and sharpness is highly accurate and complete, with only a tiny local imperfection.
+          9: The eyeliner is sharply resolved, structurally clean, and artifact-free.
+identity_preservation_protocol:
+  purpose: Prevent successful target editing from hiding facial-identity drift. Identity is judged by source-to-result correspondence,
+    not by whether the edited face is attractive or realistic.
+  comparison_checklist:
+  - overall face outline and width/length relationship
+  - forehead and hair-independent face contour
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position and natural geometry
+  - cheek, jaw, and chin structure
+  - age impression and gender presentation
+  - skin tone, stable characteristic marks, and facial texture
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase an identity score because the target edit is attractive or instruction-compliant.
+  - Do not treat a photorealistic but different-looking face as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - The task target region may be excluded only where explicitly necessary; unrelated facial landmarks remain fully constrained.
+  - Identity, expression, and adjacent-face scores are independent of clothing and background preservation.
+  task_specific_exception: requested eyeliner pigment and line geometry only

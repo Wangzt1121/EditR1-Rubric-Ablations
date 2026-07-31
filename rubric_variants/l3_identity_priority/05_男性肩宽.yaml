@@ -1,0 +1,869 @@
+task_key: male_shoulder_width_edit
+task_title: Male Shoulder Width Editing
+task_title_zh: 男性肩宽编辑
+version: v35_fixed_22_l3_male_shoulder_width_identity_bg_antilazy_flash_integer_0to9_l3_identity_priority
+target_region: male shoulders, shoulder line, deltoid caps, upper trapezius, clavicular region, sleeve caps, shoulder seams,
+  and minimum adjacent upper-arm transitions
+target_action_summary: Widen the male subject’s shoulders with the requested line profile, shape, height, and mass while preserving
+  pose, scale, framing, and non-target body regions.
+design_principle:
+  summary: Exactly 22 non-redundant L3 facets are used. Closely related requirements are merged inside one facet instead of
+    being repeatedly expanded. The judge returns exactly 22 integers from 0 to 9 in active_l3 order.
+  constraints:
+  - Exactly 22 active L3 facets; never add a twenty-third facet.
+  - Taxonomy hierarchy is fixed as L1 -> L2 -> L3.
+  - The judge returns exactly 22 integers in active_l3 order.
+  - No decimal L3 scores, N/A values, or per-facet evidence in the training path.
+  - Use only the rubric-defined failure_propagation score ceilings; do not add extra rank bonuses or external image metrics.
+  - Related details must be merged into one L3 rather than scored repeatedly.
+  - Clothing, background, camera angle, and other easy preservation checks are never split into many L3 facets.
+  - Public floating-point values use at most three decimal places.
+  - Facial identity must remain one dedicated, high-impact L3 facet rather than being diluted across easy preservation checks.
+  - Subject Preservation contributes 44% of the final reward; successful instruction execution cannot compensate for identity
+    drift, anatomical drift, pose drift, background color shift, global white-balance drift, or non-target image changes.
+evaluation_notes:
+- First infer the exact requested edit family, then judge every candidate against that exact family rather than generic plausibility.
+- A realistic but wrong edit must score low. For this task, shoulder widening is not arm bulking; straight-square shoulders
+  are not general torso enlargement; shoulder narrowing is not slimming the face or changing pose.
+- If the primary requested edit family is replaced by another family, the most relevant Prompt Compliance facets should normally
+  be 0-3 even when the result is photorealistic.
+- If the family is related but the subtype, direction, strength, target region, or component details are wrong, the relevant
+  Prompt Compliance facets should normally be 4-5.
+- Do not interpret accidental blur, smoothing, warping, recoloring, or masking as an intentional high-quality edit.
+- Judge symmetry and proportion relative to head/body pose rather than raw mirror symmetry.
+- Do not achieve wider shoulders by scaling or repositioning the whole person.
+- Flat, sloped, square, rounded, thin, thick, and high describe different shoulder properties and must not be conflated.
+- Minimum adjacent garment changes required for anatomical coherence are allowed.
+- Cuffs, shoes, background, and individual non-target objects are not separate L3 facets.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 facet by comparing the source image, prompt, and
+    edited image.
+  anti_saturation: Do not default plausible results to 7 or 8. Scores 0-3 indicate major failure; 4-5 indicate partial or
+    mediocre satisfaction; 6 indicates mostly correct with one clear issue; 7 indicates strong but visibly imperfect; 8 indicates
+    nearly exact; 9 requires essentially complete satisfaction and concrete visual evidence.
+  no_cross_compensation: Do not increase one facet because another facet is good. Prompt compliance, realism, beauty, color,
+    smoothness, or clean rendering cannot compensate for wrong target region, wrong direction, changed identity, or non-target
+    drift.
+  output_order_rule: Return scores in exactly the same order as active_l3.
+  identity_rule: Evaluate the edited face against the source as the same individual. A plausible or attractive face is not
+    sufficient. Visible drift in landmark geometry, feature spacing, face outline, age impression, gender presentation, or
+    characteristic details must lower the identity score.
+  identity_no_compensation_rule: Do not raise identity-related scores because prompt compliance, realism, clothing preservation,
+    or background preservation is strong.
+  task_family_disambiguation_rule: Treat task subtypes as distinct unless the prompt explicitly allows alternatives. shoulder
+    widening, shoulder narrowing, straight-square shoulder shaping, clavicle/shoulder-line adjustment, deltoid-width enhancement,
+    torso-proportion balancing, or shoulder-width reduction/removal must not substitute for each other when the prompt specifies
+    one.
+  high_score_evidence_check_rule: Before assigning any 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason for that exact
+    L3 facet and verify it against the facet name. If the evidence is weak, belongs to another facet, or any visible defect
+    remains, lower the score. Do not output the reasoning.
+  background_color_preservation_rule: Background hue, saturation, brightness, contrast, white balance, and lighting mood must
+    remain source-consistent. A correct target edit cannot compensate for visible background recoloring, global color cast,
+    exposure drift, or contrast changes.
+  anti_template_rule: Do not output all 7s or mostly 7s as a template. Use the full 0-9 scale and assign lower scores to the
+    concrete facets affected by each visible defect.
+  failure_propagation:
+    instruction: |-
+      Apply these constraints after initial evidence-based scoring and before returning the final score vector.
+      First detect each task-specific failure, estimate severity from 0 to 5, then cap every affected L3 with cap_by_severity.
+      The final score for every affected L3 must be min(raw_score, severity_cap). Unaffected L3 may keep their raw evidence score.
+      This mechanism follows the same success-gate / failure-propagation logic used by the stricter later rubrics, so preservation,
+      photorealism, clean rendering, or background stability cannot compensate for a missing or wrong primary edit.
+      Do not reveal the propagation reasoning; return only the final adjusted score vector in active_l3 order.
+      Dual success gate: a candidate is high-reward only when both conditions hold: the requested target edit is visibly
+      and correctly executed, and all non-target/source-state regions remain source-consistent. Preservation cannot compensate
+      for missing instruction following, and instruction following cannot compensate for identity, expression, pose, scene,
+      color, lighting, background, clothing, or other non-target drift.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, unrelated, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_wrong_direction_or_too_weak:
+        detect_when: |-
+          The requested Male Shoulder Width Editing is absent, barely visible, reversed in direction, or mostly indistinguishable from the source.
+          The candidate may look realistic or preserve the source well, but it does not visibly perform the requested action:
+          Widen the male subject’s shoulders with the requested line profile, shape, height, and mass while preserving
+        severity_guidance: |-
+          If the effect is tiny but correct, severity may be 1. If it is clearly too weak or only partially visible, use severity 2.
+          If the target region is mostly unchanged, use severity at least 3. If the requested edit is absent, reversed, unrelated,
+          or impossible to assess, use severity 4-5.
+          Preservation-only success is not enough: if the image is clean and source-preserving but the requested target edit is
+          absent or mostly unchanged, keep severity at least 3. If the requested operation is absent/reversed/unrelated, use
+          severity 4-5 even when identity, background, and photorealism are excellent.
+        affected_l3:
+          - requested_shoulder_widening_direction_match
+          - requested_shoulder_width_strength_match
+          - requested_left_right_lateral_span_match
+          - requested_shoulder_line_profile_match
+          - requested_shoulder_height_match
+          - requested_outer_shoulder_shape_match
+          - requested_shoulder_mass_thickness_match
+          - requested_deltoid_trapezius_distribution_match
+          - requested_upper_body_silhouette_balance_match
+          - requested_shoulder_local_edit_scope_match
+          - requested_pose_scale_distance_preservation_match
+          - unrequested_shoulder_properties_preserved
+          - shoulder_neck_clavicle_continuity
+          - shoulder_arm_armpit_continuity
+          - shoulder_garment_sleeve_seam_integration
+          - shoulder_pose_aware_bilateral_balance
+          - shoulder_facial_identity_landmark_consistency
+          - shoulder_pose_body_framing_non_target_preserved
+          - shoulder_anatomy_mass_volume_realistic
+          - shoulder_silhouette_background_stable
+          - shoulder_lighting_shadow_texture_consistent
+          - shoulder_artifact_sharpness_no_warp
+      wrong_operation_or_substitute_edit:
+        detect_when: |-
+          The result substitutes another edit family or generic beautification for the requested Male Shoulder Width Editing. This includes changing a
+          related but non-requested attribute, using a global filter, shifting pose/crop/camera, or producing an attractive but
+          semantically wrong edit instead of the requested operation on male shoulders, shoulder line, deltoid caps, upper trapezius, clavicular region, sleeve caps, shoulder seams,.
+        severity_guidance: |-
+          Related but visibly wrong substitute edits should be severity at least 2. If the substitute is the dominant visible
+          change, use severity 3-4. If it changes identity, pose, scene, or makes the requested edit absent, use severity 4-5.
+        affected_l3:
+          - requested_shoulder_widening_direction_match
+          - requested_shoulder_width_strength_match
+          - requested_left_right_lateral_span_match
+          - requested_shoulder_line_profile_match
+          - requested_shoulder_height_match
+          - requested_outer_shoulder_shape_match
+          - requested_shoulder_mass_thickness_match
+          - requested_deltoid_trapezius_distribution_match
+          - requested_upper_body_silhouette_balance_match
+          - requested_shoulder_local_edit_scope_match
+          - requested_pose_scale_distance_preservation_match
+          - unrequested_shoulder_properties_preserved
+          - shoulder_neck_clavicle_continuity
+          - shoulder_arm_armpit_continuity
+          - shoulder_garment_sleeve_seam_integration
+          - shoulder_pose_aware_bilateral_balance
+          - shoulder_facial_identity_landmark_consistency
+          - shoulder_pose_body_framing_non_target_preserved
+          - shoulder_artifact_sharpness_no_warp
+      overdone_or_anatomically_implausible_edit:
+        detect_when: |-
+          The target edit is excessive, unnatural, anatomically or materially implausible, changes the intended source character,
+          or pushes the requested effect beyond the prompt so that it looks artificial rather than source-consistent.
+        severity_guidance: |-
+          Mild over-strength may be severity 1. Clear over-editing, unnatural geometry/material, or obvious imbalance should be
+          severity 2-3. Severe deformation, plastic appearance, or unusable target structure should be severity 4-5.
+        affected_l3:
+          - requested_shoulder_width_strength_match
+          - requested_left_right_lateral_span_match
+          - requested_shoulder_line_profile_match
+          - requested_shoulder_height_match
+          - requested_outer_shoulder_shape_match
+          - requested_shoulder_mass_thickness_match
+          - requested_deltoid_trapezius_distribution_match
+          - requested_upper_body_silhouette_balance_match
+          - requested_shoulder_local_edit_scope_match
+          - requested_pose_scale_distance_preservation_match
+          - unrequested_shoulder_properties_preserved
+          - shoulder_neck_clavicle_continuity
+          - shoulder_arm_armpit_continuity
+          - shoulder_garment_sleeve_seam_integration
+          - shoulder_pose_aware_bilateral_balance
+          - shoulder_anatomy_mass_volume_realistic
+          - shoulder_silhouette_background_stable
+          - shoulder_lighting_shadow_texture_consistent
+          - shoulder_artifact_sharpness_no_warp
+      localization_boundary_or_integration_failure:
+        detect_when: |-
+          The edit spills outside the intended target area, misses important parts of male shoulders, shoulder line, deltoid caps, upper trapezius, clavicular region, sleeve caps, shoulder seams,, damages adjacent structures,
+          breaks occlusion/contact boundaries, or fails to blend with source lighting, texture, perspective, or depth.
+        severity_guidance: |-
+          Small boundary or blending issues may be severity 1. Clear spillover, missed target subregion, broken contact, or local
+          integration failure should be severity 2-3. Large wrong-region edits or severe boundary damage should be severity 4-5.
+        affected_l3:
+          - requested_left_right_lateral_span_match
+          - requested_shoulder_line_profile_match
+          - requested_shoulder_height_match
+          - requested_outer_shoulder_shape_match
+          - requested_shoulder_mass_thickness_match
+          - requested_deltoid_trapezius_distribution_match
+          - requested_upper_body_silhouette_balance_match
+          - requested_shoulder_local_edit_scope_match
+          - requested_pose_scale_distance_preservation_match
+          - unrequested_shoulder_properties_preserved
+          - shoulder_neck_clavicle_continuity
+          - shoulder_arm_armpit_continuity
+          - shoulder_garment_sleeve_seam_integration
+          - shoulder_pose_aware_bilateral_balance
+          - shoulder_anatomy_mass_volume_realistic
+          - shoulder_silhouette_background_stable
+          - shoulder_lighting_shadow_texture_consistent
+          - shoulder_artifact_sharpness_no_warp
+      identity_expression_pose_scene_or_non_target_drift:
+        detect_when: |-
+          The candidate changes identity, expression, gaze, pose, face/body geometry, non-target attributes, clothing, accessories,
+          background, camera/framing, global color, exposure, saturation, white balance, or any source-state element not requested
+          by the prompt.
+        severity_guidance: |-
+          Minor non-target drift may be severity 1. Clear identity, expression, pose, lighting, background, or scene drift should
+          be severity at least 2. Changed-person impression, broad source-state change, or camera/pose substitution should be
+          severity 3-5.
+          Instruction-only success is not enough: if the target edit is correct but any non-target/source-state region visibly
+          changes, keep severity at least 2. If the candidate changes identity, expression, pose, camera/framing, background,
+          clothing, global color/lighting, or broad non-target geometry, use severity 3-5 even when prompt compliance is strong.
+        affected_l3:
+          - requested_shoulder_widening_direction_match
+          - requested_shoulder_width_strength_match
+          - requested_left_right_lateral_span_match
+          - requested_shoulder_line_profile_match
+          - requested_shoulder_height_match
+          - requested_outer_shoulder_shape_match
+          - requested_shoulder_mass_thickness_match
+          - requested_deltoid_trapezius_distribution_match
+          - requested_upper_body_silhouette_balance_match
+          - requested_shoulder_local_edit_scope_match
+          - requested_pose_scale_distance_preservation_match
+          - unrequested_shoulder_properties_preserved
+          - shoulder_neck_clavicle_continuity
+          - shoulder_arm_armpit_continuity
+          - shoulder_garment_sleeve_seam_integration
+          - shoulder_pose_aware_bilateral_balance
+          - shoulder_facial_identity_landmark_consistency
+          - shoulder_pose_body_framing_non_target_preserved
+          - shoulder_anatomy_mass_volume_realistic
+          - shoulder_silhouette_background_stable
+          - shoulder_lighting_shadow_texture_consistent
+          - shoulder_artifact_sharpness_no_warp
+      artifact_texture_blur_or_rendering_failure:
+        detect_when: |-
+          The result contains visible blur, waxy smoothing, jagged or painted edges, mask seams, duplicated structures, warped
+          geometry, broken texture, inconsistent material response, lighting mismatch, shadow/color integration errors, or other
+          rendering artifacts that make the edit unreliable for reward training.
+        severity_guidance: |-
+          Tiny local artifacts may be severity 1. Clear blur, texture loss, boundary artifacts, or lighting/material mismatch
+          should be severity 2-3. Severe artifacts, broken anatomy/material, or unusable image quality should be severity 4-5.
+        affected_l3:
+          - shoulder_neck_clavicle_continuity
+          - shoulder_arm_armpit_continuity
+          - shoulder_garment_sleeve_seam_integration
+          - shoulder_pose_aware_bilateral_balance
+          - shoulder_anatomy_mass_volume_realistic
+          - shoulder_silhouette_background_stable
+          - shoulder_lighting_shadow_texture_consistent
+          - shoulder_artifact_sharpness_no_warp
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  input_set:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  output_values:
+  - 0.0
+  - 0.111
+  - 0.222
+  - 0.333
+  - 0.444
+  - 0.556
+  - 0.667
+  - 0.778
+  - 0.889
+  - 1.0
+  rounding: Keep full precision internally and round public values to at most 3 decimal places.
+active_l3:
+- requested_shoulder_widening_direction_match
+- requested_shoulder_width_strength_match
+- requested_left_right_lateral_span_match
+- requested_shoulder_line_profile_match
+- requested_shoulder_height_match
+- requested_outer_shoulder_shape_match
+- requested_shoulder_mass_thickness_match
+- requested_deltoid_trapezius_distribution_match
+- requested_upper_body_silhouette_balance_match
+- requested_shoulder_local_edit_scope_match
+- requested_pose_scale_distance_preservation_match
+- unrequested_shoulder_properties_preserved
+- shoulder_neck_clavicle_continuity
+- shoulder_arm_armpit_continuity
+- shoulder_garment_sleeve_seam_integration
+- shoulder_pose_aware_bilateral_balance
+- shoulder_facial_identity_landmark_consistency
+- shoulder_pose_body_framing_non_target_preserved
+- shoulder_anatomy_mass_volume_realistic
+- shoulder_silhouette_background_stable
+- shoulder_lighting_shadow_texture_consistent
+- shoulder_artifact_sharpness_no_warp
+compact_output_contract:
+  format:
+    scores:
+    - 22 integers in active_l3 order
+  schema_summary: scores is an array with exactly 22 integer items, each in [0,9].
+  example:
+    scores:
+    - 8
+    - 7
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 7
+    - 7
+    - 8
+    - 8
+    - 8
+    - 9
+    - 7
+    - 8
+    - 8
+    - 9
+    - 9
+    - 8
+    - 7
+    - 8
+    - 8
+l1_weights:
+  Prompt Compliance: 0.40
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.44
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    requested_shoulder_widening_direction_match: 0.14
+    requested_shoulder_width_strength_match: 0.13
+    requested_left_right_lateral_span_match: 0.09
+    requested_shoulder_line_profile_match: 0.09
+    requested_shoulder_height_match: 0.06
+    requested_outer_shoulder_shape_match: 0.09
+    requested_shoulder_mass_thickness_match: 0.09
+    requested_deltoid_trapezius_distribution_match: 0.07
+    requested_upper_body_silhouette_balance_match: 0.07
+    requested_shoulder_local_edit_scope_match: 0.07
+    requested_pose_scale_distance_preservation_match: 0.06
+    unrequested_shoulder_properties_preserved: 0.04
+  Localization and Anatomical Integration:
+    shoulder_neck_clavicle_continuity: 0.26
+    shoulder_arm_armpit_continuity: 0.25
+    shoulder_garment_sleeve_seam_integration: 0.29
+    shoulder_pose_aware_bilateral_balance: 0.2
+  Subject Preservation:
+    shoulder_facial_identity_landmark_consistency: 0.62
+    shoulder_pose_body_framing_non_target_preserved: 0.38
+  Task Realism and Image Quality:
+    shoulder_anatomy_mass_volume_realistic: 0.29
+    shoulder_silhouette_background_stable: 0.25
+    shoulder_lighting_shadow_texture_consistent: 0.25
+    shoulder_artifact_sharpness_no_warp: 0.21
+aggregation:
+  within_l1: weighted_arithmetic_mean_of_normalized_l3
+  final: weighted_arithmetic_mean_of_l1
+  formula: reward = sum_k(alpha_k * sum_i(w_ki * (score_i / 9.0)))
+  training_reward_range:
+  - 0.0
+  - 1.0
+  display_score_0_to_9: 9.0 * reward
+  rounding: Use full precision internally, then round returned values to at most 3 decimal places.
+taxonomy:
+  Prompt Compliance:
+    Width, Profile, and Shape:
+      requested_shoulder_widening_direction_match:
+        title: Requested shoulder widening direction match
+        definition: Judge whether the shoulders actually become wider through local outward shoulder expansion rather than
+          narrowing, whole-person scaling, or torso inflation.
+        anchors:
+          0: the requested shoulder widening direction is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested shoulder widening direction is visible; the shoulders are not widened
+            or the wrong body change is used.
+          2: A small relevant attempt is present, but the requested shoulder widening direction is severely incorrect or incomplete.
+          3: the requested shoulder widening direction is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested shoulder widening direction is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested shoulder widening direction is moderately achieved, with several substantial visible problems.
+          6: the requested shoulder widening direction is mostly correct, but one clear and important issue remains.
+          7: the requested shoulder widening direction is clearly successful, with only a minor visible mismatch.
+          8: the requested shoulder widening direction is highly accurate and complete, with only a tiny local imperfection.
+          9: Both shoulders are widened in the correct direction through a precise local edit.
+      requested_shoulder_width_strength_match:
+        title: Requested shoulder-width strength match
+        definition: Judge visible amount for wider, much wider, substantially wider, dramatically wider, or generic broad-shoulder
+          requests.
+        anchors:
+          0: the requested shoulder-width strength is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested shoulder-width strength is visible; the change is barely visible, insufficient,
+            or excessive.
+          2: A small relevant attempt is present, but the requested shoulder-width strength is severely incorrect or incomplete.
+          3: the requested shoulder-width strength is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested shoulder-width strength is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested shoulder-width strength is moderately achieved, with several substantial visible problems.
+          6: the requested shoulder-width strength is mostly correct, but one clear and important issue remains.
+          7: the requested shoulder-width strength is clearly successful, with only a minor visible mismatch.
+          8: the requested shoulder-width strength is highly accurate and complete, with only a tiny local imperfection.
+          9: The final shoulder span exactly matches the requested widening strength.
+      requested_left_right_lateral_span_match:
+        title: Requested left-right lateral span match
+        definition: Judge outward extension on both sides, total shoulder-to-shoulder span, distribution between left and
+          right shoulders, and no one-sided substitution.
+        anchors:
+          0: the requested bilateral lateral shoulder span is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested bilateral lateral shoulder span is visible; shoulder expansion is strongly
+            uneven or incomplete.
+          2: A small relevant attempt is present, but the requested bilateral lateral shoulder span is severely incorrect
+            or incomplete.
+          3: the requested bilateral lateral shoulder span is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested bilateral lateral shoulder span is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested bilateral lateral shoulder span is moderately achieved, with several substantial visible problems.
+          6: the requested bilateral lateral shoulder span is mostly correct, but one clear and important issue remains.
+          7: the requested bilateral lateral shoulder span is clearly successful, with only a minor visible mismatch.
+          8: the requested bilateral lateral shoulder span is highly accurate and complete, with only a tiny local imperfection.
+          9: Left and right lateral extension exactly produce the requested total span.
+      requested_shoulder_line_profile_match:
+        title: Requested shoulder-line profile match
+        definition: Judge flat/level/horizontal or sloped/descending shoulder line, including continuity from neck to outer
+          shoulders.
+        anchors:
+          0: the requested shoulder-line profile is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested shoulder-line profile is visible; the shoulder-line profile is opposite
+            or substantially wrong.
+          2: A small relevant attempt is present, but the requested shoulder-line profile is severely incorrect or incomplete.
+          3: the requested shoulder-line profile is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested shoulder-line profile is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested shoulder-line profile is moderately achieved, with several substantial visible problems.
+          6: the requested shoulder-line profile is mostly correct, but one clear and important issue remains.
+          7: the requested shoulder-line profile is clearly successful, with only a minor visible mismatch.
+          8: the requested shoulder-line profile is highly accurate and complete, with only a tiny local imperfection.
+          9: The exact requested flat or sloped shoulder-line profile is fully realized.
+      requested_shoulder_height_match:
+        title: Requested shoulder height and vertical placement match
+        definition: Judge high-set, elevated, raised, relaxed, or preserved shoulder height without creating an unintended
+          shrug or neck shortening.
+        anchors:
+          0: the requested shoulder height and vertical placement is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested shoulder height and vertical placement is visible; shoulders are vertically
+            misplaced or pose is changed.
+          2: A small relevant attempt is present, but the requested shoulder height and vertical placement is severely incorrect
+            or incomplete.
+          3: the requested shoulder height and vertical placement is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the requested shoulder height and vertical placement is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the requested shoulder height and vertical placement is moderately achieved, with several substantial visible
+            problems.
+          6: the requested shoulder height and vertical placement is mostly correct, but one clear and important issue remains.
+          7: the requested shoulder height and vertical placement is clearly successful, with only a minor visible mismatch.
+          8: the requested shoulder height and vertical placement is highly accurate and complete, with only a tiny local
+            imperfection.
+          9: Shoulder height exactly matches the prompt while preserving pose and neck anatomy.
+      requested_outer_shoulder_shape_match:
+        title: Requested outer shoulder shape match
+        definition: Judge square/angular/boxy corners versus rounded/curved/full deltoid caps and the exact outer silhouette.
+        anchors:
+          0: the requested outer shoulder geometry is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested outer shoulder geometry is visible; the defining outer shoulder shape
+            is mostly wrong.
+          2: A small relevant attempt is present, but the requested outer shoulder geometry is severely incorrect or incomplete.
+          3: the requested outer shoulder geometry is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: the requested outer shoulder geometry is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: the requested outer shoulder geometry is moderately achieved, with several substantial visible problems.
+          6: the requested outer shoulder geometry is mostly correct, but one clear and important issue remains.
+          7: the requested outer shoulder geometry is clearly successful, with only a minor visible mismatch.
+          8: the requested outer shoulder geometry is highly accurate and complete, with only a tiny local imperfection.
+          9: Outer shoulder corners and caps exactly match the requested square or rounded form.
+    Mass, Distribution, and Scope:
+      requested_shoulder_mass_thickness_match:
+        title: Requested shoulder mass and thickness match
+        definition: Judge thin/slim/lean/non-bulky versus thick/dense/heavy/muscular/full shoulder depth and visible mass.
+        anchors:
+          0: the requested shoulder mass and thickness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested shoulder mass and thickness is visible; shoulder mass is strongly too
+            thin, bulky, or distributed incorrectly.
+          2: A small relevant attempt is present, but the requested shoulder mass and thickness is severely incorrect or incomplete.
+          3: the requested shoulder mass and thickness is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested shoulder mass and thickness is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested shoulder mass and thickness is moderately achieved, with several substantial visible problems.
+          6: the requested shoulder mass and thickness is mostly correct, but one clear and important issue remains.
+          7: the requested shoulder mass and thickness is clearly successful, with only a minor visible mismatch.
+          8: the requested shoulder mass and thickness is highly accurate and complete, with only a tiny local imperfection.
+          9: Shoulder depth, bulk, and thickness exactly match the requested lean or powerful profile.
+      requested_deltoid_trapezius_distribution_match:
+        title: Requested deltoid and trapezius distribution match
+        definition: Judge whether added or preserved volume is allocated naturally between deltoid caps, upper trapezius,
+          clavicular area, and shoulder girdle.
+        anchors:
+          0: the requested shoulder-muscle distribution is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested shoulder-muscle distribution is visible; volume is concentrated in anatomically
+            wrong regions.
+          2: A small relevant attempt is present, but the requested shoulder-muscle distribution is severely incorrect or
+            incomplete.
+          3: the requested shoulder-muscle distribution is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested shoulder-muscle distribution is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested shoulder-muscle distribution is moderately achieved, with several substantial visible problems.
+          6: the requested shoulder-muscle distribution is mostly correct, but one clear and important issue remains.
+          7: the requested shoulder-muscle distribution is clearly successful, with only a minor visible mismatch.
+          8: the requested shoulder-muscle distribution is highly accurate and complete, with only a tiny local imperfection.
+          9: Deltoid, trapezius, and upper-shoulder volume are distributed exactly as requested.
+      requested_upper_body_silhouette_balance_match:
+        title: Requested upper-body silhouette balance match
+        definition: Judge shoulder-to-neck, shoulder-to-torso, and shoulder-to-arm visual balance while preserving non-target
+          chest, waist, and body scale.
+        anchors:
+          0: the requested upper-body silhouette balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested upper-body silhouette balance is visible; the silhouette is unbalanced
+            or achieved by inflating the torso.
+          2: A small relevant attempt is present, but the requested upper-body silhouette balance is severely incorrect or
+            incomplete.
+          3: the requested upper-body silhouette balance is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested upper-body silhouette balance is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested upper-body silhouette balance is moderately achieved, with several substantial visible problems.
+          6: the requested upper-body silhouette balance is mostly correct, but one clear and important issue remains.
+          7: the requested upper-body silhouette balance is clearly successful, with only a minor visible mismatch.
+          8: the requested upper-body silhouette balance is highly accurate and complete, with only a tiny local imperfection.
+          9: The widened shoulders form exactly the intended silhouette without unintended torso enlargement.
+      requested_shoulder_local_edit_scope_match:
+        title: Requested local-only shoulder edit scope match
+        definition: Judge whether only the shoulders and minimum adjacent sleeve/upper-arm transitions change, with no broad
+          body or scene modification.
+        anchors:
+          0: the requested local shoulder-edit scope is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested local shoulder-edit scope is visible; the edit broadly alters non-target
+            body regions.
+          2: A small relevant attempt is present, but the requested local shoulder-edit scope is severely incorrect or incomplete.
+          3: the requested local shoulder-edit scope is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: the requested local shoulder-edit scope is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested local shoulder-edit scope is moderately achieved, with several substantial visible problems.
+          6: the requested local shoulder-edit scope is mostly correct, but one clear and important issue remains.
+          7: the requested local shoulder-edit scope is clearly successful, with only a minor visible mismatch.
+          8: the requested local shoulder-edit scope is highly accurate and complete, with only a tiny local imperfection.
+          9: The transformation is confined exactly to the shoulder region and required transition zones.
+      requested_pose_scale_distance_preservation_match:
+        title: Requested pose, scale, framing, and image-distance preservation match
+        definition: Judge body pose, subject scale, crop, position, stance, and specified distances such as shoes-to-bottom-edge
+          without splitting them into multiple facets.
+        anchors:
+          0: the requested global geometry preservation is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the requested global geometry preservation is visible; global body or image geometry
+            is substantially changed.
+          2: A small relevant attempt is present, but the requested global geometry preservation is severely incorrect or
+            incomplete.
+          3: the requested global geometry preservation is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: the requested global geometry preservation is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: the requested global geometry preservation is moderately achieved, with several substantial visible problems.
+          6: the requested global geometry preservation is mostly correct, but one clear and important issue remains.
+          7: the requested global geometry preservation is clearly successful, with only a minor visible mismatch.
+          8: the requested global geometry preservation is highly accurate and complete, with only a tiny local imperfection.
+          9: Pose, subject scale, framing, placement, and all specified distances remain exactly source-consistent.
+      unrequested_shoulder_properties_preserved:
+        title: Unrequested shoulder properties are preserved
+        definition: Preserve shoulder slope, height, corner shape, mass, clothing style, and other shoulder attributes not
+          requested to change, except unavoidable consequences of widening.
+        anchors:
+          0: the preservation of unrequested shoulder properties is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of the preservation of unrequested shoulder properties is visible; unrequested shoulder
+            characteristics are extensively altered.
+          2: A small relevant attempt is present, but the preservation of unrequested shoulder properties is severely incorrect
+            or incomplete.
+          3: the preservation of unrequested shoulder properties is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: the preservation of unrequested shoulder properties is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: the preservation of unrequested shoulder properties is moderately achieved, with several substantial visible
+            problems.
+          6: the preservation of unrequested shoulder properties is mostly correct, but one clear and important issue remains.
+          7: the preservation of unrequested shoulder properties is clearly successful, with only a minor visible mismatch.
+          8: the preservation of unrequested shoulder properties is highly accurate and complete, with only a tiny local imperfection.
+          9: All unrequested shoulder attributes remain source-consistent.
+  Localization and Anatomical Integration:
+    Shoulder Anatomy and Garment Integration:
+      shoulder_neck_clavicle_continuity:
+        title: Shoulder, neck, trapezius, and clavicle continuity are natural
+        definition: Judge neck base, trapezius slope, clavicular region, and shoulder-girdle continuity after widening.
+        anchors:
+          0: shoulder-neck-clavicle anatomical continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder-neck-clavicle anatomical continuity is visible; major neck or shoulder-girdle
+            discontinuity is visible.
+          2: A small relevant attempt is present, but shoulder-neck-clavicle anatomical continuity is severely incorrect or
+            incomplete.
+          3: shoulder-neck-clavicle anatomical continuity is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: shoulder-neck-clavicle anatomical continuity is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: shoulder-neck-clavicle anatomical continuity is moderately achieved, with several substantial visible problems.
+          6: shoulder-neck-clavicle anatomical continuity is mostly correct, but one clear and important issue remains.
+          7: shoulder-neck-clavicle anatomical continuity is clearly successful, with only a minor visible mismatch.
+          8: shoulder-neck-clavicle anatomical continuity is highly accurate and complete, with only a tiny local imperfection.
+          9: Neck, trapezius, clavicle, and shoulders form one fully coherent anatomical structure.
+      shoulder_arm_armpit_continuity:
+        title: Shoulder, deltoid, upper arm, and armpit continuity are natural
+        definition: Judge deltoid cap, upper-arm attachment, armpit location, arm position, and no detached or stretched limbs.
+        anchors:
+          0: shoulder-arm-armpit anatomical continuity is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder-arm-armpit anatomical continuity is visible; arms or armpits are detached,
+            stretched, or misplaced.
+          2: A small relevant attempt is present, but shoulder-arm-armpit anatomical continuity is severely incorrect or incomplete.
+          3: shoulder-arm-armpit anatomical continuity is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: shoulder-arm-armpit anatomical continuity is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: shoulder-arm-armpit anatomical continuity is moderately achieved, with several substantial visible problems.
+          6: shoulder-arm-armpit anatomical continuity is mostly correct, but one clear and important issue remains.
+          7: shoulder-arm-armpit anatomical continuity is clearly successful, with only a minor visible mismatch.
+          8: shoulder-arm-armpit anatomical continuity is highly accurate and complete, with only a tiny local imperfection.
+          9: Both shoulders connect perfectly to upper arms and armpits with coherent anatomy.
+      shoulder_garment_sleeve_seam_integration:
+        title: Garment, sleeve-cap, seam, and fabric integration are natural
+        definition: Judge shoulder seams, sleeve caps, fabric tension, folds, patterns, and minimal garment adaptation; cuffs
+          are included here rather than separate facets.
+        anchors:
+          0: shoulder garment and sleeve integration is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder garment and sleeve integration is visible; garment structure is broken or
+            obviously stretched.
+          2: A small relevant attempt is present, but shoulder garment and sleeve integration is severely incorrect or incomplete.
+          3: shoulder garment and sleeve integration is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: shoulder garment and sleeve integration is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: shoulder garment and sleeve integration is moderately achieved, with several substantial visible problems.
+          6: shoulder garment and sleeve integration is mostly correct, but one clear and important issue remains.
+          7: shoulder garment and sleeve integration is clearly successful, with only a minor visible mismatch.
+          8: shoulder garment and sleeve integration is highly accurate and complete, with only a tiny local imperfection.
+          9: Seams, sleeve caps, folds, and fabric tension adapt perfectly to the new shoulders.
+      shoulder_pose_aware_bilateral_balance:
+        title: Shoulder balance is correct for pose and perspective
+        definition: Judge left-right width, height, line angle, arm perspective, and body rotation without demanding raw mirror
+          symmetry.
+        anchors:
+          0: pose-aware bilateral shoulder balance is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of pose-aware bilateral shoulder balance is visible; major unintended asymmetry or perspective
+            mismatch is present.
+          2: A small relevant attempt is present, but pose-aware bilateral shoulder balance is severely incorrect or incomplete.
+          3: pose-aware bilateral shoulder balance is weakly attempted; one or more primary requirements are missing or contradictory.
+          4: pose-aware bilateral shoulder balance is recognizable, but a major mismatch, omission, or excessive change remains.
+          5: pose-aware bilateral shoulder balance is moderately achieved, with several substantial visible problems.
+          6: pose-aware bilateral shoulder balance is mostly correct, but one clear and important issue remains.
+          7: pose-aware bilateral shoulder balance is clearly successful, with only a minor visible mismatch.
+          8: pose-aware bilateral shoulder balance is highly accurate and complete, with only a tiny local imperfection.
+          9: Both shoulders are perfectly balanced for the source pose and perspective.
+  Subject Preservation:
+    Facial Identity and Global Subject Preservation:
+      shoulder_facial_identity_landmark_consistency:
+        title: Facial identity and defining facial landmarks are preserved
+        definition: The shoulder edit must not regenerate or alter the face. Compare face outline, eyes, brows, nose, mouth,
+          jaw, chin, age impression, gender presentation, skin tone, expression, and characteristic details directly with
+          the source. Because the face is completely outside the target region, even moderate facial drift is a serious failure.
+        anchors:
+          0: The edited face is effectively a different person, severely distorted, or no longer identity-consistent with
+            the source.
+          1: Identity correspondence is extremely weak; multiple defining facial landmarks and the overall person impression
+            are replaced.
+          2: Major identity drift affects several defining regions such as face outline, eyes, nose, mouth, jaw, or feature
+            spacing.
+          3: Substantial facial-identity drift is visible; the person remains only loosely related to the source.
+          4: The same general subject is suggested, but the face gives a clear changed-person impression at normal viewing
+            size.
+          5: The person remains recognizable, but multiple facial landmarks, proportions, age cues, or characteristic details
+            visibly drift.
+          6: The same person is mostly preserved, but one clear identity-affecting geometric or appearance change remains.
+          7: Identity preservation is strong, with only a minor visible drift in one facial landmark or characteristic detail.
+          8: The face is nearly source-identical outside the allowed target change, with only a tiny local discrepancy.
+          9: The same person's facial identity, landmark geometry, feature spacing, age impression, and characteristic details
+            are source-identical with no target-region exception because the face is not part of shoulder editing.
+      shoulder_pose_body_framing_non_target_preserved:
+        title: Pose, body geometry, subject scale, framing, and non-target regions are preserved
+        definition: Preserve neck orientation, torso length, arm length, hand position, stance, legs, whole-body scale, subject
+          placement, crop, feet-to-bottom distance, distal sleeves, cuffs, and non-target scene geometry. Clothing and background
+          are combined here and in garment/background integration facets rather than split into easy items.
+        anchors:
+          0: pose, body geometry, subject scale, framing, and non-target regions is severely changed, replaced, or unusable.
+          1: Most of pose, body geometry, subject scale, framing, and non-target regions is clearly inconsistent with the
+            source.
+          2: Several major changes substantially alter pose, body geometry, subject scale, framing, and non-target regions.
+          3: One major or multiple obvious changes affect pose, body geometry, subject scale, framing, and non-target regions.
+          4: pose, body geometry, subject scale, framing, and non-target regions remains recognizable but contains a clear
+            important mismatch.
+          5: pose, body geometry, subject scale, framing, and non-target regions is only moderately preserved, with several
+            visible differences.
+          6: Most of pose, body geometry, subject scale, framing, and non-target regions is preserved, but one clear difference
+            remains.
+          7: pose, body geometry, subject scale, framing, and non-target regions is strongly preserved, with only a minor
+            discrepancy.
+          8: pose, body geometry, subject scale, framing, and non-target regions is nearly source-identical, with only a tiny
+            local discrepancy.
+          9: Pose, body geometry, subject scale, framing, all distances, and non-target regions remain source-consistent.
+  Task Realism and Image Quality:
+    Shoulder Rendering:
+      shoulder_anatomy_mass_volume_realistic:
+        title: Shoulder anatomy, mass, and volume are realistic
+        definition: Judge deltoid/trapezius form, volume, depth, gravity, and plausible shoulder proportions under the requested
+          design.
+        anchors:
+          0: shoulder anatomical mass and volume realism is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder anatomical mass and volume realism is visible; shoulders look inflated, flat,
+            detached, or anatomically impossible.
+          2: A small relevant attempt is present, but shoulder anatomical mass and volume realism is severely incorrect or
+            incomplete.
+          3: shoulder anatomical mass and volume realism is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: shoulder anatomical mass and volume realism is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: shoulder anatomical mass and volume realism is moderately achieved, with several substantial visible problems.
+          6: shoulder anatomical mass and volume realism is mostly correct, but one clear and important issue remains.
+          7: shoulder anatomical mass and volume realism is clearly successful, with only a minor visible mismatch.
+          8: shoulder anatomical mass and volume realism is highly accurate and complete, with only a tiny local imperfection.
+          9: Shoulder volume and anatomy are fully plausible and photorealistic.
+      shoulder_silhouette_background_stable:
+        title: Shoulder silhouette and nearby background remain stable
+        definition: Judge clean outer contour, no background bending, duplicate edges, halo, cut-and-paste boundary, or unstable
+          silhouette.
+        anchors:
+          0: shoulder silhouette and background stability is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder silhouette and background stability is visible; warping, halos, or broken
+            silhouette dominate.
+          2: A small relevant attempt is present, but shoulder silhouette and background stability is severely incorrect or
+            incomplete.
+          3: shoulder silhouette and background stability is weakly attempted; one or more primary requirements are missing
+            or contradictory.
+          4: shoulder silhouette and background stability is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: shoulder silhouette and background stability is moderately achieved, with several substantial visible problems.
+          6: shoulder silhouette and background stability is mostly correct, but one clear and important issue remains.
+          7: shoulder silhouette and background stability is clearly successful, with only a minor visible mismatch.
+          8: shoulder silhouette and background stability is highly accurate and complete, with only a tiny local imperfection.
+          9: The shoulder silhouette is clean and the adjacent background remains perfectly stable.
+      shoulder_lighting_shadow_texture_consistent:
+        title: Lighting, shadows, clothing texture, and fabric direction are consistent
+        definition: Judge source illumination, self-shadow, fabric texture, pattern continuity, and folds supporting the new
+          shoulder form.
+        anchors:
+          0: shoulder lighting, shadow, and texture consistency is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder lighting, shadow, and texture consistency is visible; lighting or texture
+            contradicts the new form.
+          2: A small relevant attempt is present, but shoulder lighting, shadow, and texture consistency is severely incorrect
+            or incomplete.
+          3: shoulder lighting, shadow, and texture consistency is weakly attempted; one or more primary requirements are
+            missing or contradictory.
+          4: shoulder lighting, shadow, and texture consistency is recognizable, but a major mismatch, omission, or excessive
+            change remains.
+          5: shoulder lighting, shadow, and texture consistency is moderately achieved, with several substantial visible problems.
+          6: shoulder lighting, shadow, and texture consistency is mostly correct, but one clear and important issue remains.
+          7: shoulder lighting, shadow, and texture consistency is clearly successful, with only a minor visible mismatch.
+          8: shoulder lighting, shadow, and texture consistency is highly accurate and complete, with only a tiny local imperfection.
+          9: Lighting, shadows, fabric texture, and folds fully support the edited shoulder geometry.
+      shoulder_artifact_sharpness_no_warp:
+        title: Artifacts, blur, texture stretching, and warping are controlled
+        definition: Judge melted anatomy, duplicated seams, stretched prints, blur, over-sharpening, blocky masks, and local
+          resolution loss.
+        anchors:
+          0: shoulder artifact control and sharpness is absent, reversed, unrelated, or unusable.
+          1: Only a negligible trace of shoulder artifact control and sharpness is visible; strong artifacts, blur, or texture
+            warping dominate.
+          2: A small relevant attempt is present, but shoulder artifact control and sharpness is severely incorrect or incomplete.
+          3: shoulder artifact control and sharpness is weakly attempted; one or more primary requirements are missing or
+            contradictory.
+          4: shoulder artifact control and sharpness is recognizable, but a major mismatch, omission, or excessive change
+            remains.
+          5: shoulder artifact control and sharpness is moderately achieved, with several substantial visible problems.
+          6: shoulder artifact control and sharpness is mostly correct, but one clear and important issue remains.
+          7: shoulder artifact control and sharpness is clearly successful, with only a minor visible mismatch.
+          8: shoulder artifact control and sharpness is highly accurate and complete, with only a tiny local imperfection.
+          9: The shoulder edit is sharply resolved, artifact-free, and contains no meaningful warping.
+identity_preservation_protocol:
+  purpose: Prevent successful target editing from hiding facial-identity drift. Identity is judged by source-to-result correspondence,
+    not by whether the edited face is attractive or realistic.
+  comparison_checklist:
+  - overall face outline and width/length relationship
+  - forehead and hair-independent face contour
+  - eyebrow position and shape
+  - eye shape, spacing, aperture, and characteristic asymmetry
+  - nose geometry and placement
+  - mouth position and natural geometry
+  - cheek, jaw, and chin structure
+  - age impression and gender presentation
+  - skin tone, stable characteristic marks, and facial texture
+  - overall same-person impression at normal viewing size
+  strict_rules:
+  - Do not increase an identity score because the target edit is attractive or instruction-compliant.
+  - Do not treat a photorealistic but different-looking face as identity-preserved.
+  - A score of 7 still requires a strong same-person match with only minor drift.
+  - A changed-person impression must score 4 or below on the dedicated identity facet.
+  - The task target region may be excluded only where explicitly necessary; unrelated facial landmarks remain fully constrained.
+  - Identity, expression, and adjacent-face scores are independent of clothing and background preservation.
+  task_specific_exception: none
+judge_role: You are a strict expert evaluator specializing in male shoulder-width and upper-body proportion editing. Judge
+  the edited image against the exact requested edit family, direction, target region, strength, component details, preservation
+  constraints, and realism, not against generic attractiveness or plausibility.
+judge_instructions: |-
+  - First infer the exact requested edit family from the prompt, such as shoulder widening, shoulder narrowing, straight-square shoulder shaping, clavicle/shoulder-line adjustment, deltoid-width enhancement, torso-proportion balancing, or shoulder-width reduction/removal.
+
+  - Treat these edit families, directions, target subregions, intensity levels, and component requirements as mutually distinct unless the prompt explicitly allows alternatives. A realistic substitute edit must receive low Prompt Compliance scores.
+
+  - Do not let photorealism, attractiveness, smooth rendering, or clean color compensate for the wrong edit family, wrong direction, wrong target region, wrong strength, missing requested component, extra unrequested operation, or changed identity.
+
+  - Target regions for this task include shoulders, clavicles, trapezius, deltoids, upper arms, torso width, clothing seams, sleeve boundaries, and neck-to-shoulder transition. Judge the requested target area and the preservation of all non-target regions independently.
+
+  - Common non-equivalent substitutions: shoulder widening is not arm bulking; straight-square shoulders are not general torso enlargement; shoulder narrowing is not slimming the face or changing pose. These should be penalized even if the image looks plausible.
+
+  - For shoulder-width edits, explicitly check shoulder span, left/right balance under pose, clavicle/neck transition, sleeve deformation, and whether the torso or arms were unintentionally changed.
+
+  - A strong-looking body with wrong shoulder geometry or changed pose must not receive high Prompt Compliance scores.
+
+  - Preserve the source person's identity, face/body proportions not requested to change, expression when not targeted, skin texture, hair, clothing, accessories, background color, global white balance, lighting contrast, saturation, and all non-target regions independently from target edit quality.
+
+  - Before assigning scores, inspect the candidate for concrete visible errors: wrong edit family, wrong direction, wrong region, weak or excessive strength, missing detail, extra unrequested operation, identity drift, face/body/pose change, background color or lighting shift, blur, smoothing, warping, duplicated structures, mask-like edges, or texture loss.
+
+  - Before assigning any score of 7, 8, or 9, privately identify concrete visual evidence and a task-specific reason that supports that high score, then cross-check the evidence against the exact active L3 facet name and the prompt. If the evidence is weak, generic, belongs to a different facet, or any visible defect remains, cap this facet at 6. Do not output the reasoning; output only the JSON score vector.
+
+  - Do not use 7 as a default safe score. A score of 7 requires clear visual evidence that the facet is strong with only a minor flaw.
+
+  - If you are uncertain between two scores, choose the lower score.
+
+  - If any visible defect exists on a facet, that facet must not be scored above 6.
+
+  - If the requested edit family, direction, or primary component is wrong, all related Prompt Compliance facets should normally be 0-5.
+
+  - If the result is realistic but the requested edit family, direction, target region, or strength is wrong, do not score Prompt Compliance above 5.
+
+  - If background color, white balance, saturation, brightness, or contrast changes visibly, non-target preservation should be 0-6.
+
+  - If the face identity, body identity, expression, anatomy, pose, or adjacent non-target structure changes visibly beyond the request, Subject Preservation should be 0-6.
+
+  - Use the full 0-9 scale. Avoid assigning the same score to many facets unless the visual evidence truly supports it.
+
+  - Do not output a flat score vector such as all 7s or mostly 7s unless every facet is genuinely strong and all checked preservation constraints are satisfied.
+
+  - Score calibration: 9 is essentially perfect and rare; 8 is near-perfect with only a tiny local issue; 7 is strong but visibly imperfect; 6 is mostly correct with one clear issue; 5 is partially correct with several visible issues; 4 is a recognizable attempt with a major mismatch; 3 is a weak attempt with a primary requirement wrong; 2 is a small relevant trace but severely wrong; 1 is negligible trace; 0 is absent, reversed, unrelated, or unusable.

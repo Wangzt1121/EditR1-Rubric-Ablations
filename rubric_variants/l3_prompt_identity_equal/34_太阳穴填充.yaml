@@ -1,0 +1,702 @@
+task_key: temple_hollow_filling
+task_title: Bilateral Temple Filling
+task_title_zh: 太阳穴填充
+version: v49_fixed_integer_22_l3_temple_hollow_filling_human_preference_gate_l3_pi_equal
+language: English
+training_prompt_profile:
+  total_prompts_reviewed: 118
+  unique_prompt_templates: 11
+  template_distribution:
+    strict_localized_template: 18
+    beauty_intensity_templates: 100
+    frequency_per_beauty_template: 10
+  target_function: face_plumping
+  fine_control: fill_temples
+  recurring_requirements:
+  - add volume to both temple hollow areas
+  - reduce visible temple hollowing
+  - smooth the transition between forehead, outer eye region, and cheekbones
+  - keep the result visible, natural, photorealistic, and cleanly blended
+  - preserve identity, expression, gaze, facial features, hairline, hairstyle, skin texture, and lighting
+  - preserve clothing, background, camera angle, and every non-temple region
+  data_note: All prompts request bilateral temple filling. No prompt requests forehead widening, cheek plumping, cheekbone
+    reshaping, hairline movement, or full-face fattening.
+target_region: The bilateral temporal hollow regions between the lateral forehead, brow tail and outer orbital area, upper
+  cheekbone, preauricular boundary, and hairline. Only the soft-tissue hollows and the minimum pixels needed for seamless
+  transition may change.
+target_action_summary: Add controlled soft-tissue volume to both temple hollows, reducing concavity and creating a smoother
+  forehead-to-temple-to-cheekbone contour. Preserve the hairline, forehead center, outer eye anatomy, brows, cheekbones, ears,
+  jawline, facial identity, skin texture, lighting, head pose, and all non-target content.
+task_boundary:
+  allowed:
+  - localized filling of bilateral temple hollows
+  - minimum contour and shadow reconstruction required by the added volume
+  - perspective-aware left-right differences caused by head rotation or natural asymmetry
+  - minimal skin and hair-boundary blending at the temporal edge
+  not_equivalent_tasks:
+  - widening the forehead, skull, or entire upper face
+  - moving or reshaping the hairline
+  - plumping the cheeks or enlarging the cheekbones
+  - lifting the brow tail or changing the outer eye shape
+  - globally fattening, smoothing, relighting, or reshaping the face
+design_principle:
+  summary: Use exactly 22 fixed L3 scores. Separate temple-filling compliance, anatomical transitions, preservation, and image
+    quality. A smoother face must not score highly when produced by broad forehead widening, cheek enlargement, hairline movement,
+    plastic smoothing, or global warping.
+  constraints:
+  - Exactly 22 L3 facets and exactly 22 integer scores.
+  - Taxonomy hierarchy must be L1 -> L2 -> L3.
+  - Every score must be an integer from 0 to 9; no N/A values.
+  - Return all 22 scores in active_l3 order.
+  - Compare source image, prompt, and edited image directly.
+  - Judge only visible and assessable temple anatomy.
+  - Do not reward broad face widening, forehead reshaping, cheek plumping, or hairline movement.
+  - Use perspective-aware balance rather than forced mirror symmetry.
+  - One severe localization, anatomy, identity, or hairline error must not be averaged away.
+  - Use YAML failure_propagation severity caps as rubric-level scoring instructions; do not rely on external metrics, rank
+    bonuses, or hidden program-side deductions.
+prompt_precheck:
+  enabled: true
+  actions:
+    wrong_task: skip_sample_and_log_wrong_task
+    missing_concrete_target: skip_sample_and_log_underspecified_prompt
+    irreconcilable_conflict: skip_sample_and_log_prompt_conflict
+    target_not_assessable: skip_sample_and_log_invisible_target
+  minimum_valid_target: The prompt must request filling, plumping, or reducing hollowing in one or both temple regions.
+  wrong_task_examples:
+  - widen the forehead or entire face
+  - reshape or lower the hairline
+  - plump the cheeks or enlarge cheekbones
+  - lift the brows or change eye shape
+  - globally smooth or recolor the skin
+  conflict_examples:
+  - fill and deepen the same temple hollows
+  - preserve exact temple volume while requiring visible filling
+  - modify only one side while explicitly requiring both sides
+  visibility_failures:
+  - both temple regions are outside the frame or fully hidden by hair
+  - resolution is insufficient to identify temple contours and adjacent landmarks
+  - extreme pose or obstruction prevents reliable assessment of temple volume
+  partial_visibility_rule: Score only assessable visible temple evidence. Do not penalize a fully occluded side, but penalize
+    missed or inconsistent visible target regions.
+anatomy_interpretation:
+  rules:
+  - Fill the temporal soft-tissue hollow rather than changing skull width or forehead shape.
+  - Added volume must taper into the lateral forehead, brow tail, outer orbital area, cheekbone, and preauricular boundary.
+  - Preserve the visible hairline position and hair-root geometry.
+  - Preserve cheekbone projection, eye position, brow position, ear shape, and jaw contour.
+  - Avoid convex lumps, filler bulges, edema, temple overexpansion, or a boxy upper face.
+  - Natural asymmetry may remain when supported by source anatomy and perspective.
+  - Local highlights and shadows must be reconstructed to reflect the new soft-tissue curvature.
+global_scoring_policy:
+  score_type: integer
+  allowed_scores:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  instruction: Assign exactly one integer from 0 to 9 to every active L3 by comparing source, prompt, and edited image; then
+    apply task-specific failure_propagation caps before returning the final score_vector.
+  anti_saturation: 0-3 major failure; 4-5 partial or mediocre; 6 mostly correct with one clear issue; 7 strong with concrete
+    facet-specific evidence but visibly imperfect; 8 nearly exact; 9 complete and exact. Never use 7 as a neutral default.
+  no_cross_compensation: Good skin texture or an attractive face cannot compensate for unchanged hollows, overfilled temples,
+    widened forehead, moved hairline, altered cheekbones, or identity drift.
+  temple_filling_disambiguation_rule: Correct temple filling targets concave temporal hollows only. Cheek/forehead inflation,
+    head widening, hairline movement, eye/brow reshaping, face slimming, lighting change, and beauty filtering are substitute
+    operations.
+  human_preference_alignment: Score the edited image as an image-editing result, not as an independently attractive portrait.
+    A good sample is one where the requested localized temple-hollow filling is visibly achieved and the source person remains
+    the same. A clean but unchanged face, a generic beautified face, or a globally widened/plumped face is a negative or weak
+    sample even if it looks smooth.
+  positive_negative_sample_rule: Positive samples show clear localized reduction of bilateral temple concavity, natural fullness,
+    stable hairline/eyes/brows/cheekbones/identity, and no global face-width or beauty-filter substitute. Negative samples include
+    near no-op outputs, cheek/forehead plumping, whole-head or upper-face widening, hairline/eye/brow movement, skin-smoothing
+    beautification, overfilled swollen temples, and source-state drift.
+  score_6_7_eligibility_rule: Core temple-filling facets may reach 6 only with visible target-region improvement, and may reach
+    7 or above only with clear localized temple hollow reduction on assessable sides. A face that merely looks better, smoother,
+    wider, brighter, or more symmetrical without visible temple-hollow filling should keep core task facets at 0-5.
+  failure_propagation:
+    instruction: Apply these constraints after initial evidence-based scoring and before returning the final score_vector.
+      For every detected failure, estimate severity 0-5 and cap each affected L3 with min(raw_score, cap_by_severity[severity]).
+      Include detected failure names and severity in failure_tags when possible.
+    severity_scale:
+      0: failure absent
+      1: minor visible issue
+      2: clear failure
+      3: major failure
+      4: severe failure
+      5: primary requirement absent, reversed, or unusable
+    cap_by_severity:
+      0: 9
+      1: 7
+      2: 5
+      3: 4
+      4: 3
+      5: 1
+    failures:
+      target_absent_or_too_weak:
+        detect_when: Temple hollows remain mostly concave, the edited image is near-identical in the temple region, bilateral
+          filling is absent/too weak, or normal-view improvement is not visible. A cleaner or prettier face does not count
+          unless the temple hollows themselves visibly change.
+        severity_guidance: Tiny but visible temple-hollow reduction is severity 1-2. Correct but weak/partial fill should
+          be severity 2. Mostly unchanged temple hollows must be severity 3. No visible target change, reversed change, or
+          unassessable target change must be severity 4-5.
+        affected_l3:
+        - temple_fill_primary_outcome_match
+        - temple_fill_hollow_reduction_match
+        - temple_fill_fullness_magnitude_match
+        - temple_fill_volume_placement_distribution_match
+        - temple_fill_bilateral_completeness_balance_match
+        - temple_fill_normal_view_visibility_match
+        - temple_fill_requested_finish_match
+        - temple_fill_edit_localized_to_temporal_hollows
+        - temple_fill_overfill_head_width_control_match
+        - temple_fill_forehead_hairline_transition_quality
+        - temple_fill_edge_blending_artifact_stability
+      wrong_region_or_substitute_face_head_widening:
+        detect_when: The improvement comes from cheek/forehead inflation, whole-head/face widening, hairline shift, eye/brow
+          reshaping, skin smoothing, lighting/shadow change, crop/pose change, or generic beauty retouching rather than temple-hollow
+          filling.
+        severity_guidance: Minor non-temple volume drift with real temple fill may be severity 1-2. If wrong-region/global
+          widening is the main visible improvement, severity 3-4. If it changes identity, hairline, camera, or face shape
+          substantially, severity 4-5.
+        affected_l3:
+        - temple_fill_primary_outcome_match
+        - temple_fill_volume_placement_distribution_match
+        - temple_fill_overfill_head_width_control_match
+        - temple_fill_edit_localized_to_temporal_hollows
+        - temple_fill_forehead_hairline_transition_quality
+        - temple_fill_outer_eye_brow_tail_transition_quality
+        - temple_fill_cheekbone_preauricular_transition_quality
+        - temple_fill_identity_face_shape_preservation
+        - temple_fill_hair_clothing_scene_camera_preservation
+        - temple_fill_hollow_reduction_match
+        - temple_fill_fullness_magnitude_match
+        - temple_fill_bilateral_completeness_balance_match
+        - temple_fill_normal_view_visibility_match
+        - temple_fill_requested_finish_match
+        - temple_fill_eyes_gaze_brows_lashes_preservation
+        - temple_fill_forehead_cheekbone_jaw_ear_preservation
+        - temple_fill_expression_head_pose_preservation
+        - temple_fill_edge_blending_artifact_stability
+      overfilled_swollen_or_upper_face_width_changed:
+        detect_when: Temples become swollen, bulging, puffy, over-wide, boxy, asymmetric, filler-like, or incompatible with
+          the source upper-face width, even if the hollow is less visible.
+        severity_guidance: Clear overfill/swelling must be at least severity 2. Filler-like deformity, severe asymmetry, or
+          changed head width must be severity 3-5.
+        affected_l3:
+        - temple_fill_fullness_magnitude_match
+        - temple_fill_volume_placement_distribution_match
+        - temple_fill_bilateral_completeness_balance_match
+        - temple_fill_overfill_head_width_control_match
+        - temple_fill_temporal_curvature_perspective_consistency
+        - temple_fill_identity_face_shape_preservation
+        - temple_fill_edge_blending_artifact_stability
+        - temple_fill_primary_outcome_match
+        - temple_fill_hollow_reduction_match
+        - temple_fill_normal_view_visibility_match
+        - temple_fill_requested_finish_match
+        - temple_fill_edit_localized_to_temporal_hollows
+        - temple_fill_forehead_hairline_transition_quality
+        - temple_fill_outer_eye_brow_tail_transition_quality
+        - temple_fill_cheekbone_preauricular_transition_quality
+        - temple_fill_skin_hair_occlusion_integration
+        - temple_fill_skin_surface_detail_realism
+        - temple_fill_local_lighting_shadow_color_consistency
+      temporal_anatomy_transition_or_perspective_broken:
+        detect_when: Forehead-hairline, outer-eye/brow-tail, cheekbone/preauricular, temporal curvature, perspective, or occlusion
+          relation becomes dented, warped, smeared, haloed, or anatomically implausible.
+        severity_guidance: Clear anatomy/transition defect must be at least severity 2. Broken eye/brow/hairline/cheekbone
+          relation or impossible curvature must be severity 3-5.
+        affected_l3:
+        - temple_fill_forehead_hairline_transition_quality
+        - temple_fill_outer_eye_brow_tail_transition_quality
+        - temple_fill_cheekbone_preauricular_transition_quality
+        - temple_fill_temporal_curvature_perspective_consistency
+        - temple_fill_skin_hair_occlusion_integration
+        - temple_fill_local_lighting_shadow_color_consistency
+        - temple_fill_edge_blending_artifact_stability
+        - temple_fill_primary_outcome_match
+        - temple_fill_hollow_reduction_match
+        - temple_fill_fullness_magnitude_match
+        - temple_fill_volume_placement_distribution_match
+        - temple_fill_bilateral_completeness_balance_match
+        - temple_fill_overfill_head_width_control_match
+        - temple_fill_normal_view_visibility_match
+        - temple_fill_requested_finish_match
+        - temple_fill_edit_localized_to_temporal_hollows
+        - temple_fill_identity_face_shape_preservation
+        - temple_fill_skin_surface_detail_realism
+      identity_eye_brow_hairline_or_source_state_drift:
+        detect_when: Identity, face shape outside temples, eyes, gaze, brows, lashes, hairline, forehead, cheekbones, jaw/ears,
+          expression, head pose, lighting, clothing, background, or camera state changes beyond the fill.
+        severity_guidance: Minor local skin/hair boundary drift may be severity 1. Clear eye/brow/hairline/forehead/cheekbone/lighting
+          drift should be severity 2-3. Identity, expression, head pose, camera/framing, or broad source-state change must
+          be severity 4-5.
+        affected_l3:
+        - temple_fill_identity_face_shape_preservation
+        - temple_fill_eyes_gaze_brows_lashes_preservation
+        - temple_fill_forehead_cheekbone_jaw_ear_preservation
+        - temple_fill_expression_head_pose_preservation
+        - temple_fill_hair_clothing_scene_camera_preservation
+        - temple_fill_skin_surface_detail_realism
+        - temple_fill_local_lighting_shadow_color_consistency
+        - temple_fill_edge_blending_artifact_stability
+        - temple_fill_primary_outcome_match
+        - temple_fill_edit_localized_to_temporal_hollows
+  high_score_evidence_check_rule: Before assigning 7, 8, or 9, identify concrete visual evidence for that exact L3 and check
+    success_gate_conditions. For the eight Prompt Compliance facets, 7+ requires visible localized temple-hollow improvement,
+    not just a nicer face. If any task-specific failure affects that L3, apply the severity cap first; if evidence is generic,
+    ambiguous, or borrowed from another facet, choose the lower score.
+  anti_template_rule: >-
+    Do not output all 7s, mostly 7s, all 8-9s, all 9s, or a copied score pattern. A vector of all 7s or 14+ scores equal
+    to 7 is presumptively a failed template response: re-audit target visibility, wrong-region substitute edits, and source
+    preservation, then lower every facet without exact evidence. Also avoid a mechanical many-1s/many-9s split unless the
+    visual evidence truly supports both extremes. Scores should reflect facet-level differences.
+  task_disambiguation_rule: Temple filling means localized reduction of temporal hollow concavity. It is not cheek/forehead
+    inflation, whole-face/head widening, hairline shift, lighting/shadow trick, crop/pose change, or generic beauty retouching.
+  no_compensation_rule: If temple hollow filling is absent, preservation/background/photorealism must not raise edit-dependent
+    facets. If the result relies on wrong-region volume, global face/head widening, hairline/eye/brow drift, or source-state
+    change, a fuller-looking upper face must not raise source-preserving temple-fill facets.
+  mandatory_failure_propagation_rule: Before outputting final score_vector, detect failures in global_scoring_policy.failure_propagation,
+    estimate severity 0-5, apply cap_by_severity to affected_l3, and output the adjusted vector. Severity 5 is reserved for
+    completely absent, reversed, unusable, or clearly source-breaking target editing.
+  no_high_score_example_rule: Do not use positive examples, ideal score vectors, or high-score templates. Scores 8-9 are allowed
+    only when the exact L3 facet has concrete visible evidence and no applicable failure cap; no fixed high-score vector is
+    provided to imitate.
+  success_gate_definition: A positive sample fills bilateral temple hollows with controlled soft-tissue volume, smoothing
+    forehead-temple-cheekbone transitions while preserving hairline, eyes/brows, cheekbones, identity, skin, pose, and scene.
+  success_gate_conditions:
+  - Temple concavity is visibly reduced on assessable sides with natural fullness and improved temporal curvature.
+  - Volume is placed in temple hollows, not cheeks, forehead center, whole head/face width, hairline, or lighting.
+  - Hairline, outer eyes, brow tails, cheekbones, ears, jawline, expression, head pose, and identity remain source-consistent.
+  - Forehead-hairline, outer-eye/brow-tail, cheekbone/preauricular transitions and skin/hair occlusions are anatomically coherent.
+  - No overfilled, swollen, puffy, asymmetric, filler-like, or globally widened upper face is visible.
+  success_gate_usage_rule: The success gate is only an eligibility check for scores 7-9. It is not a positive example and
+    does not imply automatic high scores. If any condition is uncertain, contradicted, missing, or replaced by a substitute
+    edit, choose the lower score and apply failure_propagation.
+  score_7_9_eligibility_rule: A facet may receive 7, 8, or 9 only when the visual evidence for that exact L3 is strong, source-preserving,
+    and not contradicted by any detected failure affecting that facet. For core temple-filling facets, if the result is near-identical,
+    only cosmetically beautified, or improved by non-temple widening, the score must stay at 0-5 even when the image looks clean.
+  primary_failure_preservation_ceiling_rule: When the primary requested edit is absent, wrong-direction, mostly unchanged,
+    or mainly a substitute operation, apply failure_propagation before assigning preservation/quality highs. Unchanged non-target
+    regions may receive moderate preservation scores, but failed editing must not become high reward through unrelated 8-9
+    scores.
+  anti_extreme_split_rule: Avoid mechanical split vectors such as many affected core facets at 1 and many unaffected facets
+    at 9. Use 2-4 for weak/partial/mostly unchanged or wrong-substitute attempts, 5-6 for mixed recognizable attempts, and
+    reserve 0-1 or 8-9 for truly extreme visual evidence.
+normalization:
+  formula: normalized_l3_i = integer_l3_i / 9.0
+  training_reward_range:
+  - 0.0
+  - 1.0
+  rounding: Keep full precision internally; public values use at most 3 decimals.
+active_l3:
+- temple_fill_primary_outcome_match
+- temple_fill_hollow_reduction_match
+- temple_fill_fullness_magnitude_match
+- temple_fill_volume_placement_distribution_match
+- temple_fill_bilateral_completeness_balance_match
+- temple_fill_overfill_head_width_control_match
+- temple_fill_normal_view_visibility_match
+- temple_fill_requested_finish_match
+- temple_fill_edit_localized_to_temporal_hollows
+- temple_fill_forehead_hairline_transition_quality
+- temple_fill_outer_eye_brow_tail_transition_quality
+- temple_fill_cheekbone_preauricular_transition_quality
+- temple_fill_temporal_curvature_perspective_consistency
+- temple_fill_skin_hair_occlusion_integration
+- temple_fill_identity_face_shape_preservation
+- temple_fill_eyes_gaze_brows_lashes_preservation
+- temple_fill_forehead_cheekbone_jaw_ear_preservation
+- temple_fill_expression_head_pose_preservation
+- temple_fill_hair_clothing_scene_camera_preservation
+- temple_fill_skin_surface_detail_realism
+- temple_fill_local_lighting_shadow_color_consistency
+- temple_fill_edge_blending_artifact_stability
+compact_output_contract:
+  format:
+    scores: array of exactly 22 integers in active_l3 order
+  requirements:
+  - minItems = 22
+  - maxItems = 22
+  - minimum score = 0
+  - maximum score = 9
+  - Do not output names, evidence, explanations, summaries, or failure tags in the training path.
+  no_example_reason: Fixed example vectors are intentionally omitted to avoid template copying and high-score saturation.
+l1_weights:
+  Prompt Compliance: 0.42
+  Localization and Anatomical Integration: 0.11
+  Subject Preservation: 0.42
+  Task Realism and Image Quality: 0.05
+facet_weights_within_l1:
+  Prompt Compliance:
+    temple_fill_primary_outcome_match: 0.2
+    temple_fill_hollow_reduction_match: 0.16
+    temple_fill_fullness_magnitude_match: 0.15
+    temple_fill_volume_placement_distribution_match: 0.14
+    temple_fill_bilateral_completeness_balance_match: 0.11
+    temple_fill_overfill_head_width_control_match: 0.11
+    temple_fill_normal_view_visibility_match: 0.07
+    temple_fill_requested_finish_match: 0.06
+  Localization and Anatomical Integration:
+    temple_fill_edit_localized_to_temporal_hollows: 0.21
+    temple_fill_forehead_hairline_transition_quality: 0.2
+    temple_fill_outer_eye_brow_tail_transition_quality: 0.18
+    temple_fill_cheekbone_preauricular_transition_quality: 0.17
+    temple_fill_temporal_curvature_perspective_consistency: 0.15
+    temple_fill_skin_hair_occlusion_integration: 0.09
+  Subject Preservation:
+    temple_fill_identity_face_shape_preservation: 0.27
+    temple_fill_eyes_gaze_brows_lashes_preservation: 0.21
+    temple_fill_forehead_cheekbone_jaw_ear_preservation: 0.2
+    temple_fill_expression_head_pose_preservation: 0.17
+    temple_fill_hair_clothing_scene_camera_preservation: 0.15
+  Task Realism and Image Quality:
+    temple_fill_skin_surface_detail_realism: 0.3
+    temple_fill_local_lighting_shadow_color_consistency: 0.3
+    temple_fill_edge_blending_artifact_stability: 0.4
+aggregation:
+  prompt_compliance: Weighted arithmetic mean over all 8 Prompt Compliance facets. All eight facets are applicable to every
+    valid prompt.
+  other_l1_blocks: Use the listed within-L1 weights for the remaining three blocks.
+  base_formula: base_reward = 0.60 * P + 0.25 * L + 0.11 * S + 0.04 * Q
+  anatomy_score: A = score(temple_fill_temporal_curvature_perspective_consistency) / 9.0
+  identity_score: I = score(temple_fill_identity_face_shape_preservation) / 9.0
+  final_formula: reward = base_reward * (A ** 0.24) * (I ** 0.18)
+taxonomy:
+  Prompt Compliance:
+    Requested Temple Filling:
+      temple_fill_primary_outcome_match:
+        title: Primary temple-filling outcome
+        definition: Whether both assessable temple hollows gain natural localized volume.
+        anchors:
+          0: No target edit, deeper hollowing, or a different task.
+          3: Tiny, uncertain, mostly unchanged, or inconsistent filling.
+          5: Visible partial temple filling with major incompleteness or one-side weakness.
+          7: Clear localized bilateral temple filling with one material issue; not a default score.
+          9: Temple filling is complete, visible, localized, natural, and source-preserving.
+        rubric: Whether both assessable temple hollows gain natural localized volume. Apply this facet's 0-9 anchors directly.
+          If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated preservation,
+          attractiveness, or realism compensate for this facet.
+      temple_fill_hollow_reduction_match:
+        title: Temple-hollow reduction
+        definition: Whether visible concavity is reduced without erasing normal temporal anatomy.
+        anchors:
+          0: Hollows remain unchanged, deepen, or become distorted.
+          3: Minimal, hard-to-see, or highly artificial hollow correction.
+          5: Partial reduction with clear residual concavity, unevenness, or mild overfill.
+          7: Effective visible hollow reduction with one minor issue and no substitute widening.
+          9: Hollowing is naturally and fully improved while normal temporal anatomy remains.
+        rubric: Whether visible concavity is reduced without erasing normal temporal anatomy. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_fullness_magnitude_match:
+        title: Fullness magnitude
+        definition: Whether the added volume is visible and prompt-appropriate without excess.
+        anchors:
+          0: No filling or destructive overexpansion.
+          3: Severely too weak, too strong, uneven, or barely visible.
+          5: Recognizable but clearly inaccurate magnitude.
+          7: Prompt-appropriate temple fullness with one minor issue and no swollen look.
+          9: Magnitude precisely matches the prompt and source anatomy.
+        rubric: Whether the added volume is visible and prompt-appropriate without excess. Apply this facet's 0-9 anchors
+          directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not let unrelated
+          preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_volume_placement_distribution_match:
+        title: Volume placement and distribution
+        definition: Whether volume occupies the true temporal hollows and tapers naturally around them.
+        anchors:
+          0: Volume is misplaced or forms an impossible lump.
+          3: Major concentration, wrong vertical level, cheek/forehead placement, or anatomical mismatch.
+          5: General temple filling exists with one clear distribution error.
+          7: Volume is naturally distributed inside the temple hollows with one minor issue.
+          9: Volume is precisely placed in the true temporal hollows and smoothly tapered.
+        rubric: Whether volume occupies the true temporal hollows and tapers naturally around them. Apply this facet's 0-9
+          anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do not
+          let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_bilateral_completeness_balance_match:
+        title: Bilateral completeness and balance
+        definition: Whether visible left and right temples are treated completely with perspective-aware balance.
+        anchors:
+          0: One visible side is missed or severe imbalance is introduced.
+          3: Major left-right mismatch, mostly one-sided change, or incomplete editing.
+          5: Both sides are attempted but visibly inconsistent or weak on one side.
+          7: Assessable sides are treated with perspective-aware balance and one minor difference.
+          9: All assessable temple regions are complete and naturally balanced.
+        rubric: Whether visible left and right temples are treated completely with perspective-aware balance. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_overfill_head_width_control_match:
+        title: Overfill and upper-face width control
+        definition: Whether filling avoids bulging temples, widened forehead, boxy skull, or swollen upper-face appearance.
+        anchors:
+          0: Severe overfill or broad upper-face deformation.
+          3: Major temple bulge, forehead widening, or filler-like swelling.
+          5: Target filling exists but noticeable overexpansion remains.
+          7: Well controlled with one minor contour excess and no visible head-width drift.
+          9: Fullness is localized with no overfill, puffy filler effect, or head-width drift.
+        rubric: Whether filling avoids bulging temples, widened forehead, boxy skull, or swollen upper-face appearance. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_normal_view_visibility_match:
+        title: Normal-view improvement visibility
+        definition: Whether the smoother temporal contour is noticeable at ordinary portrait viewing size.
+        anchors:
+          0: No visible improvement or severe overfilling dominates.
+          3: Improvement is difficult to see, mostly unchanged, or highly distracting.
+          5: Visible but clearly incomplete, weak, or artificial.
+          7: Clear normal-view temple-contour improvement with one minor issue.
+          9: The temple-hollow improvement is easy to perceive and fully believable.
+        rubric: Whether the smoother temporal contour is noticeable at ordinary portrait viewing size. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_requested_finish_match:
+        title: Requested retouching finish
+        definition: Whether the result matches localized natural, studio, editorial, commercial, app-style, or premium presentation.
+        anchors:
+          0: Finish is absent, opposite, or destructive.
+          3: Strong style, intensity, realism, or beautification-substitute mismatch.
+          5: Requested finish is recognizable but inaccurate or too generic.
+          7: Appropriate localized retouching finish with one minor mismatch.
+          9: Finish, visibility, and realism precisely match the prompt without global beautification.
+        rubric: Whether the result matches localized natural, studio, editorial, commercial, app-style, or premium presentation.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Localization and Anatomical Integration:
+    Temporal Anatomy and Transitions:
+      temple_fill_edit_localized_to_temporal_hollows:
+        title: Edit localization
+        definition: Whether changes remain within the bilateral temple hollows and minimum transition area.
+        anchors:
+          0: Broad forehead, eye, cheek, hair, or full-face editing.
+          3: Significant spill into non-target regions.
+          5: Mostly localized but with one clear extra alteration, or target change is too weak to verify localization.
+          7: Localized to the permitted temple region with one minor spill.
+          9: Precisely confined to the permitted temple hollows and required transition pixels.
+        rubric: Whether changes remain within the bilateral temple hollows and minimum transition area. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_forehead_hairline_transition_quality:
+        title: Forehead and hairline transition
+        definition: Whether added volume blends into the lateral forehead while preserving the hairline and forehead center.
+        anchors:
+          0: Hairline moves, forehead deforms, or a severe contour shelf appears.
+          3: Major hair-root, forehead, or boundary distortion.
+          5: Generally connected with one clear transition problem or slight non-target forehead change.
+          7: Natural with one minor issue and no meaningful hairline/forehead-width drift.
+          9: Forehead-to-temple transition is seamless and hairline-safe.
+        rubric: Whether added volume blends into the lateral forehead while preserving the hairline and forehead center. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_outer_eye_brow_tail_transition_quality:
+        title: Outer-eye and brow-tail transition
+        definition: Whether the temporal fill integrates with the outer orbital area without moving eyes, brows, lashes, or
+          eye corners.
+        anchors:
+          0: Outer eye or brow anatomy is severely displaced or deformed.
+          3: Major brow-tail, lash, eye-corner, or orbital distortion.
+          5: Generally plausible with one obvious transition error or subtle eye/brow drift.
+          7: Natural with one minor issue and no eye/brow/beauty-retouch substitute.
+          9: Outer-eye and brow-tail relationships remain fully coherent.
+        rubric: Whether the temporal fill integrates with the outer orbital area without moving eyes, brows, lashes, or eye
+          corners. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_cheekbone_preauricular_transition_quality:
+        title: Cheekbone and preauricular transition
+        definition: Whether the fill tapers naturally into the upper cheekbone and ear-side boundary without enlarging them.
+        anchors:
+          0: Cheekbone, ear, or preauricular anatomy is severely altered.
+          3: Major bulge, ridge, gap, or boundary discontinuity.
+          5: Generally plausible with one clear transition issue.
+          7: Natural with one minor issue.
+          9: Cheekbone and preauricular transitions are seamless.
+        rubric: Whether the fill tapers naturally into the upper cheekbone and ear-side boundary without enlarging them. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_temporal_curvature_perspective_consistency:
+        title: Temporal curvature and perspective
+        definition: Whether filling follows skull curvature, head rotation, depth, foreshortening, and natural asymmetry.
+        anchors:
+          0: Volume contradicts pose or creates impossible temporal anatomy.
+          3: Major curvature, depth, perspective, or asymmetry error.
+          5: Generally plausible with one clear anatomical inconsistency.
+          7: Coherent with one minor issue.
+          9: Temporal volume is fully compatible with anatomy and perspective.
+        rubric: Whether filling follows skull curvature, head rotation, depth, foreshortening, and natural asymmetry. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_skin_hair_occlusion_integration:
+        title: Skin and hair occlusion integration
+        definition: Whether hair strands, sideburns, skin boundaries, and accessories keep correct front-back relationships.
+        anchors:
+          0: Hair, skin, or accessories are erased, duplicated, or wrongly layered.
+          3: Major penetration, occlusion, or boundary error.
+          5: Mostly integrated with one obvious inconsistency.
+          7: Natural with one minor issue.
+          9: All local occlusion relationships remain exact and seamless.
+        rubric: Whether hair strands, sideburns, skin boundaries, and accessories keep correct front-back relationships. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+  Subject Preservation:
+    Identity and Non-target Preservation:
+      temple_fill_identity_face_shape_preservation:
+        title: Identity and face-shape preservation
+        definition: Whether the same person, age impression, forehead width, skull contour, and overall face shape remain
+          recognizable.
+        anchors:
+          0: Different person or major facial redesign.
+          3: Strong identity, age, forehead-width, or face-shape drift.
+          5: Same person remains recognizable with one clear change.
+          7: Preserved with one minor difference limited to the temple-fill transition.
+          9: Identity and all non-target face-shape traits remain unchanged.
+        rubric: Whether the same person, age impression, forehead width, skull contour, and overall face shape remain recognizable.
+          Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_eyes_gaze_brows_lashes_preservation:
+        title: Eyes, gaze, brows, and lashes preservation
+        definition: Whether eye position, shape, gaze, brows, eyelashes, and outer eye corners remain unchanged.
+        anchors:
+          0: Major eye, gaze, brow, lash, or corner alteration.
+          3: Strong drift in one or more listed features.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: Eyes, gaze, brows, lashes, and eye corners remain unchanged.
+        rubric: Whether eye position, shape, gaze, brows, eyelashes, and outer eye corners remain unchanged. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_forehead_cheekbone_jaw_ear_preservation:
+        title: Adjacent facial-structure preservation
+        definition: Whether forehead center, cheekbones, nose, mouth, jawline, ears, and neck remain unchanged.
+        anchors:
+          0: Multiple major adjacent-structure changes.
+          3: Strong alteration of one or more protected structures.
+          5: Mostly preserved with one clear change.
+          7: Preserved with one minor difference.
+          9: All adjacent facial structures remain unchanged.
+        rubric: Whether forehead center, cheekbones, nose, mouth, jawline, ears, and neck remain unchanged. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_expression_head_pose_preservation:
+        title: Expression and head-pose preservation
+        definition: Whether expression, mouth state, head rotation, tilt, scale, and position remain stable.
+        anchors:
+          0: Major expression or head-pose change.
+          3: Strong drift in one or more listed properties.
+          5: Mostly preserved with one clear difference.
+          7: Preserved with one minor shift.
+          9: Expression and head pose remain unchanged.
+        rubric: Whether expression, mouth state, head rotation, tilt, scale, and position remain stable. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_hair_clothing_scene_camera_preservation:
+        title: Hair, clothing, scene, and camera preservation
+        definition: Whether hairline, hairstyle, hair color, clothing, background, lighting, crop, camera angle, framing,
+          and resolution remain stable.
+        anchors:
+          0: Major non-target replacement, reframing, or camera change.
+          3: Strong hairline, hair, clothing, scene, crop, or lighting drift.
+          5: Mostly stable with one clear change.
+          7: Preserved with one minor difference.
+          9: All non-target appearance and camera conditions remain unchanged.
+        rubric: Whether hairline, hairstyle, hair color, clothing, background, lighting, crop, camera angle, framing, and
+          resolution remain stable. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is
+          detected, apply failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate
+          for this facet.
+  Task Realism and Image Quality:
+    Rendering and Artifact Control:
+      temple_fill_skin_surface_detail_realism:
+        title: Skin-surface detail realism
+        definition: Whether pores, fine lines, makeup, peach fuzz, and skin texture remain natural over the filled temples.
+        anchors:
+          0: Severely synthetic, smeared, plastic, or textureless skin.
+          3: Strong texture loss, repetition, or over-smoothing.
+          5: Usable but visibly processed, beautified, or inconsistent with source texture.
+          7: Realistic and source-consistent with one minor detail issue.
+          9: Fully photorealistic and source-consistent skin detail.
+        rubric: Whether pores, fine lines, makeup, peach fuzz, and skin texture remain natural over the filled temples. Apply
+          this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation
+          caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_local_lighting_shadow_color_consistency:
+        title: Local lighting, shadow, and color consistency
+        definition: Whether temporal highlights, shadows, skin tone, and facial depth follow source illumination.
+        anchors:
+          0: Lighting, shadows, or colors strongly contradict the image.
+          3: Major missing, duplicated, or incorrect local illumination.
+          5: Generally plausible with one obvious inconsistency.
+          7: Consistent with one minor issue.
+          9: Color, lighting, and temporal shadows integrate perfectly.
+        rubric: Whether temporal highlights, shadows, skin tone, and facial depth follow source illumination. Apply this facet's
+          0-9 anchors directly. If any global failure affecting this facet is detected, apply failure_propagation caps. Do
+          not let unrelated preservation, attractiveness, or realism compensate for this facet.
+      temple_fill_edge_blending_artifact_stability:
+        title: Edge blending and artifact stability
+        definition: Whether boundaries remain seamless and free of halos, dents, lumps, warped hair, duplicated features,
+          or background deformation.
+        anchors:
+          0: Severe contour failure, structural artifacts, or image instability.
+          3: Multiple obvious seams, bulges, distortions, or duplicated details.
+          5: One clear artifact or moderate local instability.
+          7: Stable with one minor blending or artifact issue.
+          9: No visible artifacts; all edited boundaries are seamless.
+        rubric: Whether boundaries remain seamless and free of halos, dents, lumps, warped hair, duplicated features, or background
+          deformation. Apply this facet's 0-9 anchors directly. If any global failure affecting this facet is detected, apply
+          failure_propagation caps. Do not let unrelated preservation, attractiveness, or realism compensate for this facet.
+prompt_applicability:
+  purpose: All prompts share one bilateral temple-filling target. All eight Prompt Compliance facets are always applicable.
+  always_applicable:
+  - temple_fill_primary_outcome_match
+  - temple_fill_hollow_reduction_match
+  - temple_fill_fullness_magnitude_match
+  - temple_fill_volume_placement_distribution_match
+  - temple_fill_bilateral_completeness_balance_match
+  - temple_fill_overfill_head_width_control_match
+  - temple_fill_normal_view_visibility_match
+  - temple_fill_requested_finish_match
+  mask:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  aggregation_rule: P = sum_i(weight_i * normalized_score_i) over all 8 Prompt Compliance facets.
+judge_role: You are a strict expert evaluator for temple-hollow filling, upper-face soft-tissue anatomy, identity preservation,
+  and source-state consistency.
+judge_instructions: |-
+  Judge SOURCE, EDIT PROMPT, and EDITED IMAGE in this order.
+
+  1) Source audit. Compare the original bilateral temple hollows, forehead-to-temple-to-cheekbone contour, hairline, outer eyes,
+  brow tails, cheekbones, ears, jawline, skin texture, identity, expression, head pose, lighting, clothing, background, and camera state.
+
+  2) Actual-edit classification. Before scoring, decide which case best describes the edited image:
+  correct_local_temple_fill; weak_or_near_no_op; cheek_forehead_or_head_widening_substitute; overfilled_swollen_temple; source_state_or_identity_drift;
+  or artifact/lighting/beauty_filter_substitute. Do not reward a generally prettier, smoother, brighter, wider, or more symmetric face
+  unless the temple hollows themselves are visibly and locally filled.
+
+  3) Positive versus negative sample meaning. A positive training sample should show visible localized temple-hollow reduction with
+  natural fullness and preserved source identity. A negative sample includes no visible temple change, only generic beautification,
+  whole-face or upper-face widening, cheek/forehead plumping, moved hairline/eyes/brows, puffy filler-like temples, or source-state drift.
+
+  4) Failure propagation. Treat absent/weak filling, wrong-region/substitute widening, overfill/swelling, broken temporal anatomy,
+  hairline/eye/brow/identity drift, and local skin/lighting artifacts as failures. Estimate severity 0-5 and apply
+  global_scoring_policy.failure_propagation caps before final output.
+
+  5) Score calibration. 9 is rare. 8 is near-perfect. 7 requires concrete facet-specific evidence; for core temple-filling facets,
+  7 requires clear localized temple-hollow improvement on assessable sides. 6 means mostly correct with one clear issue. 4-5 means
+  partial, weak, substituted, or visibly flawed. 0-3 means absent, wrong, severe, or source-breaking.
+
+  6) Anti-template review. If your provisional vector is all 7s, mostly 7s, all 8-9s, or copied across many facets, re-audit the
+  image. Lower every facet that lacks exact visual evidence. Preservation and quality can be moderate-to-good when the source is
+  not damaged, but they must not turn a failed or substituted primary edit into a high reward.
+
+  Return only JSON:
+  {"score_vector":[22 integers from 0 to 9],"failure_tags":[]}

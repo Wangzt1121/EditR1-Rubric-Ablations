@@ -99,9 +99,9 @@ launchers. Therefore `NUM_EPOCHS=150` produces 150 optimizer/global steps.
 Checkpoints are saved every 25 epochs by default, including step 150.
 
 The launchers set `EVAL_FREQ=50`, `SKIP_EVAL=0`, and
-`MAX_EVAL_BATCHES=0`. Evaluation therefore traverses the complete validation
-set after optimizer steps 50, 100, and 150 instead of evaluating 500 images at
-every step.
+`EVAL_SAMPLE_COUNT=50`. Evaluation therefore reuses the same first 50 samples
+from the validation manifest after optimizer steps 50, 100, and 150. The limit
+is global across all GPUs, not per GPU.
 
 ## Reproducibility and security
 

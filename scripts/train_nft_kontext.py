@@ -42,7 +42,7 @@ import tempfile
 from PIL import Image, ImageDraw, ImageFont
 from peft import LoraConfig, get_peft_model, PeftModel
 import random
-from torch.utils.data import Dataset, DataLoader, Sampler
+from torch.utils.data import Dataset, DataLoader, Sampler, Subset
 from flow_grpo.ema import EMAModuleWrapper
 from flow_grpo.fsdp2_utils import prepare_fsdp_model
 from ml_collections import config_flags
@@ -2282,81 +2282,118 @@ def eval_fn(
     pipeline.transformer.eval()
     all_rewards = defaultdict(list)
 
+    requested_eval_samples = int(os.getenv("EVAL_SAMPLE_COUNT", "50") or "50")
+    if requested_eval_samples < 0:
+        raise ValueError("EVAL_SAMPLE_COUNT must be non-negative.")
+
+    full_eval_dataset = test_dataloader.dataset
+    eval_sample_count = (
+        min(requested_eval_samples, len(full_eval_dataset))
+        if requested_eval_samples > 0
+        else len(full_eval_dataset)
+    )
+    if eval_sample_count == 0:
+        raise ValueError("The evaluation dataset is empty.")
+
+    # The ordered subset is recreated identically at every evaluation step.
+    eval_dataset = Subset(full_eval_dataset, range(eval_sample_count))
     test_sampler = (
         DistributedSampler(
-            test_dataloader.dataset, num_replicas=world_size, rank=rank, shuffle=False
+            eval_dataset, num_replicas=world_size, rank=rank, shuffle=False
         )
         if world_size > 1
         else None
     )
     eval_loader = DataLoader(
-        test_dataloader.dataset,
+        eval_dataset,
         batch_size=1,
         sampler=test_sampler,
         collate_fn=test_dataloader.collate_fn,
         num_workers=test_dataloader.num_workers,
     )
 
-    max_eval_batches = int(os.getenv("MAX_EVAL_BATCHES", "0") or "0")
+    if is_main_process(rank):
+        logger.info(
+            "Evaluating the fixed first %d samples from the validation manifest.",
+            eval_sample_count,
+        )
+
     for eval_batch_idx, test_batch in enumerate(tqdm(
         eval_loader,
         desc="Eval: ",
         disable=not is_main_process(rank),
         position=0,
     )):
-        if max_eval_batches > 0 and eval_batch_idx >= max_eval_batches:
-            break
         prompts, prompt_metadata, ref_images, prompt_with_image_paths, target_size = test_batch
         sample_height, sample_width = target_size
         prompt_embeds, pooled_prompt_embeds, _ = compute_text_embeddings(
             prompts, text_encoders, tokenizers, max_sequence_length=128, device=device
         )
-        current_batch_size = len(prompt_embeds)
-        with torch_autocast(
-            enabled=(config.mixed_precision in ["fp16", "bf16"]),
-            dtype=mixed_precision_dtype,
-        ):
-            with torch.no_grad():
-                images, _, _, _, _, _ = pipeline_with_logprob(
-                    pipeline,
-                    prompt_embeds=prompt_embeds,
-                    pooled_prompt_embeds=pooled_prompt_embeds,
-                    image=ref_images,
-                    num_inference_steps=config.sample.eval_num_steps,
-                    guidance_scale=config.sample.guidance_scale,
-                    output_type="pt",
-                    height=sample_height,
-                    width=sample_width,
-                    noise_level=config.sample.noise_level,
-                    deterministic=True,
-                    solver="flow",
-                    max_area=sample_height * sample_width,
-                    _auto_resize=False,
-                )
+        # DistributedSampler pads when 50 is not divisible by world_size. The
+        # padded items join sharded text encoding but are not generated or scored.
+        is_real_sample = eval_batch_idx * world_size + rank < eval_sample_count
+        if is_real_sample:
+            with torch_autocast(
+                enabled=(config.mixed_precision in ["fp16", "bf16"]),
+                dtype=mixed_precision_dtype,
+            ):
+                with torch.no_grad():
+                    images, _, _, _, _, _ = pipeline_with_logprob(
+                        pipeline,
+                        prompt_embeds=prompt_embeds,
+                        pooled_prompt_embeds=pooled_prompt_embeds,
+                        image=ref_images,
+                        num_inference_steps=config.sample.eval_num_steps,
+                        guidance_scale=config.sample.guidance_scale,
+                        output_type="pt",
+                        height=sample_height,
+                        width=sample_width,
+                        noise_level=config.sample.noise_level,
+                        deterministic=True,
+                        solver="flow",
+                        max_area=sample_height * sample_width,
+                        _auto_resize=False,
+                    )
 
-        reward_images, reward_ref_images = prepare_reward_images(
-            images, ref_images, prompt_metadata
-        )
-        rewards_future = executor.submit(
-            reward_fn,
-            reward_images,
-            prompts,
-            prompt_metadata,
-            reward_ref_images,
-            only_strict=False,
-        )
-        time.sleep(0)
-        rewards, reward_metadata = rewards_future.result()
+            reward_images, reward_ref_images = prepare_reward_images(
+                images, ref_images, prompt_metadata
+            )
+            rewards_future = executor.submit(
+                reward_fn,
+                reward_images,
+                prompts,
+                prompt_metadata,
+                reward_ref_images,
+                only_strict=False,
+            )
+            time.sleep(0)
+            rewards, _reward_metadata = rewards_future.result()
 
-        for key, value in rewards.items():
-            rewards_tensor = torch.as_tensor(value, device=device).float()
-            gathered_value = gather_tensor_to_all(rewards_tensor, world_size)
-            all_rewards[key].append(gathered_value.numpy())
+            for key, value in rewards.items():
+                all_rewards[key].extend(_flatten_reward_values(value).tolist())
+
+    local_rewards = {key: list(values) for key, values in all_rewards.items()}
+    if world_size > 1:
+        gathered_rewards = [None] * world_size if is_main_process(rank) else None
+        dist.gather_object(local_rewards, gathered_rewards, dst=0)
+    else:
+        gathered_rewards = [local_rewards]
 
     if is_main_process(rank):
+        combined_rewards = defaultdict(list)
+        for rank_rewards in gathered_rewards:
+            for key, values in rank_rewards.items():
+                combined_rewards[key].extend(values)
         final_rewards = {
-            key: np.concatenate(value_list) for key, value_list in all_rewards.items()
+            key: np.asarray(values, dtype=np.float32)
+            for key, values in combined_rewards.items()
         }
+        actual_eval_count = len(final_rewards.get("avg", []))
+        if actual_eval_count != eval_sample_count:
+            raise RuntimeError(
+                f"Expected {eval_sample_count} scored evaluation samples, "
+                f"but received {actual_eval_count}."
+            )
 
         images_to_log = reward_images
         prompts_to_log = prompts

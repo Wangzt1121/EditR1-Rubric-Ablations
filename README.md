@@ -62,9 +62,9 @@ and does not load model weights.
 ## Run the three ablations
 
 Each launcher first validates its rubric and environment, then runs 150
-optimizer steps with fail-closed Gemini scoring and a LoRA learning rate of
-`5e-4`. All other model, data, sampling, and candidate settings are shared
-through `.env`.
+optimizer steps with fail-closed `gemini-3.1-flash-lite` scoring and a LoRA
+learning rate of `5e-4`. All other model, data, sampling, and candidate settings
+are shared through `.env`.
 
 The three experiments are parallel variants on the same `main` branch:
 

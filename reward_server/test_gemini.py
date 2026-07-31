@@ -2483,7 +2483,7 @@ def main() -> None:
     parser.add_argument("--output_dir", default="/nvmedata/workspace2/users/wzt/data/rubric_test_out")
 
     # OpenAI-compatible API.
-    parser.add_argument("--model", default=os.getenv("GPT_RUBRIC_MODEL", os.getenv("GPT_REWARD_MODEL", os.getenv("GEMINI_REWARD_MODEL", "gemini-2.5-flash"))))
+    parser.add_argument("--model", default=os.getenv("GPT_RUBRIC_MODEL", os.getenv("GPT_REWARD_MODEL", os.getenv("GEMINI_REWARD_MODEL", "gemini-3.1-flash-lite"))))
     parser.add_argument(
         "--api_key",
         default=os.getenv(

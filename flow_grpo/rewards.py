@@ -145,7 +145,7 @@ def mllm_relative_api_score(device):
     ).strip()
     model = os.getenv(
         "RELATIVE_REWARD_MODEL",
-        os.getenv("GPT_RUBRIC_MODEL", os.getenv("GEMINI_REWARD_MODEL", os.getenv("GPT_REWARD_MODEL", "gemini-2.5-flash"))),
+        os.getenv("GPT_RUBRIC_MODEL", os.getenv("GEMINI_REWARD_MODEL", os.getenv("GPT_REWARD_MODEL", "gemini-3.1-flash-lite"))),
     ).strip()
     rubric_yaml = os.getenv("RELATIVE_RUBRIC_YAML", "/nvmedata/workspace2/users/wzt/hair_edit.yaml")
     timeout = float(os.getenv("RELATIVE_REWARD_TIMEOUT", "180"))
@@ -466,7 +466,7 @@ def mllm_single_api_score(device):
     ).strip()
     model = os.getenv(
         "SINGLE_REWARD_MODEL",
-        os.getenv("GPT_RUBRIC_MODEL", os.getenv("GEMINI_REWARD_MODEL", os.getenv("GPT_REWARD_MODEL", "gemini-2.5-flash"))),
+        os.getenv("GPT_RUBRIC_MODEL", os.getenv("GEMINI_REWARD_MODEL", os.getenv("GPT_REWARD_MODEL", "gemini-3.1-flash-lite"))),
     ).strip()
     rubric_yaml = os.getenv(
         "SINGLE_REWARD_RUBRIC_YAML",
